@@ -65,6 +65,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
   const months = lastMonths(now, 6);
   if (!months.includes(month)) months.push(month);
+  months.sort().reverse(); // do mais recente para o mais antigo, mesmo quando o mês pedido está fora da lista
   const hasData = revenue > 0 || purchases > 0 || summary.soldUnits > 0;
   const bigGap = summary.deviationPct !== null && Math.abs(summary.deviationPct) >= 0.03;
 
@@ -121,19 +122,30 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
           </dl>
 
           {summary.deviationCost !== null ? (
-            <div className={`rounded-lg p-3 text-sm ${bigGap && summary.deviationCost > 0 ? "bg-danger/10" : bigGap ? "bg-warning/10" : "bg-success/10"}`}>
-              {!bigGap ? (
+            <div
+              className={`rounded-lg p-3 text-sm ${
+                summary.deviationPct === null ? "bg-border/60" : bigGap && summary.deviationCost > 0 ? "bg-danger/10" : bigGap ? "bg-warning/10" : "bg-success/10"
+              }`}
+            >
+              {summary.deviationPct === null ? (
+                <p>
+                  Você comprou <strong>{formatBRL(summary.purchases)}</strong> e as marmitas vendidas deveriam ter custado{" "}
+                  <strong>{formatBRL(summary.theoreticalCost ?? 0)}</strong>. <strong>Informe o faturamento do mês</strong> para o app dizer se essa diferença é grande ou pequena.
+                </p>
+              ) : !bigGap ? (
                 <p>
                   <strong>Compras e vendas batem.</strong> A diferença é de só {formatBRL(Math.abs(summary.deviationCost))}.
                 </p>
               ) : summary.deviationCost > 0 ? (
                 <p>
-                  <strong>Você gastou {formatBRL(summary.deviationCost)} a mais</strong> em insumos do que as marmitas vendidas explicam. Pode ser sobra de estoque, desperdício, perda no preparo ou preço de insumo
-                  desatualizado nas fichas.
+                  <strong>Você gastou {formatBRL(summary.deviationCost)} a mais</strong> em insumos do que as marmitas vendidas explicam. Pode ser sobra de estoque, desperdício, perda no preparo, preço de insumo
+                  desatualizado nas fichas ou alguma venda que ainda não foi informada
+                  {summary.salesWithoutCost > 0 ? ` (e ${summary.salesWithoutCost} ${summary.salesWithoutCost === 1 ? "ficha incompleta não entra" : "fichas incompletas não entram"} na conta)` : ""}.
                 </p>
               ) : (
                 <p>
-                  <strong>Você gastou {formatBRL(Math.abs(summary.deviationCost))} a menos</strong> do que o esperado. Provavelmente usou estoque que comprou no mês anterior (ou faltou informar alguma venda).
+                  <strong>Você gastou {formatBRL(Math.abs(summary.deviationCost))} a menos</strong> do que o esperado. Provavelmente usou estoque que comprou no mês anterior, ou informou vendas a mais, ou o custo de alguma ficha
+                  está acima do real.
                 </p>
               )}
             </div>

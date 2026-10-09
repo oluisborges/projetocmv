@@ -64,6 +64,7 @@ export async function setSoldQty(month: string, recipeId: string, rawQty: string
   const qty = text === null ? NaN : Number(text);
   if (!start || !id.success) return { ok: false, error: "Dados inválidos." };
   if (!Number.isFinite(qty) || qty < 0 || qty > 10_000_000) return { ok: false, error: "Digite quantas marmitas vendeu, como 120." };
+  if (!Number.isInteger(qty)) return { ok: false, error: "Digite um número inteiro de marmitas (sem vírgula)." };
 
   const unit = await activeUnit(orgId);
   if (!unit) return { ok: false, error: "Sua marmitaria ainda não tem unidade cadastrada." };

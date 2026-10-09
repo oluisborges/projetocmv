@@ -80,6 +80,8 @@ describe("meses", () => {
     expect(monthStart("2026-10-09")).toBe("2026-10-01");
     expect(monthStart("2026-13")).toBeNull();
     expect(monthStart("26-10")).toBeNull();
+    expect(monthStart("0000-01")).toBeNull(); // ano 0 não existe no banco
+    expect(monthStart("1999-12")).toBeNull();
     expect(monthStart("")).toBeNull();
     expect(monthStart(undefined)).toBeNull();
   });

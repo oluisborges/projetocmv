@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
 import { formatBRL } from "@/lib/format";
@@ -48,12 +48,15 @@ export function SalesRow({
   const [saved, setSaved] = useState(initialQty);
   const [text, setText] = useState(initialQty > 0 ? String(initialQty) : "");
   const [state, setState] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
+  const latest = useRef(0); // só a última resposta vale: duas edições seguidas não deixam o valor velho sobrescrever o novo
 
   async function commit() {
     const current = text.trim() === "" ? 0 : Number(text.replace(",", "."));
     if (current === saved) return;
+    const mine = ++latest.current;
     setState({ kind: "saving" });
     const result = await setSoldQty(month, recipe.id, text);
+    if (mine !== latest.current) return;
     if (result.ok) {
       setSaved(result.qty);
       setText(result.qty > 0 ? String(result.qty) : "");

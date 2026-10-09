@@ -55,7 +55,7 @@ export function summarizeMonth(input: { revenue: number; purchases: number; sale
 
 /** "2026-10" (ou "2026-10-09") -> "2026-10-01"; `null` se inválido. A coluna do banco exige o dia 1. */
 export function monthStart(input: string | undefined | null): string | null {
-  const m = /^(\d{4})-(0[1-9]|1[0-2])(?:-\d{2})?$/.exec(input ?? "");
+  const m = /^(20\d{2})-(0[1-9]|1[0-2])(?:-\d{2})?$/.exec(input ?? "");
   return m ? `${m[1]}-${m[2]}-01` : null;
 }
 

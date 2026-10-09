@@ -58,7 +58,7 @@ describe("priceIncreaseAlerts", () => {
     expect(r).toEqual([]);
   });
 
-  it("só olha a janela de 45 dias e ordena do maior aumento para o menor", () => {
+  it("usa o preço anterior à janela como base e ordena do maior aumento para o menor", () => {
     const r = priceIncreaseAlerts({
       history: [
         { ingredient_id: "sal", unit_cost: 0.001, changed_at: "2026-07-01T10:00:00Z" }, // fora da janela
@@ -72,6 +72,49 @@ describe("priceIncreaseAlerts", () => {
       recipesUsing: used,
       now,
     });
-    expect(r.map((a) => a.name)).toEqual(["Arroz", "Peito de frango"]);
+    // sal: o preço de julho (fora da janela) é a base e dobrou; arroz +20%; frango +15%
+    expect(r.map((a) => a.name)).toEqual(["Sal", "Arroz", "Peito de frango"]);
+  });
+});
+
+describe("priceIncreaseAlerts: insumo antigo reajustado uma vez", () => {
+  it("cadastrado há meses a R$ 10 e reajustado ontem para R$ 12: avisa +20%", () => {
+    const r = priceIncreaseAlerts({
+      history: [
+        { ingredient_id: "frango", unit_cost: 0.01, changed_at: "2026-03-01T10:00:00Z" }, // há meses
+        { ingredient_id: "frango", unit_cost: 0.012, changed_at: "2026-10-09T10:00:00Z" }, // ontem
+      ],
+      names,
+      recipesUsing: used,
+      now,
+    });
+    expect(r).toHaveLength(1);
+    expect(r[0].pct).toBeCloseTo(0.2, 6);
+  });
+
+  it("insumo que não mudou na janela não gera aviso, mesmo com histórico antigo", () => {
+    const r = priceIncreaseAlerts({
+      history: [
+        { ingredient_id: "arroz", unit_cost: 0.005, changed_at: "2026-02-01T10:00:00Z" },
+        { ingredient_id: "arroz", unit_cost: 0.006, changed_at: "2026-04-01T10:00:00Z" },
+      ],
+      names,
+      recipesUsing: used,
+      now,
+    });
+    expect(r).toEqual([]);
+  });
+
+  it("base zero antiga (importado do catálogo) continua sem ser aumento", () => {
+    const r = priceIncreaseAlerts({
+      history: [
+        { ingredient_id: "sal", unit_cost: 0, changed_at: "2026-03-01T10:00:00Z" },
+        { ingredient_id: "sal", unit_cost: 0.002, changed_at: "2026-10-09T10:00:00Z" },
+      ],
+      names,
+      recipesUsing: used,
+      now,
+    });
+    expect(r).toEqual([]);
   });
 });

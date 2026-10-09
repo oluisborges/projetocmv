@@ -32,7 +32,7 @@ export function MonthlyNumbersForm({ revenue, units }: { revenue: number | null;
           required={false}
           defaultValue={revenue ? moneyInput.format(revenue) : ""}
           placeholder="Ex.: 60.000"
-          hint={<Hint>A média do que entra por mês com as vendas. Com isso o app calcula quanto dos seus custos fixos pesa em cada real vendido e já usa no preço.</Hint>}
+          hint={<Hint>A MÉDIA do que entra por mês com as vendas. Com isso o app calcula quanto dos seus custos fixos pesa em cada real vendido e já usa no preço. O faturamento de cada mês específico você informa na aba Resultado do mês.</Hint>}
         />
         <TextField
           label="Quantas marmitas você vende por mês"

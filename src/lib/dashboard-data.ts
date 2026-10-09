@@ -44,7 +44,6 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
 
   const supabase = await createClient();
   const monthStart = currentMonthStart();
-  const sinceHistory = new Date(Date.now() - 50 * 86_400_000).toISOString();
 
   const [ingredients, { recipes, items }, prices, staff, { data: ingPrices }, { data: period }, { data: history }] = await Promise.all([
     loadIngredients(),
@@ -53,7 +52,9 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
     loadStaff(ctx.unit.id),
     supabase.from("ingredients").select("purchase_price, price_updated_at").eq("org_id", orgId).is("archived_at", null),
     supabase.from("periods").select("id, revenue, purchases").eq("unit_id", ctx.unit.id).eq("month", monthStart).maybeSingle(),
-    supabase.from("ingredient_price_history").select("ingredient_id, unit_cost, changed_at").eq("org_id", orgId).gte("changed_at", sinceHistory).order("changed_at").limit(1000),
+    // Sem limite inferior de data: o alerta precisa do último preço ANTES da janela como base. Os mais recentes primeiro,
+    // para que um eventual corte do limite descarte o histórico antigo, nunca o preço atual.
+    supabase.from("ingredient_price_history").select("ingredient_id, unit_cost, changed_at").eq("org_id", orgId).order("changed_at", { ascending: false }).limit(2000),
   ]);
 
   const { data: salesRows } = period
@@ -88,7 +89,9 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
 
   const recipesUsing = new Map<string, number>();
   const seen = new Set<string>();
+  const activeRecipeIds = new Set(recipes.map((r) => r.id)); // fichas arquivadas não contam
   for (const it of items) {
+    if (!activeRecipeIds.has(it.recipe_id)) continue;
     const key = `${it.recipe_id}:${it.ingredient_id}`;
     if (seen.has(key)) continue;
     seen.add(key);

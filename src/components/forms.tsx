@@ -1,6 +1,10 @@
 "use client";
 
-import { startTransition, useActionState, useRef } from "react";
+import { startTransition, useActionState, useRef, useSyncExternalStore } from "react";
+
+const subscribe = () => () => {};
+/** false no servidor e no primeiro render, true depois que a página carregou no navegador. */
+const useHydrated = () => useSyncExternalStore(subscribe, () => true, () => false);
 
 type State = { error?: string; ok?: string };
 
@@ -21,6 +25,7 @@ export function ActionForm({
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLFormElement>(null);
+  const hydrated = useHydrated();
   const [state, formAction, pending] = useActionState(async (prev: State, formData: FormData) => {
     const result = await action(prev, formData);
     if (result.ok && resetOnOk) ref.current?.reset();
@@ -50,7 +55,7 @@ export function ActionForm({
       ) : null}
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !hydrated}
         className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
       >
         {pending ? "Salvando…" : submitLabel}
