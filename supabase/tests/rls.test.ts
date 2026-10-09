@@ -349,3 +349,29 @@ describe("ajustes de preço e canais de venda", () => {
     expect(seen).toHaveLength(0);
   });
 });
+
+describe("vínculos (memberships): só o admin Shogun cria e altera", () => {
+  it("dono não consegue vincular outro usuário à própria organização", async () => {
+    await expect(
+      as(ids.ownerA, "dono-a@marmita.com", () =>
+        q(`insert into public.memberships (org_id, user_id, role) values ($1,$2,'owner')`, [ids.orgA, ids.ownerB]),
+      ),
+    ).rejects.toThrow(/row-level security/i);
+  });
+
+  it("dono não promove nem rebaixa papéis", async () => {
+    await as(ids.ownerA, "dono-a@marmita.com", () =>
+      q(`update public.memberships set role = 'owner' where org_id = $1 and user_id = $2`, [ids.orgA, ids.viewerA]),
+    );
+    const [row] = await q(`select role from public.memberships where org_id = $1 and user_id = $2`, [ids.orgA, ids.viewerA]);
+    expect(row.role).toBe("viewer");
+  });
+
+  it("admin Shogun cria e altera vínculos", async () => {
+    await as(ids.admin, "admin@shogun.com", () =>
+      q(`insert into public.memberships (org_id, user_id, role) values ($1,$2,'viewer') on conflict do nothing`, [ids.orgB, ids.newbie]),
+    );
+    const [row] = await q(`select role from public.memberships where org_id = $1 and user_id = $2`, [ids.orgB, ids.newbie]);
+    expect(row.role).toBe("viewer");
+  });
+});

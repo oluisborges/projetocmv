@@ -23,7 +23,8 @@ export const getSession = cache(async (): Promise<Session | null> => {
 
   const [{ data: profile }, { data: memberships }] = await Promise.all([
     supabase.from("profiles").select("full_name, is_platform_admin").eq("id", user.id).maybeSingle(),
-    supabase.from("memberships").select("role, organizations(id, name)").eq("user_id", user.id),
+    // Ordem fixa: se um dia houver mais de uma organização, a "ativa" é sempre a mais antiga.
+    supabase.from("memberships").select("role, organizations(id, name)").eq("user_id", user.id).order("created_at"),
   ]);
 
   return {
