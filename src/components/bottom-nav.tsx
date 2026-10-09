@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const ITEMS = [
   { href: "/", label: "Início", match: (p: string) => p === "/" },
   { href: "/insumos", label: "Insumos", match: (p: string) => p.startsWith("/insumos") },
+  { href: "/fichas", label: "Fichas", match: (p: string) => p.startsWith("/fichas") },
 ];
 
 /** Navegação inferior fixa: no celular o polegar alcança tudo. */
