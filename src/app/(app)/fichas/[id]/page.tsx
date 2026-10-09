@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { ConfirmButton } from "@/components/confirm-button";
+import { isPurchaseUnit, baseUnitOf } from "@/lib/calc";
 import { requireMember } from "@/lib/auth";
 import { loadIngredients, loadRecipe } from "@/lib/recipes-data";
 import { archiveRecipe, duplicateRecipe } from "../actions";
@@ -25,8 +27,21 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
       <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
 
       <RecipeEditor
-        recipe={{ id: recipe.id, name: recipe.name, portions: recipe.portions, portionWeight: recipe.portion_weight, cookingLossPct: recipe.cooking_loss_pct }}
-        initialItems={items.map((i) => ({ id: i.id, ingredientId: i.ingredient_id, netQty: i.net_qty, scope: i.scope }))}
+        recipe={{
+          id: recipe.id,
+          name: recipe.name,
+          portions: recipe.portions,
+          portionWeightGrams: recipe.portion_weight,
+          portionWeightUnit: recipe.portion_weight_unit,
+          cookingLossPct: recipe.cooking_loss_pct,
+        }}
+        initialItems={items.map((i) => {
+          const base = ingredients.find((x) => x.id === i.ingredient_id)?.purchase_unit;
+          const baseUnit = base && isPurchaseUnit(base) ? baseUnitOf(base) : "g";
+          // Unidade em que o dono digitou; se não houver, a unidade-base do item.
+          const unit = i.qty_unit && isPurchaseUnit(i.qty_unit) ? i.qty_unit : baseUnit;
+          return { id: i.id, ingredientId: i.ingredient_id, netQty: i.net_qty, unit, scope: i.scope };
+        })}
         ingredients={ingredients.map((i) => ({
           id: i.id,
           name: i.name,
@@ -40,18 +55,22 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
       />
 
       {canWrite ? (
-        <div className="grid grid-cols-2 gap-2 pt-2">
+        <div className="flex flex-col gap-6 border-t border-border pt-6">
           <form action={duplicateRecipe}>
             <input type="hidden" name="id" value={recipe.id} />
             <button type="submit" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold">
               Duplicar ficha
             </button>
           </form>
-          <form action={archiveRecipe}>
+          <form action={archiveRecipe} className="flex flex-col gap-1.5">
             <input type="hidden" name="id" value={recipe.id} />
-            <button type="submit" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-danger">
+            <ConfirmButton
+              message="Arquivar esta ficha? Ela some da lista, mas dá para restaurar depois em Arquivadas."
+              className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-danger"
+            >
               Arquivar ficha
-            </button>
+            </ConfirmButton>
+            <p className="text-center text-xs text-muted">Não é para salvar: o que você digita já é salvo sozinho.</p>
           </form>
         </div>
       ) : null}

@@ -9,14 +9,19 @@ import {
   contributionMargin,
   fixedCostPerUnit,
   fixedExpensePct,
+  fromBaseQty,
   grossQty,
+  isCompatibleUnit,
+  isPurchaseUnit,
   marginStatus,
   netMargin,
   netMarginPct,
   priceChangePct,
   recipeCost,
   suggestedPrice,
+  toBaseQty,
   toCents,
+  unitsFor,
   unitCost,
   type RecipeItem,
 } from "./index";
@@ -188,5 +193,33 @@ describe("ponto de equilíbrio", () => {
 
   it("sem margem positiva não há ponto de equilíbrio", () => {
     expect(breakEven(9000, [{ price: 10, margin: -1, qtySold: 100 }])).toBeNull();
+  });
+});
+
+describe("unidades de medida escolhidas pelo dono", () => {
+  it("converte para a unidade-base e volta", () => {
+    expect(toBaseQty(2, "kg").toString()).toBe("2000");
+    expect(toBaseQty(0.5, "l").toString()).toBe("500");
+    expect(toBaseQty(300, "g").toString()).toBe("300");
+    expect(fromBaseQty(1500, "kg").toString()).toBe("1.5");
+    expect(fromBaseQty(250, "l").toString()).toBe("0.25");
+    expect(fromBaseQty(toBaseQty(0.75, "kg"), "kg").toString()).toBe("0.75");
+  });
+
+  it("só oferece unidades que medem a mesma coisa", () => {
+    expect(unitsFor("g")).toEqual(["g", "kg"]);
+    expect(unitsFor("ml")).toEqual(["ml", "l"]);
+    expect(unitsFor("un")).toEqual(["un"]);
+    expect(isCompatibleUnit("kg", "g")).toBe(true);
+    expect(isCompatibleUnit("l", "g")).toBe(false);
+    expect(isCompatibleUnit("un", "ml")).toBe(false);
+    expect(isPurchaseUnit("kg")).toBe(true);
+    expect(isPurchaseUnit("colher")).toBe(false);
+    expect(isPurchaseUnit("toString")).toBe(false);
+  });
+
+  it("meio quilo de frango custa o mesmo que 500 g", () => {
+    const cost = (qty: number, unit: "g" | "kg") => toBaseQty(qty, unit).mul(0.014).toFixed(2);
+    expect(cost(0.5, "kg")).toBe(cost(500, "g"));
   });
 });

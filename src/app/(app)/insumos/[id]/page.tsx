@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { ConfirmButton } from "@/components/confirm-button";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatPurchaseSize } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -66,9 +67,12 @@ export default async function IngredientPage(props: PageProps<"/insumos/[id]">) 
       {canWrite ? (
         <form action={archiveIngredient} className="pt-2">
           <input type="hidden" name="id" value={ing.id} />
-          <button type="submit" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-danger">
+          <ConfirmButton
+            message="Arquivar este insumo? Ele some da lista, mas as fichas que o usam continuam calculando."
+            className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-danger"
+          >
             Arquivar insumo
-          </button>
+          </ConfirmButton>
           <p className="pt-2 text-center text-xs text-muted">Some da lista, mas as fichas técnicas antigas continuam funcionando.</p>
         </form>
       ) : null}

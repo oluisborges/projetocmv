@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireMember } from "@/lib/auth";
+import { baseUnitOf, isCompatibleUnit, isPurchaseUnit, toBaseQty, type PurchaseUnit } from "@/lib/calc";
 import { parseDecimal } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,9 +27,24 @@ function optionalNumber(raw: unknown, label: string, { min = 0, max = 1_000_000 
   return { ok: true, value: n };
 }
 
-type RecipeSettingsInput = { name: string; category: string | null; portions: number | null; portionWeight: number | null; cookingLossPct: number };
+type RecipeSettingsInput = {
+  name: string;
+  category: string | null;
+  portions: number | null;
+  /** sempre em gramas */
+  portionWeight: number | null;
+  portionWeightUnit: "g" | "kg";
+  cookingLossPct: number;
+};
 
-function readSettings(raw: { name: unknown; category?: unknown; portions: unknown; portionWeight: unknown; cookingLoss: unknown }): Parsed<RecipeSettingsInput> {
+function readSettings(raw: {
+  name: unknown;
+  category?: unknown;
+  portions: unknown;
+  portionWeight: unknown;
+  portionWeightUnit?: unknown;
+  cookingLoss: unknown;
+}): Parsed<RecipeSettingsInput> {
   const name = String(raw.name ?? "").trim();
   if (!name || name.length > 80) return { ok: false, error: "Dê um nome à ficha (até 80 letras)." };
 
@@ -37,8 +53,13 @@ function readSettings(raw: { name: unknown; category?: unknown; portions: unknow
 
   const portions = optionalNumber(raw.portions, "Porções", { max: 100_000 });
   if (!portions.ok) return portions;
-  const weight = optionalNumber(raw.portionWeight, "Peso da porção", { max: 100_000 });
-  if (!weight.ok) return weight;
+  const weightUnit = raw.portionWeightUnit === "kg" ? "kg" : "g";
+  const weightTyped = optionalNumber(raw.portionWeight, "Peso da porção", { max: 100_000 });
+  if (!weightTyped.ok) return weightTyped;
+  // O que o dono digitou (em g ou kg) vira gramas, que é o que o cálculo usa.
+  const weight: { value: number | null } = {
+    value: weightTyped.value === null ? null : toBaseQty(weightTyped.value, weightUnit).toNumber(),
+  };
   if (portions.value === null && weight.value === null) {
     return { ok: false, error: "Informe quantas porções a receita rende, ou o peso de cada porção." };
   }
@@ -52,7 +73,10 @@ function readSettings(raw: { name: unknown; category?: unknown; portions: unknow
     loss = n / 100;
   }
 
-  return { ok: true, value: { name, category, portions: portions.value, portionWeight: weight.value, cookingLossPct: loss } };
+  return {
+    ok: true,
+    value: { name, category, portions: portions.value, portionWeight: weight.value, portionWeightUnit: weightUnit, cookingLossPct: loss },
+  };
 }
 
 const toRow = (v: RecipeSettingsInput) => ({
@@ -60,6 +84,7 @@ const toRow = (v: RecipeSettingsInput) => ({
   category: v.category,
   portions: v.portions,
   portion_weight: v.portionWeight,
+  portion_weight_unit: v.portionWeightUnit,
   cooking_loss_pct: v.cookingLossPct,
 });
 
@@ -72,6 +97,7 @@ export async function createRecipe(_prev: FormState, formData: FormData): Promis
     category: formData.get("category"),
     portions: formData.get("portions"),
     portionWeight: formData.get("portion_weight"),
+    portionWeightUnit: formData.get("portion_weight_unit"),
     cookingLoss: formData.get("cooking_loss"),
   });
   if (!read.ok) return { error: read.error };
@@ -89,6 +115,7 @@ export async function updateRecipeSettings(input: {
   name: string;
   portions: string;
   portionWeight: string;
+  portionWeightUnit: string;
   cookingLoss: string;
 }): Promise<Result> {
   const { canWrite } = await requireMember();
@@ -101,7 +128,13 @@ export async function updateRecipeSettings(input: {
 
   const supabase = await createClient();
   const v = read.value;
-  const row = { name: v.name, portions: v.portions, portion_weight: v.portionWeight, cooking_loss_pct: v.cookingLossPct };
+  const row = {
+    name: v.name,
+    portions: v.portions,
+    portion_weight: v.portionWeight,
+    portion_weight_unit: v.portionWeightUnit,
+    cooking_loss_pct: v.cookingLossPct,
+  };
   const { data, error } = await supabase.from("recipes").update(row).eq("id", id.data).select("id").maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
@@ -109,19 +142,33 @@ export async function updateRecipeSettings(input: {
   return { ok: true };
 }
 
-export async function addRecipeItem(input: { recipeId: string; ingredientId: string; qty: string }): Promise<Result<{ itemId: string }>> {
+/** Quantidade + unidade escolhida -> quantidade na unidade-base do item (g/ml/un). `null` se inválida. */
+function toBase(qtyText: string, unit: string, ingredientUnit: string): { qty: number; unit: PurchaseUnit } | { error: string } {
+  const parsed = parseDecimal(qtyText);
+  const typed = parsed === null ? NaN : Number(parsed);
+  if (!(typed > 0)) return { error: "Digite uma quantidade maior que zero, como 500." };
+  if (!isPurchaseUnit(unit) || !isPurchaseUnit(ingredientUnit) || !isCompatibleUnit(unit, baseUnitOf(ingredientUnit))) {
+    return { error: "Essa unidade não combina com o item (ex.: litro para algo em gramas)." };
+  }
+  const base = toBaseQty(typed, unit).toNumber();
+  if (base > 10_000_000) return { error: "Quantidade muito grande." };
+  if (base < 0.0001) return { error: "Quantidade muito pequena." };
+  return { qty: base, unit };
+}
+
+export async function addRecipeItem(input: { recipeId: string; ingredientId: string; qty: string; unit: string }): Promise<Result<{ itemId: string; qty: number; unit: string }>> {
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
   const ids = z.object({ recipeId: z.uuid(), ingredientId: z.uuid() }).safeParse(input);
-  const qtyText = parseDecimal(input.qty);
-  const qty = qtyText === null ? NaN : Number(qtyText);
   if (!ids.success) return { ok: false, error: "Item inválido." };
-  if (!(qty > 0) || qty > 10_000_000) return { ok: false, error: "Digite a quantidade, como 500." };
 
   const supabase = await createClient();
-  const { data: ing } = await supabase.from("ingredients").select("kind").eq("id", ids.data.ingredientId).maybeSingle();
+  const { data: ing } = await supabase.from("ingredients").select("kind, purchase_unit").eq("id", ids.data.ingredientId).maybeSingle();
   if (!ing) return { ok: false, error: "Insumo não encontrado." };
+
+  const base = toBase(input.qty, input.unit, ing.purchase_unit);
+  if ("error" in base) return { ok: false, error: base.error };
 
   // Insumo entra no lote; embalagem é por porção. O servidor decide, não o navegador.
   const scope = ing.kind === "embalagem" ? "portion" : "batch";
@@ -131,7 +178,8 @@ export async function addRecipeItem(input: { recipeId: string; ingredientId: str
       org_id: orgId,
       recipe_id: ids.data.recipeId,
       ingredient_id: ids.data.ingredientId,
-      net_qty: qty,
+      net_qty: base.qty,
+      qty_unit: base.unit,
       scope,
       counts_for_yield: scope === "batch",
     })
@@ -140,24 +188,34 @@ export async function addRecipeItem(input: { recipeId: string; ingredientId: str
   if (error || !data) return { ok: false, error: "Não foi possível adicionar o item." };
 
   revalidatePath("/fichas");
-  return { ok: true, itemId: data.id };
+  return { ok: true, itemId: data.id, qty: base.qty, unit: base.unit };
 }
 
-export async function updateRecipeItemQty(itemId: string, rawQty: string): Promise<Result<{ qty: number }>> {
+export async function updateRecipeItemQty(itemId: string, rawQty: string, unit: string): Promise<Result<{ qty: number; unit: string }>> {
   const { canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
   const id = z.uuid().safeParse(itemId);
-  const text = parseDecimal(rawQty);
-  const qty = text === null ? NaN : Number(text);
-  if (!id.success || !(qty > 0) || qty > 10_000_000) return { ok: false, error: "Digite uma quantidade maior que zero." };
+  if (!id.success) return { ok: false, error: "Item inválido." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("recipe_items").update({ net_qty: qty }).eq("id", id.data).select("net_qty").maybeSingle();
+  const { data: item } = await supabase.from("recipe_items").select("ingredient_id").eq("id", id.data).maybeSingle();
+  const { data: ing } = item ? await supabase.from("ingredients").select("purchase_unit").eq("id", item.ingredient_id).maybeSingle() : { data: null };
+  if (!item || !ing) return { ok: false, error: "Item não encontrado." };
+
+  const base = toBase(rawQty, unit, ing.purchase_unit);
+  if ("error" in base) return { ok: false, error: base.error };
+
+  const { data, error } = await supabase
+    .from("recipe_items")
+    .update({ net_qty: base.qty, qty_unit: base.unit })
+    .eq("id", id.data)
+    .select("net_qty")
+    .maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
   revalidatePath("/fichas");
-  return { ok: true, qty: Number(data.net_qty) };
+  return { ok: true, qty: Number(data.net_qty), unit: base.unit };
 }
 
 export async function removeRecipeItem(itemId: string): Promise<Result> {
@@ -181,8 +239,8 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
 
   const supabase = await createClient();
   const [{ data: recipe }, { data: items }] = await Promise.all([
-    supabase.from("recipes").select("name, category, portions, portion_weight, cooking_loss_pct").eq("id", id.data).maybeSingle(),
-    supabase.from("recipe_items").select("ingredient_id, net_qty, scope, counts_for_yield").eq("recipe_id", id.data),
+    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct").eq("id", id.data).maybeSingle(),
+    supabase.from("recipe_items").select("ingredient_id, net_qty, qty_unit, scope, counts_for_yield").eq("recipe_id", id.data),
   ]);
   if (!recipe) return;
 
@@ -210,4 +268,15 @@ export async function archiveRecipe(formData: FormData): Promise<void> {
   await supabase.from("recipes").update({ active: false }).eq("id", id.data);
   revalidatePath("/fichas");
   redirect("/fichas");
+}
+
+export async function restoreRecipe(formData: FormData): Promise<void> {
+  const { canWrite } = await requireMember();
+  const id = z.uuid().safeParse(formData.get("id"));
+  if (!canWrite || !id.success) return;
+
+  const supabase = await createClient();
+  await supabase.from("recipes").update({ active: true }).eq("id", id.data);
+  revalidatePath("/fichas");
+  redirect(`/fichas/${id.data}`);
 }

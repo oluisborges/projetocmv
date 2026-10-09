@@ -44,3 +44,18 @@ export function grossQty(netQty: Num, correctionFactor: Num): Decimal {
 export function priceChangePct(previous: Num, current: Num): Decimal {
   return safeDiv(D(current).minus(previous), previous);
 }
+
+/** Inverso de `toBaseQty`: 1500 g -> 1,5 kg. */
+export function fromBaseQty(baseQty: Num, unit: PurchaseUnit): Decimal {
+  return D(baseQty).div(TO_BASE[unit].factor);
+}
+
+/** Unidades que o dono pode escolher para um item, conforme a unidade-base dele (g, ml ou un). */
+export function unitsFor(base: BaseUnit): PurchaseUnit[] {
+  return base === "g" ? ["g", "kg"] : base === "ml" ? ["ml", "l"] : ["un"];
+}
+
+export const isPurchaseUnit = (v: string): v is PurchaseUnit => Object.hasOwn(TO_BASE, v);
+
+/** A unidade escolhida mede a mesma coisa que o item? (kg com insumo em gramas: sim; litro com gramas: não). */
+export const isCompatibleUnit = (unit: PurchaseUnit, base: BaseUnit): boolean => TO_BASE[unit].base === base;

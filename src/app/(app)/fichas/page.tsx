@@ -2,13 +2,14 @@ import Link from "next/link";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { computeRecipe, type CostItem } from "@/lib/recipe-cost";
-import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
+import { loadArchivedRecipes, loadIngredients, loadRecipes } from "@/lib/recipes-data";
+import { restoreRecipe } from "./actions";
 
 export const metadata = { title: "Fichas técnicas" };
 
 export default async function RecipesPage() {
   const { canWrite } = await requireMember();
-  const [ingredients, { recipes, items }] = await Promise.all([loadIngredients(), loadRecipes()]);
+  const [ingredients, { recipes, items }, archived] = await Promise.all([loadIngredients(), loadRecipes(), loadArchivedRecipes()]);
   const byId = new Map(ingredients.map((i) => [i.id, i]));
 
   const cards = recipes.map((r) => {
@@ -69,6 +70,27 @@ export default async function RecipesPage() {
           ))}
         </ul>
       )}
+
+      {archived.length > 0 ? (
+        <details className="rounded-xl border border-border bg-surface px-4">
+          <summary className="flex h-12 cursor-pointer items-center text-sm font-semibold text-muted">Arquivadas ({archived.length})</summary>
+          <ul className="divide-y divide-border">
+            {archived.map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-3 py-3">
+                <span className="min-w-0 truncate text-sm">{a.name}</span>
+                {canWrite ? (
+                  <form action={restoreRecipe}>
+                    <input type="hidden" name="id" value={a.id} />
+                    <button type="submit" className="h-9 shrink-0 text-sm font-semibold text-primary">
+                      Restaurar
+                    </button>
+                  </form>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </>
   );
 }

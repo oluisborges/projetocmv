@@ -306,3 +306,21 @@ describe("catálogo-modelo inicial", () => {
     expect(row.embalagens).toBe(2);
   });
 });
+
+describe("unidades escolhidas pelo dono", () => {
+  it("guarda a unidade de exibição e recusa unidades inventadas", async () => {
+    const [rec] = await q(
+      `insert into public.recipes (org_id, name, portions, portion_weight, portion_weight_unit) values ($1,'Prato kg',10,300,'kg') returning id`,
+      [ids.orgA],
+    );
+    await q(`insert into public.recipe_items (org_id, recipe_id, ingredient_id, net_qty, qty_unit) values ($1,$2,$3,2000,'kg')`, [ids.orgA, rec.id, ids.ingA]);
+    const [item] = await q(`select net_qty, qty_unit from public.recipe_items where recipe_id = $1`, [rec.id]);
+    expect(Number(item.net_qty)).toBe(2000);
+    expect(item.qty_unit).toBe("kg");
+
+    await expect(
+      q(`insert into public.recipe_items (org_id, recipe_id, ingredient_id, net_qty, qty_unit) values ($1,$2,$3,1,'colher')`, [ids.orgA, rec.id, ids.ingA]),
+    ).rejects.toThrow(/check constraint/i);
+    await expect(q(`update public.recipes set portion_weight_unit = 'lb' where id = $1`, [rec.id])).rejects.toThrow(/check constraint/i);
+  });
+});
