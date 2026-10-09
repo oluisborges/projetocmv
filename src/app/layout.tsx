@@ -8,6 +8,7 @@ const heading = Plus_Jakarta_Sans({ variable: "--font-heading", subsets: ["latin
 export const metadata: Metadata = {
   title: "Shogun Precificação",
   description: "Custo, margem e preço certo da sua marmita",
+  robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
