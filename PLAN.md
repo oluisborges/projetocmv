@@ -5,7 +5,7 @@ O Grupo Shogun atende 30 marmitarias congeladas. O dono não sabe a margem real 
 **Fator de sucesso: atualizar preços de insumos precisa ser quase sem esforço.**
 
 Decisões já tomadas por você:
-- Acesso: **só por convite** no MVP (auto-cadastro depois).
+- Acesso: **contas criadas pelo admin Shogun com e-mail + senha** (sem auto-cadastro, sem convite, sem código por e-mail).
 - **Organização com várias unidades** (cada unidade tem custos/vendas/CMV próprios).
 - **Sem estoque no MVP**: CMV real = compras do período ÷ faturamento (aproximação, avisada na tela). Estoque entra depois.
 - Preços: **lista editável em lote** (principal) + atalho de reajuste % por categoria/fornecedor.
@@ -33,7 +33,7 @@ Sua stack está **correta**. Ajustes:
 - **Vercel** para deploy; preview a cada branch.
 - Extras: `zod` + `react-hook-form` (formulários), `decimal.js` (**dinheiro nunca em float**), `date-fns`, Recharts (via shadcn charts), `vitest`, `@serwist/next` ou manifest simples (PWA instalável na tela inicial do celular).
 - **pnpm** como gerenciador.
-- Login: **código por e-mail (OTP) / link mágico**, com senha opcional — dono pouco técnico esquece senha.
+- Login: **e-mail + senha definida pelo admin Shogun**. O admin cria a marmitaria, o dono e a senha; o cliente não se cadastra. Esqueceu a senha → pede nova à Shogun (admin troca no painel). Exige a chave secreta do Supabase no servidor (`SUPABASE_SERVICE_ROLE_KEY`).
 
 **Dois alertas de custo/risco (decisão sua antes de ter clientes reais):**
 1. Vercel *Hobby* é só uso não comercial → para clientes pagantes, **Vercel Pro** (~US$20/mês).
@@ -43,9 +43,9 @@ Plano: dois projetos Supabase (dev e prod), prod só na Fase 8.
 ## 3. Arquitetura
 ```
 src/
-  app/(auth)/ login, aceitar-convite
+  app/login/ e-mail + senha
   app/(app)/[unit]/ insumos | fichas | precificacao | cmv | cmo | custos | dashboard
-  app/(admin)/ painel Shogun (orgs, convites, catálogo modelo)
+  app/(admin)/ painel Shogun (criar marmitaria/usuários, trocar senha, catálogo modelo)
   lib/calc/        ← FUNÇÕES PURAS (sem React/Supabase) + *.test.ts
   lib/supabase/    client.ts (browser) | server.ts (cookies) | admin.ts (service role, server-only)
   lib/validation/  schemas zod
@@ -54,7 +54,7 @@ supabase/migrations/  SQL versionado (único jeito de mudar o banco)
 supabase/seed/        catálogo modelo
 ```
 - **Cálculo é puro e testado**: UI e banco só guardam dados; custos calculados no TS (e conferidos por testes). Custo de insumo calculado também em coluna gerada para ordenação/alertas.
-- **Service role** só em `lib/supabase/admin.ts` (`import "server-only"`), usada apenas para convites/admin. Nunca `NEXT_PUBLIC_`.
+- **Service role** só em `lib/supabase/admin.ts` (`import "server-only"`), usada apenas pelo painel admin (criar usuário com senha, trocar senha), sempre depois de `requireAdmin()`. Nunca `NEXT_PUBLIC_`.
 - **Preparado para o futuro**: colunas `external_source/external_id` em insumos e fichas; tabela `integrations` por organização; `sales_import` genérica (hoje preenchida à mão, amanhã Cardápio Web); views de agregação para o painel Shogun.
 
 ## 4. Modelo de dados (Postgres)
@@ -65,7 +65,6 @@ Toda tabela de negócio tem `org_id` desnormalizado (policies simples e rápidas
 - `organizations` (nome, slug)
 - `memberships` (org_id, user_id, papel: `owner | manager | viewer`)
 - `units` (org_id, nome, cidade)
-- `invitations` (org_id, e-mail, papel, hash do token, expira, aceito_em)
 
 **Catálogo da organização (compartilhado entre unidades)**
 - `suppliers` (org_id, nome, contato)
@@ -112,7 +111,7 @@ Toda tabela de negócio tem `org_id` desnormalizado (policies simples e rápidas
 | Fase | Entrega | Pronto quando |
 |---|---|---|
 | **0 — Fundação** | `git` com 1º commit, scaffold Next, push p/ GitHub, projeto Supabase (dev), projeto Vercel conectado, variáveis de ambiente, "hello world" em produção lendo do Supabase | URL pública abre no celular |
-| **1 — Acesso e base** | Auth OTP, organizações, unidades, memberships, convites, RLS + testes de isolamento, shell mobile (nav inferior), design system, painel admin mínimo | Admin convida cliente; cliente entra e só vê a própria org |
+| **1 — Acesso e base** | Login e-mail+senha, organizações, unidades, memberships, painel admin que cria usuários com senha, RLS + testes de isolamento, shell mobile (nav inferior), design system, painel admin mínimo | Admin cria cliente e senha; cliente entra e só vê a própria org |
 | **2 — Insumos** | CRUD, fornecedor, FC, histórico, **lista editável em lote**, reajuste %, "desatualizado há 30+ dias", importar do catálogo modelo | Atualizar 20 preços em < 2 min no celular |
 | **3 — Fichas técnicas** | Editor de ficha, embalagem por porção, cocção, custo por porção em tempo real, duplicar ficha | Custo bate com planilha de referência |
 | **4 — Precificação** | Configurações, canais, preço sugerido, MC, simulador, comparação com preço praticado | Margem real por prato visível |
@@ -141,14 +140,14 @@ Cada fase: rodar o app, validar com Chrome DevTools (viewport 375px e desktop), 
 - Tom: frases curtas, "Quanto você ganha em cada marmita".
 
 **Telas principais**
-1. **Login** — e-mail → código de 6 dígitos.
+1. **Login** — e-mail e senha.
 2. **Início/Dashboard** — 3 cartões (CMV%, CMO%, margem média), alertas, ranking dos 5 melhores e 5 piores pratos.
 3. **Insumos (lista em lote)** — busca no topo, chips de categoria/fornecedor, linha = nome + preço editável; salvando automaticamente; botão "Reajustar %"; selo "desatualizado".
 4. **Ficha técnica** — cabeçalho com custo por porção grande e fixo no topo; lista de ingredientes; bloco "Embalagem"; bloco "Rendimento".
 5. **Precificação do prato** — preço sugerido × praticado, barra de margem, simulador (slider de preço) e por canal (iFood etc.).
 6. **Mês (CMV)** — faturamento, compras, vendas por prato; gráfico real × teórico.
 7. **Custos e equipe** — custos fixos, CMO por área, ponto de equilíbrio com meta diária de marmitas.
-8. **Admin Shogun** — organizações, convites, catálogo modelo.
+8. **Admin Shogun** — organizações, usuários e senhas, catálogo modelo.
 Antes de implementar cada tela uso o skill `frontend-design`.
 
 ## 9. O que VOCÊ precisa fazer manualmente (Fase 0)

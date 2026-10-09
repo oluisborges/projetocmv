@@ -16,7 +16,9 @@ Next.js (App Router) + TypeScript estrito + Tailwind v4 + shadcn/ui · Supabase 
 - Dinheiro nunca em `number` float em cálculo: use `decimal.js`.
 - Banco muda **somente** via `supabase/migrations`. Toda tabela nova: RLS + policies + índice em `org_id` na mesma migration.
 - Multi-tenant: toda tabela de negócio tem `org_id` (e as de operação `unit_id`). Admin Shogun = `profiles.is_platform_admin`.
-- `SUPABASE_SERVICE_ROLE_KEY` só em arquivos com `import "server-only"`; nunca em Client Components nem em variável `NEXT_PUBLIC_*`.
+- `SUPABASE_SERVICE_ROLE_KEY` só em `src/lib/supabase/admin.ts` (`import "server-only"`); nunca em Client Components nem em `NEXT_PUBLIC_*`. Toda Server Action que a usa chama `requireAdmin()` antes.
+- Login é e-mail + senha criada pelo admin Shogun (não há auto-cadastro). Páginas protegidas chamam `requireUser()`; o `proxy.ts` é só checagem otimista.
+- No Next 16 `middleware` se chama `proxy` (`src/proxy.ts`).
 - Mobile-first: projetar em 375px, alvos de toque ≥ 44px, `inputMode="decimal"` em preços, navegação inferior.
 - Todo termo técnico (CMV, CMO, markup, FC, MC) tem tooltip em linguagem simples.
 - Páginas são Server Components por padrão; `"use client"` só quando necessário.

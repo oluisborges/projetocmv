@@ -203,45 +203,6 @@ describe("insumos", () => {
   });
 });
 
-describe("convites", () => {
-  const token = "token-secreto-123";
-  const hashSql = `encode(sha256(convert_to($2, 'utf8')), 'hex')`;
-
-  it("e-mail certo aceita; vira membro com o papel do convite", async () => {
-    await q(
-      `insert into public.invitations (org_id, email, role, token_hash) values ($1,'novo@marmita.com','manager',${hashSql})`,
-      [ids.orgA, token],
-    );
-    const org = await as(ids.newbie, "novo@marmita.com", () => q(`select public.accept_invitation($1) as org`, [token]));
-    expect(org[0].org).toBe(ids.orgA);
-    const [m] = await q(`select role from public.memberships where org_id = $1 and user_id = $2`, [ids.orgA, ids.newbie]);
-    expect(m.role).toBe("manager");
-  });
-
-  it("não aceita duas vezes", async () => {
-    await expect(
-      as(ids.newbie, "novo@marmita.com", () => q(`select public.accept_invitation($1)`, [token])),
-    ).rejects.toThrow(/inválido/);
-  });
-
-  it("e-mail diferente do convite é recusado", async () => {
-    await q(`insert into public.invitations (org_id, email, role, token_hash) values ($1,'outra@x.com','viewer',${hashSql})`, [ids.orgB, "outro-token"]);
-    await expect(
-      as(ids.ownerA, "dono-a@marmita.com", () => q(`select public.accept_invitation($1)`, ["outro-token"])),
-    ).rejects.toThrow(/inválido/);
-  });
-
-  it("convite expirado é recusado", async () => {
-    await q(
-      `insert into public.invitations (org_id, email, role, token_hash, expires_at) values ($1,'novo@marmita.com','viewer',${hashSql}, now() - interval '1 day')`,
-      [ids.orgB, "velho"],
-    );
-    await expect(
-      as(ids.newbie, "novo@marmita.com", () => q(`select public.accept_invitation($1)`, ["velho"])),
-    ).rejects.toThrow(/inválido/);
-  });
-});
-
 describe("catálogo-modelo", () => {
   let tplRecipe: string;
 

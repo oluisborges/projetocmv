@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
+/* Paleta provisória (marca Grupo Shogun a confirmar). Interface só em tema claro, de propósito:
+   o uso é no celular, em cozinha, com muita luz. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf7f2;
+  --foreground: #1f2328;
+  --surface: #ffffff;
+  --border: #e6e0d6;
+  --muted: #6b7280;
+  --primary: #c8102e;
+  --primary-foreground: #ffffff;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading), system-ui, sans-serif;
+}
+
+/* Números alinhados em colunas (preços, percentuais). */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
