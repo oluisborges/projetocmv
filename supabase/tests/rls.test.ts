@@ -407,3 +407,39 @@ describe("custos fixos e equipe", () => {
     await expect(q(`update public.unit_settings set monthly_units = 0 where unit_id = $1`, [ids.unitA])).rejects.toThrow(/check constraint/i);
   });
 });
+
+describe("endurecimento: remoção de vínculos e unidades", () => {
+  it("dono não remove outro dono nem a si mesmo; remove quem não é dono; admin remove qualquer um", async () => {
+    await q(`insert into public.memberships (org_id, user_id, role) values ($1,$2,'owner') on conflict do nothing`, [ids.orgA, ids.newbie]);
+    await q(`insert into public.memberships (org_id, user_id, role) values ($1,$2,'manager') on conflict do nothing`, [ids.orgA, ids.admin]);
+
+    const count = async (user: string) => Number((await q(`select count(*)::int as n from public.memberships where org_id = $1 and user_id = $2`, [ids.orgA, user]))[0].n);
+
+    await as(ids.ownerA, "dono-a@marmita.com", () => q(`delete from public.memberships where org_id = $1 and user_id = $2`, [ids.orgA, ids.newbie]));
+    expect(await count(ids.newbie)).toBe(1); // outro dono: continua
+
+    await as(ids.ownerA, "dono-a@marmita.com", () => q(`delete from public.memberships where org_id = $1 and user_id = $2`, [ids.orgA, ids.ownerA]));
+    expect(await count(ids.ownerA)).toBe(1); // ele mesmo: continua
+
+    await as(ids.ownerA, "dono-a@marmita.com", () => q(`delete from public.memberships where org_id = $1 and user_id = $2`, [ids.orgA, ids.viewerA]));
+    expect(await count(ids.viewerA)).toBe(0); // viewer: removido
+
+    await as(ids.admin, "admin@shogun.com", () => q(`delete from public.memberships where org_id = $1 and user_id = $2`, [ids.orgA, ids.newbie]));
+    expect(await count(ids.newbie)).toBe(0); // admin remove até dono
+  });
+
+  it("gerente não cria unidade; dono cria, mas não escolhe created_at", async () => {
+    await q(`insert into public.memberships (org_id, user_id, role) values ($1,$2,'manager') on conflict do nothing`, [ids.orgB, ids.viewerA]);
+    await expect(
+      as(ids.viewerA, "viewer-a@marmita.com", () => q(`insert into public.units (org_id, name) values ($1,'Filial do gerente')`, [ids.orgB])),
+    ).rejects.toThrow(/row-level security|permission denied/i);
+
+    await as(ids.ownerB, "dono-b@marmita.com", () => q(`insert into public.units (org_id, name) values ($1,'Filial 2')`, [ids.orgB]));
+    await expect(
+      as(ids.ownerB, "dono-b@marmita.com", () => q(`insert into public.units (org_id, name, created_at) values ($1,'Falsa','2000-01-01')`, [ids.orgB])),
+    ).rejects.toThrow(/permission denied/i);
+    await expect(
+      as(ids.ownerB, "dono-b@marmita.com", () => q(`update public.units set created_at = '2000-01-01' where id = $1`, [ids.unitB])),
+    ).rejects.toThrow(/permission denied/i);
+  });
+});
