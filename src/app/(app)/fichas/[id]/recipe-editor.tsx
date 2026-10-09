@@ -200,7 +200,7 @@ function AddItem({
           </option>
         ))}
       </select>
-      <div className="grid grid-cols-[1fr_auto] gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <input value={qty} onChange={(e) => setQty(e.target.value)} inputMode="decimal" aria-label="Quantidade" placeholder="Quantidade" className={`${inputClass} text-right`} />
         <UnitSelect value={unit} options={unitOptions} onChange={setUnit} label="Unidade da quantidade" />
       </div>
@@ -383,7 +383,7 @@ export function RecipeEditor({
         </label>
         <div className="flex flex-col gap-1.5 text-sm font-medium">
           <label htmlFor="portion-weight">Peso da porção</label>
-          <div className="grid grid-cols-[1fr_auto] gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
             <input
               id="portion-weight"
               value={portionWeight}
