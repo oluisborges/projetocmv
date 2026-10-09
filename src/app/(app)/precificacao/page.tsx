@@ -54,7 +54,7 @@ export default async function PricingPage() {
           Ainda não há fichas técnicas. Monte a primeira em <Link href="/fichas" className="font-semibold text-primary">Fichas</Link>: o preço sai do custo dela.
         </p>
       ) : (
-        <PricingList rows={rows} channels={ctx.channels} settings={ctx.settings} configured={ctx.configured} canWrite={canWrite} />
+        <PricingList rows={rows} channels={ctx.channels} settings={ctx.settings} configured={ctx.configured} fixedAuto={ctx.fixedAuto} canWrite={canWrite} />
       )}
     </>
   );

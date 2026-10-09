@@ -55,6 +55,7 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
           currentPrice={prices.get(recipe.id) ?? null}
           settings={ctx.settings}
           configured={ctx.configured}
+          fixedAuto={ctx.fixedAuto}
           channels={ctx.channels}
           canWrite={canWrite}
         />

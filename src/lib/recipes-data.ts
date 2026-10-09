@@ -1,5 +1,12 @@
 import "server-only";
+import { getSession } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+
+/** Organização do usuário logado (a mais antiga, ver getSession). Sem vínculo = sem dados. */
+async function currentOrgId(): Promise<string | null> {
+  const session = await getSession();
+  return session?.memberships[0]?.org.id ?? null;
+}
 
 export type IngredientRecord = {
   id: string;
@@ -37,9 +44,11 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ dat
 
 /** Insumos (inclusive arquivados: fichas antigas continuam calculando) — RLS limita à organização do usuário. */
 export async function loadIngredients(): Promise<IngredientRecord[]> {
+  const orgId = await currentOrgId();
+  if (!orgId) return [];
   const supabase = await createClient();
   const data = await fetchAll((from, to) =>
-    supabase.from("ingredients").select("id, name, kind, purchase_unit, unit_cost, correction_factor, archived_at").order("id").range(from, to),
+    supabase.from("ingredients").select("id, name, kind, purchase_unit, unit_cost, correction_factor, archived_at").eq("org_id", orgId).order("id").range(from, to),
   );
   return data.map((i) => ({ ...i, unit_cost: Number(i.unit_cost), correction_factor: Number(i.correction_factor) })) as IngredientRecord[];
 }
@@ -47,9 +56,11 @@ export async function loadIngredients(): Promise<IngredientRecord[]> {
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
 export async function loadRecipe(id: string): Promise<{ recipe: RecipeRecord; items: RecipeItemRecord[] } | null> {
+  const orgId = await currentOrgId();
+  if (!orgId) return null;
   const supabase = await createClient();
   const [{ data: recipe }, { data: items }] = await Promise.all([
-    supabase.from("recipes").select("id, name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("id", id).eq("active", true).maybeSingle(),
+    supabase.from("recipes").select("id, name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("id", id).eq("org_id", orgId).eq("active", true).maybeSingle(),
     supabase.from("recipe_items").select("id, recipe_id, ingredient_id, net_qty, qty_unit, scope").eq("recipe_id", id).order("id"),
   ]);
   if (!recipe) return null;
@@ -60,10 +71,12 @@ export async function loadRecipe(id: string): Promise<{ recipe: RecipeRecord; it
 }
 
 export async function loadRecipes(): Promise<{ recipes: RecipeRecord[]; items: RecipeItemRecord[] }> {
+  const orgId = await currentOrgId();
+  if (!orgId) return { recipes: [], items: [] };
   const supabase = await createClient();
   const [{ data: recipes }, items] = await Promise.all([
-    supabase.from("recipes").select("id, name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("active", true).order("name"),
-    fetchAll((from, to) => supabase.from("recipe_items").select("id, recipe_id, ingredient_id, net_qty, qty_unit, scope").order("id").range(from, to)),
+    supabase.from("recipes").select("id, name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("org_id", orgId).eq("active", true).order("name"),
+    fetchAll((from, to) => supabase.from("recipe_items").select("id, recipe_id, ingredient_id, net_qty, qty_unit, scope").eq("org_id", orgId).order("id").range(from, to)),
   ]);
   return {
     recipes: (recipes ?? []).map((r) => ({ ...r, portions: num(r.portions), portion_weight: num(r.portion_weight), portion_weight_unit: r.portion_weight_unit === "kg" ? "kg" : "g", cooking_loss_pct: Number(r.cooking_loss_pct), mode: r.mode === "serving" ? "serving" : "batch" })) as RecipeRecord[],
@@ -72,7 +85,9 @@ export async function loadRecipes(): Promise<{ recipes: RecipeRecord[]; items: R
 }
 
 export async function loadArchivedRecipes(): Promise<{ id: string; name: string }[]> {
+  const orgId = await currentOrgId();
+  if (!orgId) return [];
   const supabase = await createClient();
-  const { data } = await supabase.from("recipes").select("id, name").eq("active", false).order("name");
+  const { data } = await supabase.from("recipes").select("id, name").eq("org_id", orgId).eq("active", false).order("name");
   return data ?? [];
 }

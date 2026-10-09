@@ -105,7 +105,7 @@ export function FixedCostRow({ cost, canWrite }: { cost: { id: string; name: str
 
 export function AddFixedCostForm() {
   return (
-    <ActionForm action={addFixedCost} submitLabel="Adicionar custo">
+    <ActionForm action={addFixedCost} submitLabel="Adicionar custo" resetOnOk>
       <TextField label="O que é" name="name" list="sugestoes-custos" placeholder="Ex.: Aluguel" />
       <datalist id="sugestoes-custos">
         {["Aluguel", "Energia elétrica (freezers)", "Gás", "Água", "Internet", "Sistema de pedidos", "Contador", "Manutenção", "Anúncios"].map((n) => (
@@ -187,7 +187,7 @@ export function StaffRowView({
 
 export function AddStaffForm() {
   return (
-    <ActionForm action={addStaff} submitLabel="Adicionar pessoa">
+    <ActionForm action={addStaff} submitLabel="Adicionar pessoa" resetOnOk>
       <TextField label="Nome" name="name" placeholder="Ex.: Maria (cozinheira) ou Pró-labore (você)" />
       <SelectField
         label="Área"

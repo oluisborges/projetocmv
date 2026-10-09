@@ -85,7 +85,7 @@ export function ChannelRow({ channel }: { channel: { id: string; name: string; f
 
 export function AddChannelForm() {
   return (
-    <ActionForm action={addChannel} submitLabel="Adicionar canal">
+    <ActionForm action={addChannel} submitLabel="Adicionar canal" resetOnOk>
       <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
         <TextField label="Nome do canal" name="name" placeholder="Ex.: iFood" />
         <TextField label="Taxa (%)" name="fee" inputMode="decimal" required={false} placeholder="Ex.: 27" />

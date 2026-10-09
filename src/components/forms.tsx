@@ -1,22 +1,42 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState, useRef } from "react";
 
 type State = { error?: string; ok?: string };
 
+/**
+ * Formulário com mensagem de erro/sucesso. O envio é feito à mão (startTransition) de propósito: com
+ * `<form action={fn}>` o React 19 limpa todos os campos até quando a ação devolve erro, e o dono perderia o que digitou.
+ * `resetOnOk`: limpa os campos só quando salvou com sucesso (formulários de "adicionar").
+ */
 export function ActionForm({
   action,
   submitLabel,
+  resetOnOk = false,
   children,
 }: {
   action: (prev: State, formData: FormData) => Promise<State>;
   submitLabel: string;
+  resetOnOk?: boolean;
   children: React.ReactNode;
 }) {
-  const [state, formAction, pending] = useActionState(action, {} as State);
+  const ref = useRef<HTMLFormElement>(null);
+  const [state, formAction, pending] = useActionState(async (prev: State, formData: FormData) => {
+    const result = await action(prev, formData);
+    if (result.ok && resetOnOk) ref.current?.reset();
+    return result;
+  }, {} as State);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form
+      ref={ref}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        startTransition(() => formAction(data));
+      }}
+      className="flex flex-col gap-4"
+    >
       {children}
       {state.error ? (
         <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">

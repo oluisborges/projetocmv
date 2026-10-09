@@ -134,12 +134,14 @@ export function PricingList({
   channels,
   settings,
   configured,
+  fixedAuto,
   canWrite,
 }: {
   rows: PricingRowData[];
   channels: Channel[];
   settings: PricingSettings;
   configured: boolean;
+  fixedAuto: boolean;
   canWrite: boolean;
 }) {
   const [channelId, setChannelId] = useState(channels[0]?.id ?? "");
@@ -172,7 +174,7 @@ export function PricingList({
 
       {!configured ? (
         <p role="status" className="rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
-          Estes lucros são <strong>estimativas</strong>: faltam impostos e despesas fixas.{" "}
+          Estes lucros são <strong>estimativas</strong>: {fixedAuto ? "faltam os impostos." : "faltam impostos e despesas fixas."}{" "}
           <Link href="/precificacao/ajustes" className="font-semibold underline">
             Informe nos Ajustes
           </Link>{" "}

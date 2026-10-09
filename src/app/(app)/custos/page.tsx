@@ -42,7 +42,8 @@ export default async function CostsPage() {
     return view.ok && price > 0 ? [{ price, cost: view.cost.costPerPortion.toNumber() }] : [];
   });
 
-  const feePct = Math.min(...(ctx.channels.length ? ctx.channels.map((c) => c.fee_pct) : [0]));
+  const cheapest = [...ctx.channels].sort((a, b) => a.fee_pct - b.fee_pct)[0];
+  const feePct = cheapest?.fee_pct ?? 0;
   const summary = summarizeFixedCosts({
     fixedCosts: fixedCosts.map((c) => c.monthly_amount),
     staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
@@ -65,11 +66,17 @@ export default async function CostsPage() {
       <section aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted">Seu ponto de equilíbrio</p>
         {summary.breakEven ? (
+          <>
           <p className="text-lg leading-snug">
             Para empatar você precisa vender <strong className="tabular">{formatNumber(summary.breakEven.units, 0)} marmitas por mês</strong> (cerca de{" "}
             <strong className="tabular">{formatNumber(summary.breakEven.perDay, 0)} por dia</strong>), o que dá{" "}
             <strong className="tabular">{formatBRL(summary.breakEven.revenue)}</strong> de faturamento.
           </p>
+          <p className="text-xs text-muted">
+            Considerando 30 dias por mês, o preço atual das suas marmitas e a venda por <strong>{cheapest?.name ?? "venda direta"}</strong> (a de menor taxa).
+            {ctx.configured ? "" : " É uma estimativa: ainda faltam os impostos nos Ajustes."}
+          </p>
+          </>
         ) : empty ? (
           <p className="text-muted">Cadastre seus custos fixos e a equipe abaixo para descobrir quanto precisa vender para não ter prejuízo.</p>
         ) : dishes.length === 0 ? (
@@ -93,7 +100,12 @@ export default async function CostsPage() {
             <div className="col-span-2">
               <dt className="text-muted">Peso nas vendas</dt>
               <dd className="font-bold">
-                {summary.pctOfRevenue !== null ? (
+                {summary.pctOfRevenue !== null && !ctx.fixedAuto ? (
+                  <span className="font-normal text-danger">
+                    Seus custos fixos (<span className="tabular">{formatPct(summary.pctOfRevenue)}</span> do faturamento) passam do que você fatura. Confira os valores: enquanto isso o preço sugerido NÃO está
+                    contando os custos fixos.
+                  </span>
+                ) : summary.pctOfRevenue !== null ? (
                   <>
                     <span className="tabular">{formatPct(summary.pctOfRevenue)}</span> do faturamento <span className="font-normal text-muted">· já usado no preço sugerido</span>
                   </>

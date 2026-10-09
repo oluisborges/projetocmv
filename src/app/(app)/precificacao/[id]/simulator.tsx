@@ -26,6 +26,7 @@ export function Simulator({
   currentPrice,
   settings,
   configured,
+  fixedAuto,
   channels,
   canWrite,
 }: {
@@ -34,6 +35,7 @@ export function Simulator({
   currentPrice: number | null;
   settings: PricingSettings;
   configured: boolean;
+  fixedAuto: boolean;
   channels: Channel[];
   canWrite: boolean;
 }) {
@@ -89,7 +91,7 @@ export function Simulator({
 
       {!configured ? (
         <p role="status" className="rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
-          Estimativa: faltam impostos e despesas fixas.{" "}
+          Estimativa: {fixedAuto ? "faltam os impostos." : "faltam impostos e despesas fixas."}{" "}
           <Link href="/precificacao/ajustes" className="font-semibold underline">
             Informe nos Ajustes
           </Link>

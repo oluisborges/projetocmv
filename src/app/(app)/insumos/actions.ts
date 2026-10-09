@@ -110,7 +110,8 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
   const baseOf = (u: string) => (isPurchaseUnit(u) ? baseUnitOf(u) : u);
   const changesMeaning = current.kind !== read.value.kind || baseOf(current.purchase_unit) !== baseOf(read.value.purchase_unit);
   if (changesMeaning) {
-    const { count } = await supabase.from("recipe_items").select("id", { count: "exact", head: true }).eq("ingredient_id", id.data);
+    const { count, error: countError } = await supabase.from("recipe_items").select("id", { count: "exact", head: true }).eq("ingredient_id", id.data);
+    if (countError) return fail("Não foi possível conferir se esse item está em alguma ficha. Tente de novo.");
     if ((count ?? 0) > 0) {
       return fail(
         `Esse item está em ${count} ${count === 1 ? "ficha" : "fichas"}. Só dá para trocar entre kg e g, ou entre litro e ml. Para mudar o tipo ou a medida de verdade, crie um item novo e troque nas fichas.`,
@@ -119,6 +120,7 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
   }
 
   const { data, error } = await supabase.from("ingredients").update(read.value).eq("id", id.data).select("id").maybeSingle();
+  if (error?.code === "23514") return fail("Esse item está em fichas: não dá para mudar o tipo ou a medida dele.");
   if (error || !data) return fail("Não foi possível salvar as alterações.");
 
   revalidatePath("/insumos");

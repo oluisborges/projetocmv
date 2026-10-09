@@ -443,3 +443,31 @@ describe("endurecimento: remoção de vínculos e unidades", () => {
     ).rejects.toThrow(/permission denied/i);
   });
 });
+
+describe("travas no banco", () => {
+  it("insumo em uso: não troca de tipo nem de medida-base, mas troca kg por g", async () => {
+    const [ing] = await q(
+      `insert into public.ingredients (org_id, name, purchase_unit, purchase_qty, purchase_price) values ($1,'Frango guard','kg',1,10) returning id`,
+      [ids.orgA],
+    );
+    const [rec] = await q(`insert into public.recipes (org_id, name, portions) values ($1,'Prato guard',1) returning id`, [ids.orgA]);
+
+    // sem uso, qualquer troca vale
+    await q(`update public.ingredients set purchase_unit = 'un' where id = $1`, [ing.id]);
+    await q(`update public.ingredients set purchase_unit = 'kg' where id = $1`, [ing.id]);
+
+    await q(`insert into public.recipe_items (org_id, recipe_id, ingredient_id, net_qty) values ($1,$2,$3,100)`, [ids.orgA, rec.id, ing.id]);
+
+    await expect(q(`update public.ingredients set purchase_unit = 'un' where id = $1`, [ing.id])).rejects.toThrow(/em uso em fichas/);
+    await expect(q(`update public.ingredients set purchase_unit = 'l' where id = $1`, [ing.id])).rejects.toThrow(/em uso em fichas/);
+    await expect(q(`update public.ingredients set kind = 'embalagem' where id = $1`, [ing.id])).rejects.toThrow(/em uso em fichas/);
+    await q(`update public.ingredients set purchase_unit = 'g', purchase_qty = 1000 where id = $1`, [ing.id]); // mesma base: ok
+    await q(`update public.ingredients set name = 'Frango renomeado', purchase_price = 12 where id = $1`, [ing.id]); // preço e nome: ok
+  });
+
+  it("ficha 'por marmita' precisa ter 1 porção e nenhuma perda de cocção", async () => {
+    await expect(q(`insert into public.recipes (org_id, name, portions, mode) values ($1,'Serving ruim',10,'serving')`, [ids.orgA])).rejects.toThrow(/check constraint/i);
+    await expect(q(`insert into public.recipes (org_id, name, portions, cooking_loss_pct, mode) values ($1,'Serving ruim 2',1,0.2,'serving')`, [ids.orgA])).rejects.toThrow(/check constraint/i);
+    await q(`insert into public.recipes (org_id, name, portions, mode) values ($1,'Serving ok',1,'serving')`, [ids.orgA]);
+  });
+});

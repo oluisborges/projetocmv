@@ -14,6 +14,8 @@ export type PricingContext = {
    * Quando existe, ela SUBSTITUI o percentual digitado à mão em Ajustes.
    */
   fixedAuto: boolean;
+  /** Custos fixos ÷ faturamento (fração), mesmo quando passa de 100% e por isso NÃO é usado no preço. */
+  fixedPctOfRevenue: number | null;
   monthlyRevenue: number | null;
   monthlyUnits: number | null;
   /** Custos fixos + equipe por mês (0 se ainda não cadastrou). */
@@ -84,6 +86,7 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
     unit,
     settings: fixedAuto ? { ...base, fixedExpensePct: fixed.pctOfRevenue as number } : base,
     fixedAuto,
+    fixedPctOfRevenue: fixed.pctOfRevenue,
     monthlyRevenue,
     monthlyUnits,
     fixedTotal: fixed.total,

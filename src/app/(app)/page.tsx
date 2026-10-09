@@ -16,8 +16,8 @@ export default async function HomePage() {
     const supabase = await createClient();
     const ctx = await loadPricingContext(member.org.id, canWrite);
     const [{ data: ingredients }, { data: recipes }, prices] = await Promise.all([
-      supabase.from("ingredients").select("purchase_price").is("archived_at", null),
-      supabase.from("recipes").select("id").eq("active", true),
+      supabase.from("ingredients").select("purchase_price").eq("org_id", member.org.id).is("archived_at", null),
+      supabase.from("recipes").select("id").eq("org_id", member.org.id).eq("active", true),
       ctx ? loadCurrentPrices(ctx.unit.id) : Promise.resolve(new Map<string, number>()),
     ]);
 
@@ -46,7 +46,11 @@ export default async function HomePage() {
       {
         key: "settings",
         title: "Informe impostos e despesas",
-        detail: ctx?.configured ? "Informados: o lucro mostrado já é o real." : "Sem isso o lucro mostrado é só uma estimativa.",
+        detail: ctx?.configured
+          ? "Informados: o lucro mostrado já é o real."
+          : ctx?.fixedAuto
+            ? "Falta só informar os impostos para o lucro mostrado ser o real."
+            : "Sem isso o lucro mostrado é só uma estimativa.",
         href: "/precificacao/ajustes",
         cta: "Informar agora",
         done: Boolean(ctx?.configured),

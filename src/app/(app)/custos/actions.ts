@@ -47,6 +47,7 @@ export async function saveMonthlyNumbers(_prev: FormState, formData: FormData): 
   const units = money(formData.get("units"), "Marmitas por mês", { optional: true, max: 1_000_000 });
   if (!revenue.ok) return { error: revenue.error };
   if (!units.ok) return { error: units.error };
+  if (units.value !== null && Math.round(units.value) < 1) return { error: "Marmitas por mês: digite pelo menos 1." };
 
   const unit = await activeUnit(orgId);
   if (!unit) return { error: NO_UNIT };

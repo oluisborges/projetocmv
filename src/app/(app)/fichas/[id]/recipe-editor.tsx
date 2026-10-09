@@ -276,6 +276,7 @@ export function RecipeEditor({
     if (result.ok) {
       setStatus({ kind: "saved" });
       setTimeout(() => setStatus((s) => (s.kind === "saved" ? { kind: "idle" } : s)), 2000);
+      router.refresh(); // o título da página vem do servidor
       return true;
     }
     setStatus({ kind: "error", message: result.error });
