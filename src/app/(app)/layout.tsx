@@ -9,7 +9,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col">
-      <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur">
         <Link href="/" className="flex min-w-0 flex-col leading-tight">
           <span className="truncate font-[family-name:var(--font-heading)] text-base font-extrabold">
             {orgName ?? "Shogun Precificação"}

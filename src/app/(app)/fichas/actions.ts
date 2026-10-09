@@ -92,6 +92,25 @@ export async function createRecipe(_prev: FormState, formData: FormData): Promis
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { error: NO_PERMISSION };
 
+  // Por marmita (padrão): uma porção, sem perda de cocção. Em lote: o dono informa porções/peso.
+  if (formData.get("mode") !== "batch") {
+    const name = String(formData.get("name") ?? "").trim();
+    const category = String(formData.get("category") ?? "").trim() || null;
+    if (!name || name.length > 80) return { error: "Dê um nome à ficha (até 80 letras)." };
+    if (category && category.length > 40) return { error: "Categoria muito longa." };
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("recipes")
+      .insert({ org_id: orgId, name, category, portions: 1, portion_weight: null, cooking_loss_pct: 0, mode: "serving" })
+      .select("id")
+      .single();
+    if (error || !data) return { error: "Não foi possível criar a ficha." };
+
+    revalidatePath("/fichas");
+    redirect(`/fichas/${data.id}`);
+  }
+
   const read = readSettings({
     name: formData.get("name"),
     category: formData.get("category"),
@@ -103,7 +122,7 @@ export async function createRecipe(_prev: FormState, formData: FormData): Promis
   if (!read.ok) return { error: read.error };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("recipes").insert({ ...toRow(read.value), org_id: orgId }).select("id").single();
+  const { data, error } = await supabase.from("recipes").insert({ ...toRow(read.value), org_id: orgId, mode: "batch" }).select("id").single();
   if (error || !data) return { error: "Não foi possível criar a ficha." };
 
   revalidatePath("/fichas");
@@ -123,10 +142,24 @@ export async function updateRecipeSettings(input: {
 
   const id = z.uuid().safeParse(input.id);
   if (!id.success) return { ok: false, error: "Ficha inválida." };
+
+  const supabase = await createClient();
+  const { data: current } = await supabase.from("recipes").select("mode").eq("id", id.data).maybeSingle();
+  if (!current) return { ok: false, error: "Ficha não encontrada." };
+
+  if (current.mode === "serving") {
+    // Ficha por marmita: porções e perda de cocção não existem; só o nome muda.
+    const name = input.name.trim();
+    if (!name || name.length > 80) return { ok: false, error: "Dê um nome à ficha (até 80 letras)." };
+    const { data, error } = await supabase.from("recipes").update({ name }).eq("id", id.data).select("id").maybeSingle();
+    if (error || !data) return { ok: false, error: "Não foi possível salvar." };
+    revalidatePath("/fichas");
+    return { ok: true };
+  }
+
   const read = readSettings(input);
   if (!read.ok) return read;
 
-  const supabase = await createClient();
   const v = read.value;
   const row = {
     name: v.name,
@@ -239,7 +272,7 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
 
   const supabase = await createClient();
   const [{ data: recipe }, { data: items }] = await Promise.all([
-    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct").eq("id", id.data).maybeSingle(),
+    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("id", id.data).maybeSingle(),
     supabase.from("recipe_items").select("ingredient_id, net_qty, qty_unit, scope, counts_for_yield").eq("recipe_id", id.data),
   ]);
   if (!recipe) return;
@@ -252,7 +285,11 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
   if (!copy) return;
 
   if (items && items.length > 0) {
-    await supabase.from("recipe_items").insert(items.map((i) => ({ ...i, org_id: orgId, recipe_id: copy.id })));
+    const { error } = await supabase.from("recipe_items").insert(items.map((i) => ({ ...i, org_id: orgId, recipe_id: copy.id })));
+    if (error) {
+      await supabase.from("recipes").delete().eq("id", copy.id); // não deixa uma cópia vazia para trás
+      return;
+    }
   }
 
   revalidatePath("/fichas");

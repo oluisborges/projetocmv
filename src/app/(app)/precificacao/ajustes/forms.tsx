@@ -58,7 +58,7 @@ export function ChannelRow({ channel }: { channel: { id: string; name: string; f
       </ActionForm>
       <form action={deleteChannel}>
         <input type="hidden" name="id" value={channel.id} />
-        <ConfirmButton message={`Remover o canal ${channel.name}?`} className="h-9 text-sm font-semibold text-danger">
+        <ConfirmButton message={`Remover o canal ${channel.name}?`} className="h-11 text-sm font-semibold text-danger">
           Remover canal
         </ConfirmButton>
       </form>

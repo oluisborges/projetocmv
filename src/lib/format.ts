@@ -29,8 +29,9 @@ export function parseDecimal(input: string, { allowNegative = false }: { allowNe
     // Vírgula é o decimal; pontos são separador de milhar.
     if ((s.match(/,/g) ?? []).length > 1) return null;
     s = s.replace(/\./g, "").replace(",", ".");
-  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
-    s = s.replace(/\./g, ""); // "1.234" / "12.345.678": milhar
+  } else if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(s)) {
+    // "1.234" / "12.345.678": milhar. Grupo inicial nunca começa com 0: "0.500" é meio, não 500.
+    s = s.replace(/\./g, "");
   } else if ((s.match(/\./g) ?? []).length > 1) {
     return null;
   }

@@ -71,8 +71,16 @@ function PriceRow({ item, canWrite }: { item: IngredientRow; canWrite: boolean }
             value={text}
             onChange={(e) => setText(e.target.value)}
             onBlur={commit}
-            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              // Enter salva (ao sair do campo) e já pula para o preço de baixo: atualizar 20 preços sem tocar na tela.
+              const next = e.currentTarget.closest("li")?.nextElementSibling?.querySelector("input");
+              e.currentTarget.blur();
+              next?.focus();
+            }}
             inputMode="decimal"
+            enterKeyHint="next"
             disabled={!canWrite}
             placeholder="0,00"
             aria-invalid={status === "error"}
@@ -119,7 +127,7 @@ export function PriceList({ items, canWrite }: { items: IngredientRow[]; canWrit
   });
 
   const chip = (active: boolean) =>
-    `h-9 shrink-0 rounded-full border px-3.5 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`;
+    `h-11 shrink-0 rounded-full border px-4 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`;
 
   return (
     <section className="flex flex-col gap-3">

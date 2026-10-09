@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { D, baseUnitOf, fromBaseQty, grossQty, toBaseQty, type PurchaseUnit } from "@/lib/calc";
+import { D, baseUnitOf, fromBaseQty, grossQty, toBaseQty, unitsFor, type PurchaseUnit } from "@/lib/calc";
 import { Hint } from "@/components/hint";
 import { formatBRL, formatNumber, parseDecimal, UNIT_LABEL } from "@/lib/format";
 import { computeRecipe } from "@/lib/recipe-cost";
@@ -20,6 +20,8 @@ export type EditorIngredient = {
 /** `netQty` fica SEMPRE na unidade-base (g/ml/un); `unit` é só como o dono vê e digita. */
 export type EditorItem = { id: string; ingredientId: string; netQty: number; unit: PurchaseUnit; scope: "batch" | "portion" };
 export type EditorRecipe = {
+  /** serving = UMA marmita (só gramas); batch = lote (aceita kg/l) */
+  mode: "serving" | "batch";
   id: string;
   name: string;
   portions: number | null;
@@ -67,6 +69,7 @@ function ItemRow({
   ingredient,
   canWrite,
   perPortion,
+  lockUnit,
   onChange,
   onRemove,
 }: {
@@ -74,6 +77,7 @@ function ItemRow({
   ingredient: EditorIngredient;
   canWrite: boolean;
   perPortion: boolean;
+  lockUnit: boolean;
   onChange: (qty: number, unit: PurchaseUnit) => void;
   onRemove: () => void;
 }) {
@@ -123,7 +127,7 @@ function ItemRow({
             aria-invalid={Boolean(error)}
             className="tabular h-11 w-20 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           />
-          <UnitSelect value={item.unit} options={[baseOf(ingredient)]} onChange={changeUnit} disabled={!canWrite} label={`Unidade de ${ingredient.name}`} />
+          <UnitSelect value={item.unit} options={lockUnit ? [baseOf(ingredient)] : unitsFor(baseOf(ingredient))} onChange={changeUnit} disabled={!canWrite} label={`Unidade de ${ingredient.name}`} />
         </div>
         {canWrite ? (
           <button
@@ -150,12 +154,14 @@ function AddItem({
   options,
   defaultQty,
   label,
+  lockUnit,
   onAdded,
 }: {
   recipeId: string;
   options: EditorIngredient[];
   defaultQty: string;
   label: string;
+  lockUnit: boolean;
   onAdded: (item: EditorItem) => void;
 }) {
   const [ingredientId, setIngredientId] = useState("");
@@ -165,7 +171,7 @@ function AddItem({
   const [busy, setBusy] = useState(false);
 
   const selected = options.find((o) => o.id === ingredientId);
-  const unitOptions: PurchaseUnit[] = [selected ? baseOf(selected) : "g"];
+  const unitOptions: PurchaseUnit[] = selected ? (lockUnit ? [baseOf(selected)] : unitsFor(baseOf(selected))) : ["g"];
 
   function choose(id: string) {
     setIngredientId(id);
@@ -228,6 +234,7 @@ export function RecipeEditor({
   canWrite: boolean;
 }) {
   const router = useRouter();
+  const isServing = recipe.mode === "serving";
   const [items, setItems] = useState(initialItems);
   const [name, setName] = useState(recipe.name);
   const [portions, setPortions] = useState(fmt(recipe.portions));
@@ -248,13 +255,13 @@ export function RecipeEditor({
     const typedWeight = num(portionWeight);
     return computeRecipe(
       {
-        portions: num(portions),
+        portions: isServing ? 1 : num(portions),
         portionWeight: typedWeight === null ? null : toBaseQty(typedWeight, weightUnit).toNumber(),
-        cookingLossPct: (num(cookingLoss) ?? 0) / 100,
+        cookingLossPct: isServing ? 0 : (num(cookingLoss) ?? 0) / 100,
       },
       items.flatMap((i) => (byId.has(i.ingredientId) ? [{ ingredient: byId.get(i.ingredientId)!, netQty: i.netQty, scope: i.scope }] : [])),
     );
-  }, [items, portions, portionWeight, weightUnit, cookingLoss, byId]);
+  }, [items, portions, portionWeight, weightUnit, cookingLoss, byId, isServing]);
 
   async function saveSettings(over: { portionWeight?: string; weightUnit?: "g" | "kg" } = {}): Promise<boolean> {
     setStatus({ kind: "saving" });
@@ -310,6 +317,7 @@ export function RecipeEditor({
             ingredient={byId.get(item.ingredientId)!}
             canWrite={canWrite}
             perPortion={scope === "portion"}
+            lockUnit={isServing || scope === "portion"}
             onChange={(qty, unit) => setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, netQty: qty, unit } : i)))}
             onRemove={() => removeItem(item)}
           />
@@ -319,18 +327,24 @@ export function RecipeEditor({
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-live="polite" className="sticky top-[57px] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <section aria-live="polite" className="sticky top-14 z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         {view.ok ? (
           <div className="flex flex-col gap-1">
             <p className="flex items-center text-xs font-semibold uppercase tracking-wider text-muted">
-              Custo por porção
-              <Hint>Quanto custa fazer UMA marmita: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem.</Hint>
+              {isServing ? "Custo da marmita" : "Custo por porção"}
+              <Hint>
+                {isServing
+                  ? "Quanto custa fazer UMA marmita: a soma dos ingredientes que vão nela mais a embalagem."
+                  : "Quanto custa fazer UMA marmita: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem."}
+              </Hint>
             </p>
             <div className="flex items-baseline justify-between gap-3">
               <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(view.cost.costPerPortion.toNumber())}</p>
-              <p className="tabular text-right text-xs text-muted">
-                Lote {formatBRL(view.cost.batchCost.toNumber())} · {formatNumber(view.cost.portions.toNumber(), 0)} porções
-              </p>
+              {isServing ? null : (
+                <p className="tabular text-right text-xs text-muted">
+                  Lote {formatBRL(view.cost.batchCost.toNumber())} · {formatNumber(view.cost.portions.toNumber(), 0)} porções
+                </p>
+              )}
             </div>
             <p className="tabular text-xs text-muted">
               Ingredientes {formatBRL(view.cost.ingredientCostPerPortion.toNumber())} + embalagem {formatBRL(view.cost.packagingCostPerPortion.toNumber())}
@@ -353,30 +367,34 @@ export function RecipeEditor({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Ingredientes do lote</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Ingredientes de UMA marmita" : "Ingredientes do lote"}</h2>
         {renderItems("batch")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
         <p className="text-xs text-muted">
-          Digite a quantidade LIMPA que vai em UMA porção ou no lote, já pronta para usar. O custo considera a perda de limpeza (fator de correção) sozinho.
+          {isServing
+            ? "Digite quantos gramas vão em UMA marmita, já limpo e pronto para usar. O custo considera a perda de limpeza (fator de correção) sozinho."
+            : "Digite a quantidade do LOTE INTEIRO (a receita toda), já limpa. Dá para usar kg ou g. O custo considera a perda de limpeza sozinho."}
         </p>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Embalagem (por porção)</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Embalagem da marmita" : "Embalagem (por porção)"}</h2>
         {renderItems("portion")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Bandeja, filme, etiqueta…" onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Bandeja, filme, etiqueta…" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Rendimento</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Nome" : "Rendimento"}</h2>
         <label className="flex flex-col gap-1.5 text-sm font-medium">
-          Nome
+          {isServing ? "Nome da marmita" : "Nome"}
           <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => saveSettings()} disabled={!canWrite} className={inputClass} />
         </label>
+        {isServing ? null : (
+          <>
         <label className="flex flex-col gap-1.5 text-sm font-medium">
           Rende (porções)
           <input value={portions} onChange={(e) => setPortions(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
@@ -403,6 +421,8 @@ export function RecipeEditor({
           </span>
           <input value={cookingLoss} onChange={(e) => setCookingLoss(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
         </label>
+          </>
+        )}
         <p role={status.kind === "error" ? "alert" : undefined} className="min-h-5 text-sm">
           {status.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
           {status.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}

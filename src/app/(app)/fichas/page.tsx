@@ -46,7 +46,7 @@ export default async function RecipesPage() {
                   <p className="truncate font-semibold">{recipe.name}</p>
                   <p className="truncate text-xs text-muted">
                     {recipe.category ? `${recipe.category} · ` : ""}
-                    {view.ok ? `rende ${formatNumber(view.cost.portions.toNumber(), 0)} porções` : "ficha incompleta"}
+                    {view.ok ? (recipe.mode === "serving" ? "por marmita" : `lote de ${formatNumber(view.cost.portions.toNumber(), 0)} porções`) : "ficha incompleta"}
                   </p>
                   {view.ok && view.missingPrices > 0 ? (
                     <p className="text-xs text-warning">
@@ -81,7 +81,7 @@ export default async function RecipesPage() {
                 {canWrite ? (
                   <form action={restoreRecipe}>
                     <input type="hidden" name="id" value={a.id} />
-                    <button type="submit" className="h-9 shrink-0 text-sm font-semibold text-primary">
+                    <button type="submit" className="h-11 shrink-0 px-2 text-sm font-semibold text-primary">
                       Restaurar
                     </button>
                   </form>

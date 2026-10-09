@@ -30,7 +30,7 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
 
   return (
     <>
-      <Link href="/precificacao" className="text-sm font-semibold text-primary">
+      <Link href="/precificacao" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
         ← Preços
       </Link>
       <section className="flex flex-col gap-1">
@@ -54,6 +54,7 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
           cost={view.cost.costPerPortion.toNumber()}
           currentPrice={prices.get(recipe.id) ?? null}
           settings={ctx.settings}
+          configured={ctx.configured}
           channels={ctx.channels}
           canWrite={canWrite}
         />

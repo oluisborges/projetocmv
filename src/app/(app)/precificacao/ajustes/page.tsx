@@ -12,7 +12,7 @@ export default async function PricingSettingsPage() {
 
   return (
     <>
-      <Link href="/precificacao" className="text-sm font-semibold text-primary">
+      <Link href="/precificacao" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
         ← Preços
       </Link>
       <section className="flex flex-col gap-1">

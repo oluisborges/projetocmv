@@ -21,7 +21,7 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
 
   return (
     <>
-      <Link href="/fichas" className="text-sm font-semibold text-primary">
+      <Link href="/fichas" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
         ← Fichas
       </Link>
       <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
@@ -29,6 +29,7 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
       <RecipeEditor
         recipe={{
           id: recipe.id,
+          mode: recipe.mode,
           name: recipe.name,
           portions: recipe.portions,
           portionWeightGrams: recipe.portion_weight,
@@ -38,8 +39,9 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
         initialItems={items.map((i) => {
           const base = ingredients.find((x) => x.id === i.ingredient_id)?.purchase_unit;
           const baseUnit = base && isPurchaseUnit(base) ? baseUnitOf(base) : "g";
-          // Na ficha tudo é g/ml/un (não existe marmita de 1 kg): sempre a unidade-base do item.
-          return { id: i.id, ingredientId: i.ingredient_id, netQty: i.net_qty, unit: baseUnit, scope: i.scope };
+          // Por marmita: tudo em g/ml/un (não existe marmita de 1 kg). Em lote: a unidade em que o dono digitou.
+          const typed = i.qty_unit && isPurchaseUnit(i.qty_unit) && i.scope === "batch" && recipe.mode === "batch" ? i.qty_unit : baseUnit;
+          return { id: i.id, ingredientId: i.ingredient_id, netQty: i.net_qty, unit: typed, scope: i.scope };
         })}
         ingredients={ingredients.map((i) => ({
           id: i.id,

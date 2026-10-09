@@ -1,6 +1,14 @@
 import { D, type Decimal, type Num, safeDiv } from "./decimal";
 import { grossQty } from "./ingredient";
 
+/** Faltou informar quantas porções a receita rende (ou o peso da porção). */
+export class NoPortionsError extends Error {
+  constructor() {
+    super("Informe o número de porções ou o peso da porção");
+    this.name = "NoPortionsError";
+  }
+}
+
 export type RecipeItem = {
   /** Custo por unidade-base do insumo comprado (bruto). Ver `unitCost`. */
   unitCost: Num;
@@ -56,7 +64,7 @@ export function recipeCost(r: RecipeInput): RecipeCost {
   if (r.portions !== undefined) portions = D(r.portions);
   else if (r.portionWeight !== undefined && D(r.portionWeight).gt(0))
     portions = yieldWeight.div(r.portionWeight).floor();
-  else throw new Error("Informe o número de porções ou o peso da porção");
+  else throw new NoPortionsError();
   if (portions.lte(0)) throw new RangeError("Número de porções deve ser maior que zero");
 
   const ingredientCostPerPortion = safeDiv(batchCost, portions);

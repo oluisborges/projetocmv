@@ -7,6 +7,8 @@ export type Channel = { id: string; name: string; fee_pct: number };
 export type PricingContext = {
   unit: { id: string; name: string };
   settings: PricingSettings;
+  /** O dono já salvou os ajustes ao menos uma vez? Se não, impostos e despesas ainda são zero e a margem é só estimativa. */
+  configured: boolean;
   channels: Channel[];
 };
 
@@ -16,9 +18,9 @@ export const DEFAULT_SETTINGS: PricingSettings = { taxPct: 0, fixedExpensePct: 0
  * Unidade em uso. Hoje: a primeira da marmitaria (todo cliente começa com uma).
  * Quando houver seletor de unidade, é aqui que ele entra.
  */
-export async function activeUnit(): Promise<{ id: string; name: string } | null> {
+export async function activeUnit(orgId: string): Promise<{ id: string; name: string } | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from("units").select("id, name").order("created_at").limit(1).maybeSingle();
+  const { data } = await supabase.from("units").select("id, name").eq("org_id", orgId).order("created_at").limit(1).maybeSingle();
   return data ?? null;
 }
 
@@ -34,7 +36,7 @@ const toSettings = (r: { tax_pct: unknown; fixed_expense_pct: unknown; profit_pc
  * (lucro 15%, meta 10%) e o canal "Venda direta". Quem só lê enxerga os padrões, sem gravar nada.
  */
 export async function loadPricingContext(orgId: string, canWrite: boolean): Promise<PricingContext | null> {
-  const unit = await activeUnit();
+  const unit = await activeUnit(orgId);
   if (!unit) return null;
   const supabase = await createClient();
 
@@ -53,6 +55,7 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
   return {
     unit,
     settings: settingsRow ? toSettings(settingsRow) : DEFAULT_SETTINGS,
+    configured: Boolean(settingsRow?.configured_at),
     channels: (channels ?? []).map((c) => ({ id: c.id, name: c.name, fee_pct: Number(c.fee_pct) })),
   };
 }

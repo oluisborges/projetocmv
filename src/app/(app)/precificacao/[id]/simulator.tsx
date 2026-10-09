@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Hint } from "@/components/hint";
 import { MarginBadge } from "@/components/margin-badge";
@@ -24,6 +25,7 @@ export function Simulator({
   cost,
   currentPrice,
   settings,
+  configured,
   channels,
   canWrite,
 }: {
@@ -31,6 +33,7 @@ export function Simulator({
   cost: number;
   currentPrice: number | null;
   settings: PricingSettings;
+  configured: boolean;
   channels: Channel[];
   canWrite: boolean;
 }) {
@@ -84,6 +87,16 @@ export function Simulator({
         </div>
       ) : null}
 
+      {!configured ? (
+        <p role="status" className="rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
+          Estimativa: faltam impostos e despesas fixas.{" "}
+          <Link href="/precificacao/ajustes" className="font-semibold underline">
+            Informe nos Ajustes
+          </Link>
+          .
+        </p>
+      ) : null}
+
       <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
         <label className="flex flex-col gap-1.5 text-sm font-medium">
           Preço de venda
@@ -109,9 +122,9 @@ export function Simulator({
 
         {analysis.at ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <MarginBadge status={analysis.at.status} pct={analysis.at.netPct} />
+            <MarginBadge status={analysis.at.status} pct={analysis.at.netPct} estimate={!configured} />
             <p className="tabular text-sm text-muted">
-              Sobra <strong className="text-foreground">{formatBRL(analysis.at.net)}</strong> por marmita
+              {analysis.at.net >= 0 ? "Sobra" : "Falta"} <strong className="text-foreground">{formatBRL(Math.abs(analysis.at.net))}</strong> por marmita
             </p>
           </div>
         ) : null}
@@ -125,8 +138,8 @@ export function Simulator({
             <span className="text-muted">
               Para ganhar {formatPct(settings.profitPct)} limpo: <strong className="tabular text-foreground">{formatBRL(analysis.suggested)}</strong>
             </span>
-            <button type="button" onClick={() => setText(priceFmt.format(analysis.suggested!))} className="h-9 shrink-0 rounded-lg border border-primary px-3 font-semibold text-primary">
-              Usar
+            <button type="button" onClick={() => setText(priceFmt.format(analysis.suggested!))} className="h-11 shrink-0 rounded-lg border border-primary px-4 font-semibold text-primary">
+              Colocar no campo
             </button>
           </div>
         ) : null}
@@ -180,7 +193,7 @@ export function Simulator({
                       preço certo <strong className="text-foreground">{a.suggested !== null ? formatBRL(a.suggested) : "—"}</strong>
                     </span>
                   </div>
-                  {a.at ? <MarginBadge status={a.at.status} pct={a.at.netPct} /> : null}
+                  {a.at ? <MarginBadge status={a.at.status} pct={a.at.netPct} estimate={!configured} /> : null}
                 </li>
               );
             })}

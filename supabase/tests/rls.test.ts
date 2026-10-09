@@ -375,3 +375,11 @@ describe("vínculos (memberships): só o admin Shogun cria e altera", () => {
     expect(row.role).toBe("viewer");
   });
 });
+
+describe("integridade: item usado em ficha", () => {
+  it("o banco mantém a ficha ligada ao insumo (não dá para apagar insumo em uso)", async () => {
+    const [rec] = await q(`insert into public.recipes (org_id, name, portions) values ($1,'Prato uso',1) returning id`, [ids.orgA]);
+    await q(`insert into public.recipe_items (org_id, recipe_id, ingredient_id, net_qty) values ($1,$2,$3,100)`, [ids.orgA, rec.id, ids.ingA]);
+    await expect(q(`delete from public.ingredients where id = $1`, [ids.ingA])).rejects.toThrow(/foreign key/i);
+  });
+});

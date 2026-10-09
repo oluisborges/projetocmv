@@ -49,3 +49,15 @@ describe("formatação", () => {
     expect(formatAge(95)).toBe("há 3 meses");
   });
 });
+
+describe("parseDecimal: ponto no teclado do celular", () => {
+  it("'0.500' é meio, nunca 500 (zero à esquerda não é milhar)", () => {
+    expect(parseDecimal("0.500")).toBe("0.500");
+    expect(parseDecimal("0.250")).toBe("0.250");
+    expect(parseDecimal("0.5")).toBe("0.5");
+  });
+
+  it("'1.250' continua sendo milhar (1250), como se escreve no Brasil", () => {
+    expect(parseDecimal("1.250")).toBe("1250");
+  });
+});

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireMember } from "@/lib/auth";
+import { baseUnitOf, isPurchaseUnit } from "@/lib/calc";
 import { parseDecimal } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -101,6 +102,22 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
   if (!read.ok) return fail(read.error);
 
   const supabase = await createClient();
+
+  // As fichas guardam a quantidade na unidade-base do insumo (g, ml ou un). Trocar a base, ou trocar entre
+  // insumo e embalagem, de um insumo que já está numa ficha mudaria o custo dela sem ninguém perceber.
+  const { data: current } = await supabase.from("ingredients").select("kind, purchase_unit").eq("id", id.data).maybeSingle();
+  if (!current) return fail("Insumo não encontrado.");
+  const baseOf = (u: string) => (isPurchaseUnit(u) ? baseUnitOf(u) : u);
+  const changesMeaning = current.kind !== read.value.kind || baseOf(current.purchase_unit) !== baseOf(read.value.purchase_unit);
+  if (changesMeaning) {
+    const { count } = await supabase.from("recipe_items").select("id", { count: "exact", head: true }).eq("ingredient_id", id.data);
+    if ((count ?? 0) > 0) {
+      return fail(
+        `Esse item está em ${count} ${count === 1 ? "ficha" : "fichas"}. Só dá para trocar entre kg e g, ou entre litro e ml. Para mudar o tipo ou a medida de verdade, crie um item novo e troque nas fichas.`,
+      );
+    }
+  }
+
   const { data, error } = await supabase.from("ingredients").update(read.value).eq("id", id.data).select("id").maybeSingle();
   if (error || !data) return fail("Não foi possível salvar as alterações.");
 

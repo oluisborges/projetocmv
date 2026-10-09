@@ -21,7 +21,7 @@ export default async function CatalogPage() {
 
   return (
     <>
-      <Link href="/insumos" className="text-sm font-semibold text-primary">
+      <Link href="/insumos" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
         ← Insumos
       </Link>
       <section className="flex flex-col gap-1">

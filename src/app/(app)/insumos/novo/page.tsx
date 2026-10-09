@@ -17,7 +17,7 @@ export default async function NewIngredientPage() {
 
   return (
     <>
-      <Link href="/insumos" className="text-sm font-semibold text-primary">
+      <Link href="/insumos" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
         ← Insumos
       </Link>
       <h1 className="text-2xl font-extrabold tracking-tight">Novo insumo</h1>

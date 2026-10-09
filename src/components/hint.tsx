@@ -15,7 +15,7 @@ export function Hint({ children, label = "O que é isso?" }: { children: React.R
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen((v) => !v)}
-        className="ml-1.5 inline-flex size-6 items-center justify-center rounded-full border border-border bg-surface text-xs font-bold text-muted"
+        className="relative ml-1.5 inline-flex size-6 items-center justify-center rounded-full border border-border bg-surface text-xs font-bold text-muted before:absolute before:-inset-2.5 before:content-['']"
       >
         ?
       </button>

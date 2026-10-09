@@ -49,3 +49,19 @@ describe("computeRecipe", () => {
     expect(r).toEqual({ ok: false, reason: "invalid" });
   });
 });
+
+describe("rendimento só conta peso", () => {
+  it("30 ovos (un) não viram 30 g no rendimento", () => {
+    const ovo = { unit_cost: 0.8, correction_factor: 1, purchase_unit: "un" };
+    const arroz = { unit_cost: 0.006, correction_factor: 1, purchase_unit: "kg" };
+    const withEggs = computeRecipe(
+      { portions: null, portionWeight: 100, cookingLossPct: 0 },
+      [
+        { ingredient: arroz, netQty: 1000, scope: "batch" },
+        { ingredient: ovo, netQty: 30, scope: "batch" },
+      ],
+    );
+    expect(withEggs.ok).toBe(true);
+    if (withEggs.ok) expect(withEggs.cost.yieldWeight.toString()).toBe("1000"); // sem os 30 ovos
+  });
+});

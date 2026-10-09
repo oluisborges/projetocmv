@@ -17,7 +17,8 @@ export function AdjustForm({ categories, total }: { categories: { name: string; 
     <form
       action={action}
       onSubmit={(e) => {
-        const label = parsed === null ? "" : `${Number(parsed) > 0 ? "Aumentar" : "Reduzir"} ${Math.abs(Number(parsed)).toLocaleString("pt-BR")}%`;
+        if (parsed === null) return; // o servidor mostra o erro de valor inválido
+        const label = `${Number(parsed) > 0 ? "Aumentar" : "Reduzir"} ${Math.abs(Number(parsed)).toLocaleString("pt-BR")}%`;
         if (!window.confirm(`${label} no preço de ${affected} ${affected === 1 ? "insumo" : "insumos"}? Dá para ver o histórico depois.`)) {
           e.preventDefault();
         }

@@ -1,7 +1,12 @@
-import { recipeCost, type RecipeCost } from "@/lib/calc";
+import { NoPortionsError, baseUnitOf, isPurchaseUnit, recipeCost, type RecipeCost } from "@/lib/calc";
 
 /** Insumo/embalagem como vem do banco (unit_cost = R$ por g/ml/un comprado, já bruto). */
-export type CostIngredient = { unit_cost: number; correction_factor: number };
+export type CostIngredient = {
+  unit_cost: number;
+  correction_factor: number;
+  /** Unidade de compra (kg, g, l, ml, un). Itens em "un" (ovo, bandeja) não têm peso e não entram no rendimento. */
+  purchase_unit?: string;
+};
 
 export type CostItem = { ingredient: CostIngredient; netQty: number; scope: "batch" | "portion" };
 
@@ -11,6 +16,8 @@ export type CostSettings = {
   /** fração: 0.25 = 25% */
   cookingLossPct: number;
 };
+
+const isCountedInUnits = (unit?: string) => Boolean(unit && isPurchaseUnit(unit) && baseUnitOf(unit) === "un");
 
 export type RecipeView =
   | { ok: true; cost: RecipeCost; missingPrices: number }
@@ -30,7 +37,7 @@ export function computeRecipe(settings: CostSettings, items: CostItem[]): Recipe
         correctionFactor: i.ingredient.correction_factor,
         netQty: i.netQty,
         scope: i.scope,
-        countsForYield: i.scope === "batch",
+        countsForYield: i.scope === "batch" && !isCountedInUnits(i.ingredient.purchase_unit),
       })),
       cookingLossPct: settings.cookingLossPct,
       portions: settings.portions ?? undefined,
@@ -38,7 +45,6 @@ export function computeRecipe(settings: CostSettings, items: CostItem[]): Recipe
     });
     return { ok: true, cost, missingPrices: items.filter((i) => i.ingredient.unit_cost <= 0).length };
   } catch (e) {
-    const noPortions = e instanceof Error && /porções|porção/.test(e.message);
-    return { ok: false, reason: noPortions ? "no-portions" : "invalid" };
+    return { ok: false, reason: e instanceof NoPortionsError ? "no-portions" : "invalid" };
   }
 }

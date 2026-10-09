@@ -20,7 +20,7 @@ type Channel = { id: string; name: string; fee_pct: number };
 
 const priceFmt = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function Row({ row, settings, feePct, canWrite }: { row: PricingRowData; settings: PricingSettings; feePct: number; canWrite: boolean }) {
+function Row({ row, settings, feePct, canWrite, configured }: { row: PricingRowData; settings: PricingSettings; feePct: number; canWrite: boolean; configured: boolean }) {
   const [saved, setSaved] = useState(row.currentPrice);
   const [text, setText] = useState(row.currentPrice ? priceFmt.format(row.currentPrice) : "");
   const [state, setState] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
@@ -65,7 +65,12 @@ function Row({ row, settings, feePct, canWrite }: { row: PricingRowData; setting
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               {analysis.at ? (
-                <MarginBadge status={analysis.at.status} pct={analysis.at.netPct} />
+                <div className="flex flex-col items-start gap-1">
+                  <MarginBadge status={analysis.at.status} pct={analysis.at.netPct} estimate={!configured} />
+                  <span className="tabular text-xs text-muted">
+                    {analysis.at.net >= 0 ? "sobra" : "falta"} {formatBRL(Math.abs(analysis.at.net))} por marmita
+                  </span>
+                </div>
               ) : (
                 <span className="text-xs text-muted">Defina o preço que você cobra</span>
               )}
@@ -104,7 +109,7 @@ function Row({ row, settings, feePct, canWrite }: { row: PricingRowData; setting
                       setText(priceFmt.format(analysis.suggested!));
                       void save(String(analysis.suggested));
                     }}
-                    className="h-9 rounded-lg border border-primary px-3 font-semibold text-primary"
+                    className="h-11 rounded-lg border border-primary px-4 font-semibold text-primary"
                   >
                     Usar
                   </button>
@@ -128,11 +133,13 @@ export function PricingList({
   rows,
   channels,
   settings,
+  configured,
   canWrite,
 }: {
   rows: PricingRowData[];
   channels: Channel[];
   settings: PricingSettings;
+  configured: boolean;
   canWrite: boolean;
 }) {
   const [channelId, setChannelId] = useState(channels[0]?.id ?? "");
@@ -163,7 +170,17 @@ export function PricingList({
         </div>
       ) : null}
 
-      {below > 0 ? (
+      {!configured ? (
+        <p role="status" className="rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
+          Estes lucros são <strong>estimativas</strong>: faltam impostos e despesas fixas.{" "}
+          <Link href="/precificacao/ajustes" className="font-semibold underline">
+            Informe nos Ajustes
+          </Link>{" "}
+          para ver o lucro de verdade.
+        </p>
+      ) : null}
+
+      {configured && below > 0 ? (
         <p role="status" className="rounded-xl bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
           {below} {below === 1 ? "marmita está" : "marmitas estão"} abaixo da sua meta de margem{channel ? ` vendendo por ${channel.name}` : ""}.
         </p>
@@ -171,7 +188,7 @@ export function PricingList({
 
       <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
         {rows.map((row) => (
-          <Row key={`${row.id}-${channelId}`} row={row} settings={settings} feePct={feePct} canWrite={canWrite} />
+          <Row key={`${row.id}-${channelId}`} row={row} settings={settings} feePct={feePct} canWrite={canWrite} configured={configured} />
         ))}
       </ul>
     </section>

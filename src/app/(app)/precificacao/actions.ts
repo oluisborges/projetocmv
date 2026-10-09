@@ -31,7 +31,7 @@ export async function setRecipePrice(
   const price = text === null ? NaN : Number(text);
   if (!id.success || !(price > 0) || price > 100_000) return { ok: false, error: "Digite o preço, como 18,90." };
 
-  const unit = await activeUnit(); // a unidade vem do servidor, nunca do navegador
+  const unit = await activeUnit(orgId); // a unidade vem do servidor, nunca do navegador
   if (!unit) return { ok: false, error: "Sua marmitaria ainda não tem unidade cadastrada." };
 
   const supabase = await createClient();
@@ -57,7 +57,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
   for (const f of [tax, fixed, profit, min]) if (!f.ok) return { error: f.error };
   if (!tax.ok || !fixed.ok || !profit.ok || !min.ok) return { error: "Confira os campos." };
 
-  const unit = await activeUnit();
+  const unit = await activeUnit(orgId);
   if (!unit) return { error: "Sua marmitaria ainda não tem unidade cadastrada." };
 
   const supabase = await createClient();
@@ -69,6 +69,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
       fixed_expense_pct: fixed.value,
       profit_pct: profit.value,
       min_margin_pct: min.value,
+      configured_at: new Date().toISOString(),
     },
     { onConflict: "unit_id" },
   );
@@ -92,7 +93,7 @@ export async function addChannel(_prev: FormState, formData: FormData): Promise<
   const input = channelInput(formData);
   if (!input.ok) return { error: input.error };
 
-  const unit = await activeUnit();
+  const unit = await activeUnit(orgId);
   if (!unit) return { error: "Sua marmitaria ainda não tem unidade cadastrada." };
 
   const supabase = await createClient();

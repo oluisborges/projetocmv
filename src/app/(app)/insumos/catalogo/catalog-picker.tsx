@@ -44,7 +44,7 @@ export function CatalogPicker({ items }: { items: CatalogItem[] }) {
             <div className="flex items-center justify-between border-b border-border py-3">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{group}</h2>
               {available.length > 0 ? (
-                <button type="button" onClick={() => toggle(available, !allOn)} className="text-sm font-semibold text-primary">
+                <button type="button" onClick={() => toggle(available, !allOn)} className="h-11 px-2 text-sm font-semibold text-primary">
                   {allOn ? "Desmarcar todos" : "Marcar todos"}
                 </button>
               ) : null}

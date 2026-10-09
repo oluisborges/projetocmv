@@ -74,15 +74,17 @@ export function analyzePrice(input: { cost: number; settings: PricingSettings; f
 export function priceBreakdown(input: { price: number; cost: number; settings: PricingSettings; feePct: number }) {
   const { price, cost, settings, feePct } = input;
   const parts = [
-    { key: "cost", label: "Custo da marmita", value: cost },
-    { key: "tax", label: "Impostos", value: price * settings.taxPct },
-    { key: "fee", label: "Taxa do canal de venda", value: price * feePct },
-    { key: "fixed", label: "Despesas fixas", value: price * settings.fixedExpensePct },
+    { key: "cost", label: "Custo da marmita", value: D(cost) },
+    { key: "tax", label: "Impostos", value: D(price).mul(settings.taxPct) },
+    { key: "fee", label: "Taxa do canal de venda", value: D(price).mul(feePct) },
+    { key: "fixed", label: "Despesas fixas", value: D(price).mul(settings.fixedExpensePct) },
   ];
-  const used = parts.reduce((s, p) => s + p.value, 0);
-  return [...parts, { key: "profit", label: "Lucro que sobra", value: price - used }].map((p) => ({
-    ...p,
-    pct: price > 0 ? p.value / price : 0,
+  const used = parts.reduce((s, p) => s.plus(p.value), D(0));
+  return [...parts, { key: "profit", label: "Lucro que sobra", value: D(price).minus(used) }].map((p) => ({
+    key: p.key,
+    label: p.label,
+    value: p.value.toNumber(),
+    pct: D(price).gt(0) ? p.value.div(price).toNumber() : 0,
   }));
 }
 
