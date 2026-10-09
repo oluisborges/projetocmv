@@ -1,0 +1,66 @@
+import Link from "next/link";
+import { requireMember } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { PriceList, type IngredientRow } from "./price-list";
+
+export const metadata = { title: "Insumos" };
+
+const button = "flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold";
+
+export default async function IngredientsPage(props: PageProps<"/insumos">) {
+  const { canWrite } = await requireMember();
+  const { importado } = await props.searchParams;
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("ingredients")
+    .select("id, name, category, kind, purchase_unit, purchase_qty, purchase_price, price_updated_at")
+    .is("archived_at", null)
+    .order("name");
+  const items = (data ?? []) as IngredientRow[];
+
+  return (
+    <>
+      <section className="flex flex-col gap-1">
+        <h1 className="text-2xl font-extrabold tracking-tight">Insumos</h1>
+        <p className="text-muted">Toque no preço, digite o valor novo e pronto: salva sozinho.</p>
+      </section>
+
+      {importado ? (
+        <p role="status" className="rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
+          Itens importados! Agora é só preencher o preço que você paga em cada um.
+        </p>
+      ) : null}
+
+      {canWrite ? (
+        <div className="grid grid-cols-3 gap-2">
+          <Link href="/insumos/novo" className={`${button} bg-primary text-primary-foreground border-primary`}>
+            + Novo
+          </Link>
+          <Link href="/insumos/reajuste" className={button}>
+            Reajustar %
+          </Link>
+          <Link href="/insumos/catalogo" className={button}>
+            Catálogo
+          </Link>
+        </div>
+      ) : null}
+
+      {items.length === 0 ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5">
+          <h2 className="text-lg font-bold">Comece pelo catálogo da Shogun</h2>
+          <p className="text-sm text-muted">
+            Escolha os insumos e embalagens que você usa e só preencha o preço de cada um. Dá muito menos trabalho do que cadastrar do zero.
+          </p>
+          {canWrite ? (
+            <Link href="/insumos/catalogo" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">
+              Escolher do catálogo
+            </Link>
+          ) : null}
+        </div>
+      ) : (
+        <PriceList items={items} canWrite={canWrite} />
+      )}
+    </>
+  );
+}

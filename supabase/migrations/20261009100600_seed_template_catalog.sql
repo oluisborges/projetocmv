@@ -1,0 +1,48 @@
+-- Catálogo-modelo inicial da Shogun: insumos e embalagens comuns em marmitaria congelada.
+-- Preço de referência = 0 de propósito: o cliente preenche o preço real depois de importar.
+-- Fatores de correção são valores TÍPICOS de tabelas de mercado; a Shogun deve revisar.
+create unique index if not exists template_ingredients_name_uq on public.template_ingredients (lower(name));
+
+insert into public.template_ingredients (name, category, kind, purchase_unit, purchase_qty, reference_price, correction_factor) values
+  ('Peito de frango', 'Proteínas', 'insumo', 'kg', 1, 0, 1.15),
+  ('Coxa e sobrecoxa de frango', 'Proteínas', 'insumo', 'kg', 1, 0, 1.30),
+  ('Carne moída', 'Proteínas', 'insumo', 'kg', 1, 0, 1.00),
+  ('Acém em cubos', 'Proteínas', 'insumo', 'kg', 1, 0, 1.15),
+  ('Patinho em bife', 'Proteínas', 'insumo', 'kg', 1, 0, 1.10),
+  ('Filé de tilápia', 'Proteínas', 'insumo', 'kg', 1, 0, 1.05),
+  ('Linguiça toscana', 'Proteínas', 'insumo', 'kg', 1, 0, 1.00),
+  ('Copa lombo suíno', 'Proteínas', 'insumo', 'kg', 1, 0, 1.10),
+  ('Bacon', 'Proteínas', 'insumo', 'kg', 1, 0, 1.00),
+  ('Ovo', 'Proteínas', 'insumo', 'un', 30, 0, 1.00),
+  ('Arroz branco', 'Grãos e massas', 'insumo', 'kg', 5, 0, 1.00),
+  ('Feijão carioca', 'Grãos e massas', 'insumo', 'kg', 1, 0, 1.00),
+  ('Macarrão penne', 'Grãos e massas', 'insumo', 'kg', 1, 0, 1.00),
+  ('Farofa pronta', 'Grãos e massas', 'insumo', 'kg', 1, 0, 1.00),
+  ('Batata inglesa', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.15),
+  ('Batata-doce', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.10),
+  ('Mandioca', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.40),
+  ('Cebola', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.10),
+  ('Alho', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.10),
+  ('Tomate', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.10),
+  ('Cenoura', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.20),
+  ('Brócolis', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.45),
+  ('Couve-flor', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.45),
+  ('Abobrinha', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.10),
+  ('Vagem', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.10),
+  ('Pimentão', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.25),
+  ('Repolho', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.20),
+  ('Chuchu', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.20),
+  ('Cheiro-verde', 'Legumes e verduras', 'insumo', 'kg', 1, 0, 1.30),
+  ('Óleo de soja', 'Temperos e outros', 'insumo', 'l', 0.9, 0, 1.00),
+  ('Azeite de oliva', 'Temperos e outros', 'insumo', 'l', 0.5, 0, 1.00),
+  ('Sal', 'Temperos e outros', 'insumo', 'kg', 1, 0, 1.00),
+  ('Molho de tomate', 'Temperos e outros', 'insumo', 'kg', 1, 0, 1.00),
+  ('Queijo mussarela', 'Temperos e outros', 'insumo', 'kg', 1, 0, 1.00),
+  ('Creme de leite', 'Temperos e outros', 'insumo', 'g', 200, 0, 1.00),
+  ('Bandeja 750 ml', 'Embalagens', 'embalagem', 'un', 100, 0, 1.00),
+  ('Bandeja 1000 ml', 'Embalagens', 'embalagem', 'un', 100, 0, 1.00),
+  ('Filme/tampa da bandeja', 'Embalagens', 'embalagem', 'un', 100, 0, 1.00),
+  ('Etiqueta', 'Embalagens', 'embalagem', 'un', 500, 0, 1.00),
+  ('Lacre', 'Embalagens', 'embalagem', 'un', 500, 0, 1.00),
+  ('Sacola de entrega', 'Embalagens', 'embalagem', 'un', 100, 0, 1.00)
+on conflict do nothing;

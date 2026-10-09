@@ -44,6 +44,19 @@ export async function requireUser(): Promise<Session> {
   return session;
 }
 
+export type Member = { session: Session; orgId: string; orgName: string; canWrite: boolean };
+
+/**
+ * Usuário de uma marmitaria. A organização vem SEMPRE da sessão (servidor), nunca de um campo do formulário.
+ * Hoje cada usuário tem uma marmitaria; quem não tem (ex.: admin Shogun) volta para o início.
+ */
+export async function requireMember(): Promise<Member> {
+  const session = await requireUser();
+  const m = session.memberships[0];
+  if (!m) redirect("/");
+  return { session, orgId: m.org.id, orgName: m.org.name, canWrite: m.role !== "viewer" };
+}
+
 /** Só admin Shogun passa. Para qualquer outra pessoa a página simplesmente "não existe". */
 export async function requireAdmin(): Promise<Session> {
   const session = await requireUser();

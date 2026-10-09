@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BottomNav } from "@/components/bottom-nav";
 import { requireUser } from "@/lib/auth";
 import { signOut } from "./actions";
 
@@ -28,7 +29,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </nav>
       </header>
-      <main className="flex flex-1 flex-col gap-6 px-4 py-6">{children}</main>
+      <main className="flex flex-1 flex-col gap-6 px-4 py-6 pb-24">{children}</main>
+      <BottomNav />
     </div>
   );
 }

@@ -251,3 +251,58 @@ describe("catálogo-modelo", () => {
     ).rejects.toThrow(/row-level security/i);
   });
 });
+
+describe("reajuste em lote de preços", () => {
+  const adjust = (user: string, email: string, org: string, pct: number, category: string | null = null) =>
+    as(user, email, () => q(`select public.bulk_adjust_ingredient_prices($1, $2, $3) as n`, [org, pct, category]));
+
+  it("dono reajusta só os insumos da própria organização", async () => {
+    const [before] = await q(`select purchase_price from public.ingredients where id = $1`, [ids.ingA]);
+    const [res] = await adjust(ids.ownerA, "dono-a@marmita.com", ids.orgA, 0.1);
+    expect(Number(res.n)).toBeGreaterThanOrEqual(1);
+    const [after] = await q(`select purchase_price from public.ingredients where id = $1`, [ids.ingA]);
+    expect(Number(after.purchase_price)).toBeCloseTo(Number(before.purchase_price) * 1.1, 4);
+  });
+
+  it("não afeta outra organização, nem com o id dela", async () => {
+    const [res] = await adjust(ids.ownerA, "dono-a@marmita.com", ids.orgB, 0.5);
+    expect(Number(res.n)).toBe(0);
+    const [row] = await q(`select purchase_price from public.ingredients where id = $1`, [ids.ingB]);
+    expect(Number(row.purchase_price)).toBe(20);
+  });
+
+  it("viewer não consegue reajustar", async () => {
+    const [res] = await adjust(ids.viewerA, "viewer-a@marmita.com", ids.orgA, 0.5);
+    expect(Number(res.n)).toBe(0);
+  });
+
+  it("filtra por categoria e grava histórico", async () => {
+    await q(`update public.ingredients set category = 'Proteínas' where id = $1`, [ids.ingA]);
+    const [{ n: histBefore }] = await q(`select count(*)::int as n from public.ingredient_price_history where ingredient_id = $1`, [ids.ingA]);
+    const [none] = await adjust(ids.ownerA, "dono-a@marmita.com", ids.orgA, 0.1, "Embalagens");
+    expect(Number(none.n)).toBe(0);
+    const [some] = await adjust(ids.ownerA, "dono-a@marmita.com", ids.orgA, 0.1, "Proteínas");
+    expect(Number(some.n)).toBe(1);
+    const [{ n: histAfter }] = await q(`select count(*)::int as n from public.ingredient_price_history where ingredient_id = $1`, [ids.ingA]);
+    expect(Number(histAfter)).toBe(Number(histBefore) + 1);
+  });
+
+  it("recusa percentual absurdo", async () => {
+    await expect(adjust(ids.ownerA, "dono-a@marmita.com", ids.orgA, -1)).rejects.toThrow(/inválido/);
+    await expect(adjust(ids.ownerA, "dono-a@marmita.com", ids.orgA, 9)).rejects.toThrow(/inválido/);
+  });
+});
+
+describe("catálogo-modelo inicial", () => {
+  it("vem populado, sem preço, e sem duplicar nomes", async () => {
+    const [row] = await q(
+      `select count(*)::int as n, count(distinct lower(name))::int as nomes, max(reference_price) as preco,
+              count(*) filter (where kind = 'embalagem')::int as embalagens
+       from public.template_ingredients where name in ('Peito de frango','Arroz branco','Bandeja 750 ml','Etiqueta')`,
+    );
+    expect(row.n).toBe(4);
+    expect(row.nomes).toBe(4);
+    expect(Number(row.preco)).toBe(0);
+    expect(row.embalagens).toBe(2);
+  });
+});
