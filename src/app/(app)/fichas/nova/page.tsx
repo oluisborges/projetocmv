@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ActionForm, SelectField, TextField } from "@/components/forms";
+import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { createRecipe } from "../actions";
@@ -32,25 +32,14 @@ export default async function NewRecipePage() {
           placeholder="Ex.: 25"
           hint={<Hint>Quantas marmitas saem dessa receita. Preencha este campo OU o peso de cada porção; o outro a gente calcula.</Hint>}
         />
-        <div className="grid grid-cols-[1fr_7rem] items-end gap-3">
-          <TextField
-            label="Peso da porção"
-            name="portion_weight"
-            inputMode="decimal"
-            required={false}
-            placeholder="Ex.: 300"
-            hint={<Hint>Quanto pesa cada marmita pronta. Se você preencher só este, as porções saem do peso total depois de cozinhar.</Hint>}
-          />
-          <SelectField
-            label="Unidade"
-            name="portion_weight_unit"
-            defaultValue="g"
-            options={[
-              { value: "g", label: "g" },
-              { value: "kg", label: "kg" },
-            ]}
-          />
-        </div>
+        <TextField
+          label="Peso da porção (g)"
+          name="portion_weight"
+          inputMode="decimal"
+          required={false}
+          placeholder="Ex.: 300"
+          hint={<Hint>Quanto pesa cada marmita pronta, em gramas. Se você preencher só este, as porções saem do peso total depois de cozinhar.</Hint>}
+        />
         <TextField
           label="Perda de cocção (%)"
           name="cooking_loss"

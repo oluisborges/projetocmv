@@ -1,0 +1,178 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { MarginBadge } from "@/components/margin-badge";
+import { formatBRL, parseDecimal } from "@/lib/format";
+import { analyzePrice, type PricingSettings } from "@/lib/pricing-view";
+import { setRecipePrice } from "./actions";
+
+export type PricingRowData = {
+  id: string;
+  name: string;
+  /** Custo por porção; `null` quando a ficha está incompleta. */
+  cost: number | null;
+  missingPrices: number;
+  currentPrice: number | null;
+};
+
+type Channel = { id: string; name: string; fee_pct: number };
+
+const priceFmt = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function Row({ row, settings, feePct, canWrite }: { row: PricingRowData; settings: PricingSettings; feePct: number; canWrite: boolean }) {
+  const [saved, setSaved] = useState(row.currentPrice);
+  const [text, setText] = useState(row.currentPrice ? priceFmt.format(row.currentPrice) : "");
+  const [state, setState] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
+
+  // O que está digitado vale já para o semáforo; só grava ao sair do campo.
+  const parsed = parseDecimal(text);
+  const typed = parsed === null ? NaN : Number(parsed);
+  const live = Number.isFinite(typed) && typed > 0 ? typed : saved;
+  const analysis = row.cost === null ? null : analyzePrice({ cost: row.cost, settings, feePct, price: live });
+
+  async function save(value: string) {
+    setState({ kind: "saving" });
+    const result = await setRecipePrice(row.id, value);
+    if (result.ok) {
+      setSaved(result.price);
+      setText(priceFmt.format(result.price));
+      setState({ kind: "saved" });
+      setTimeout(() => setState((s) => (s.kind === "saved" ? { kind: "idle" } : s)), 2000);
+    } else {
+      setState({ kind: "error", message: result.error });
+    }
+  }
+
+  return (
+    <li className="flex flex-col gap-2 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Link href={`/precificacao/${row.id}`} className="block truncate font-semibold">
+            {row.name}
+          </Link>
+          {row.cost !== null ? (
+            <p className="text-xs text-muted">
+              custa {formatBRL(row.cost)} por porção
+              {row.missingPrices > 0 ? <span className="text-warning"> · custo incompleto ({row.missingPrices} sem preço)</span> : null}
+            </p>
+          ) : (
+            <p className="text-xs text-warning">Ficha incompleta: termine em Fichas para ver o preço.</p>
+          )}
+        </div>
+        {row.cost !== null ? (
+          <label className="flex shrink-0 items-center gap-1.5">
+            <span className="sr-only">Preço de venda de {row.name}</span>
+            <span aria-hidden className="text-sm text-muted">
+              R$
+            </span>
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onBlur={() => text.trim() !== "" && text.trim() !== (saved ? priceFmt.format(saved) : "") && void save(text)}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+              inputMode="decimal"
+              disabled={!canWrite}
+              placeholder="0,00"
+              aria-invalid={state.kind === "error"}
+              className="tabular h-11 w-28 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            />
+          </label>
+        ) : null}
+      </div>
+
+      {analysis ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {analysis.at ? (
+            <MarginBadge status={analysis.at.status} pct={analysis.at.netPct} />
+          ) : (
+            <span className="text-xs text-muted">Defina o preço que você cobra</span>
+          )}
+          <div className="flex items-center gap-2 text-xs">
+            {analysis.impossible ? (
+              <span className="text-danger">Impostos, taxas e lucro somam 100% ou mais</span>
+            ) : analysis.suggested !== null ? (
+              <>
+                <span className="text-muted">
+                  Sugerido <strong className="tabular text-foreground">{formatBRL(analysis.suggested)}</strong>
+                </span>
+                {canWrite && saved !== analysis.suggested ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setText(priceFmt.format(analysis.suggested!));
+                      void save(String(analysis.suggested));
+                    }}
+                    className="h-9 rounded-lg border border-primary px-3 font-semibold text-primary"
+                  >
+                    Usar
+                  </button>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      <p role={state.kind === "error" ? "alert" : undefined} className="min-h-4 text-right text-xs">
+        {state.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
+        {state.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}
+        {state.kind === "error" ? <span className="text-danger">{state.message}</span> : null}
+      </p>
+    </li>
+  );
+}
+
+export function PricingList({
+  rows,
+  channels,
+  settings,
+  canWrite,
+}: {
+  rows: PricingRowData[];
+  channels: Channel[];
+  settings: PricingSettings;
+  canWrite: boolean;
+}) {
+  const [channelId, setChannelId] = useState(channels[0]?.id ?? "");
+  const channel = channels.find((c) => c.id === channelId) ?? channels[0];
+  const feePct = channel?.fee_pct ?? 0;
+
+  const below = rows.filter((r) => {
+    if (r.cost === null || !r.currentPrice) return false;
+    return analyzePrice({ cost: r.cost, settings, feePct, price: r.currentPrice }).at?.status === "below-target";
+  }).length;
+
+  const chip = (active: boolean) =>
+    `h-10 shrink-0 rounded-full border px-4 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`;
+
+  return (
+    <section className="flex flex-col gap-3">
+      {channels.length > 1 ? (
+        <div>
+          <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Onde você vende</p>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            {channels.map((c) => (
+              <button key={c.id} type="button" className={chip(c.id === channel?.id)} onClick={() => setChannelId(c.id)} aria-pressed={c.id === channel?.id}>
+                {c.name}
+                {c.fee_pct > 0 ? ` · ${(c.fee_pct * 100).toLocaleString("pt-BR")}%` : ""}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {below > 0 ? (
+        <p role="status" className="rounded-xl bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
+          {below} {below === 1 ? "marmita está" : "marmitas estão"} abaixo da sua meta de margem{channel ? ` vendendo por ${channel.name}` : ""}.
+        </p>
+      ) : null}
+
+      <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+        {rows.map((row) => (
+          <Row key={`${row.id}-${channelId}`} row={row} settings={settings} feePct={feePct} canWrite={canWrite} />
+        ))}
+      </ul>
+    </section>
+  );
+}

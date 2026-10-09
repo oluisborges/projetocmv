@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { D, baseUnitOf, fromBaseQty, grossQty, toBaseQty, unitsFor, type PurchaseUnit } from "@/lib/calc";
+import { D, baseUnitOf, fromBaseQty, grossQty, toBaseQty, type PurchaseUnit } from "@/lib/calc";
 import { Hint } from "@/components/hint";
 import { formatBRL, formatNumber, parseDecimal, UNIT_LABEL } from "@/lib/format";
 import { computeRecipe } from "@/lib/recipe-cost";
@@ -37,6 +37,14 @@ const inputClass =
 const baseOf = (ing: EditorIngredient) => baseUnitOf(ing.purchase_unit as PurchaseUnit);
 
 function UnitSelect({ value, options, onChange, disabled, label }: { value: string; options: PurchaseUnit[]; onChange: (u: PurchaseUnit) => void; disabled?: boolean; label: string }) {
+  // Dentro da marmita tudo é g (ml para líquido, un para unidade): sem escolha, só o rótulo.
+  if (options.length === 1) {
+    return (
+      <span className="w-9 text-sm text-muted" title={label}>
+        {UNIT_LABEL[options[0]]}
+      </span>
+    );
+  }
   return (
     <select
       value={value}
@@ -115,7 +123,7 @@ function ItemRow({
             aria-invalid={Boolean(error)}
             className="tabular h-11 w-20 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           />
-          <UnitSelect value={item.unit} options={unitsFor(baseOf(ingredient))} onChange={changeUnit} disabled={!canWrite} label={`Unidade de ${ingredient.name}`} />
+          <UnitSelect value={item.unit} options={[baseOf(ingredient)]} onChange={changeUnit} disabled={!canWrite} label={`Unidade de ${ingredient.name}`} />
         </div>
       </div>
       <div className="flex items-center justify-between">
@@ -152,7 +160,7 @@ function AddItem({
   const [busy, setBusy] = useState(false);
 
   const selected = options.find((o) => o.id === ingredientId);
-  const unitOptions = selected ? unitsFor(baseOf(selected)) : unitsFor("g");
+  const unitOptions: PurchaseUnit[] = [selected ? baseOf(selected) : "g"];
 
   function choose(id: string) {
     setIngredientId(id);
@@ -348,7 +356,7 @@ export function RecipeEditor({
           <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
         <p className="text-xs text-muted">
-          Use a unidade que preferir (g, kg, ml, litro…). Digite a quantidade LIMPA, já pronta para usar: o custo considera a perda de limpeza (fator de correção) sozinho.
+          Digite a quantidade LIMPA que vai em UMA porção ou no lote, já pronta para usar. O custo considera a perda de limpeza (fator de correção) sozinho.
         </p>
       </section>
 
@@ -382,7 +390,7 @@ export function RecipeEditor({
               disabled={!canWrite}
               className={inputClass}
             />
-            <UnitSelect value={weightUnit} options={["g", "kg"]} onChange={(u) => changeWeightUnit(u as "g" | "kg")} disabled={!canWrite} label="Unidade do peso da porção" />
+            <UnitSelect value={weightUnit} options={["g"]} onChange={(u) => changeWeightUnit(u as "g" | "kg")} disabled={!canWrite} label="Unidade do peso da porção" />
           </div>
         </div>
         <label className="flex flex-col gap-1.5 text-sm font-medium">

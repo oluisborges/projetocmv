@@ -32,15 +32,14 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
           name: recipe.name,
           portions: recipe.portions,
           portionWeightGrams: recipe.portion_weight,
-          portionWeightUnit: recipe.portion_weight_unit,
+          portionWeightUnit: "g",
           cookingLossPct: recipe.cooking_loss_pct,
         }}
         initialItems={items.map((i) => {
           const base = ingredients.find((x) => x.id === i.ingredient_id)?.purchase_unit;
           const baseUnit = base && isPurchaseUnit(base) ? baseUnitOf(base) : "g";
-          // Unidade em que o dono digitou; se não houver, a unidade-base do item.
-          const unit = i.qty_unit && isPurchaseUnit(i.qty_unit) ? i.qty_unit : baseUnit;
-          return { id: i.id, ingredientId: i.ingredient_id, netQty: i.net_qty, unit, scope: i.scope };
+          // Na ficha tudo é g/ml/un (não existe marmita de 1 kg): sempre a unidade-base do item.
+          return { id: i.id, ingredientId: i.ingredient_id, netQty: i.net_qty, unit: baseUnit, scope: i.scope };
         })}
         ingredients={ingredients.map((i) => ({
           id: i.id,

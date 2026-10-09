@@ -324,3 +324,28 @@ describe("unidades escolhidas pelo dono", () => {
     await expect(q(`update public.recipes set portion_weight_unit = 'lb' where id = $1`, [rec.id])).rejects.toThrow(/check constraint/i);
   });
 });
+
+describe("ajustes de preço e canais de venda", () => {
+  it("canal é único por unidade, sem diferenciar maiúscula; ajustes têm limites", async () => {
+    await q(`insert into public.sales_channels (org_id, unit_id, name, fee_pct) values ($1,$2,'iFood',0.27)`, [ids.orgA, ids.unitA]);
+    await expect(
+      q(`insert into public.sales_channels (org_id, unit_id, name, fee_pct) values ($1,$2,'IFOOD',0.1)`, [ids.orgA, ids.unitA]),
+    ).rejects.toThrow(/duplicate key|unique/i);
+    // O mesmo nome em outra organização é permitido.
+    await q(`insert into public.sales_channels (org_id, unit_id, name, fee_pct) values ($1,$2,'iFood',0.2)`, [ids.orgB, ids.unitB]);
+
+    await q(`insert into public.unit_settings (unit_id, org_id, fixed_expense_pct) values ($1,$2,0.12)`, [ids.unitA, ids.orgA]);
+    await expect(q(`update public.unit_settings set fixed_expense_pct = 1 where unit_id = $1`, [ids.unitA])).rejects.toThrow(/check constraint/i);
+  });
+
+  it("viewer não altera ajustes; dono de outra organização não enxerga", async () => {
+    await expect(
+      as(ids.viewerA, "viewer-a@marmita.com", () => q(`update public.unit_settings set profit_pct = 0.5 where unit_id = $1`, [ids.unitA])),
+    ).resolves.toBeDefined();
+    const [row] = await q(`select profit_pct from public.unit_settings where unit_id = $1`, [ids.unitA]);
+    expect(Number(row.profit_pct)).toBe(0.15); // update do viewer não pegou nenhuma linha
+
+    const seen = await as(ids.ownerB, "dono-b@marmita.com", () => q(`select unit_id from public.unit_settings`));
+    expect(seen).toHaveLength(0);
+  });
+});
