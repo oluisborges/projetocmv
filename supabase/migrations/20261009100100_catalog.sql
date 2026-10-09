@@ -102,6 +102,7 @@ create table public.ingredient_price_history (
 );
 create index ingredient_price_history_ingredient_idx on public.ingredient_price_history (ingredient_id, changed_at desc);
 create index ingredient_price_history_org_idx on public.ingredient_price_history (org_id);
+create index ingredient_price_history_changed_by_idx on public.ingredient_price_history (changed_by);
 
 -- Grava histórico (e carimba price_updated_at) a cada mudança real de preço/quantidade.
 create function private.ingredient_price_trigger() returns trigger
