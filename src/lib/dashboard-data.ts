@@ -1,0 +1,120 @@
+import "server-only";
+import { loadStaff } from "@/lib/costs-data";
+import { currentMonthStart, summarizeMonth, type MonthSummary } from "@/lib/month-view";
+import { priceIncreaseAlerts, type PriceIncreaseAlert } from "@/lib/price-alerts";
+import { loadCurrentPrices, loadPricingContext, type PricingContext } from "@/lib/pricing-data";
+import { analyzePrice, type PriceAnalysis } from "@/lib/pricing-view";
+import { computeRecipe } from "@/lib/recipe-cost";
+import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
+import { STALE_DAYS } from "@/lib/format";
+import { createClient } from "@/lib/supabase/server";
+
+export type DashboardDish = {
+  id: string;
+  name: string;
+  cost: number | null;
+  price: number | null;
+  analysis: PriceAnalysis | null;
+};
+
+export type Dashboard = {
+  ctx: PricingContext;
+  /** Nome do canal usado nas contas (o de menor taxa). */
+  channelName: string;
+  dishes: DashboardDish[];
+  /** Insumos ativos e fichas ativas (para o checklist de primeiros passos). */
+  ingredientCount: number;
+  recipeCount: number;
+  /** Fichas com preço de venda definido. */
+  withPriceCount: number;
+  pricedCount: number;
+  belowTarget: DashboardDish[];
+  /** Lucro líquido médio das marmitas com preço (fração), ou `null` se nenhuma tem preço. */
+  avgNetPct: number | null;
+  month: MonthSummary & { start: string; hasData: boolean };
+  staleCount: number;
+  noPriceCount: number;
+  increases: PriceIncreaseAlert[];
+};
+
+/** Tudo que o painel do Início precisa, numa carga só (cada consulta já filtrada pela organização). */
+export async function loadDashboard(orgId: string, canWrite: boolean): Promise<Dashboard | null> {
+  const ctx = await loadPricingContext(orgId, canWrite);
+  if (!ctx) return null;
+
+  const supabase = await createClient();
+  const monthStart = currentMonthStart();
+  const sinceHistory = new Date(Date.now() - 50 * 86_400_000).toISOString();
+
+  const [ingredients, { recipes, items }, prices, staff, { data: ingPrices }, { data: period }, { data: history }] = await Promise.all([
+    loadIngredients(),
+    loadRecipes(),
+    loadCurrentPrices(ctx.unit.id),
+    loadStaff(ctx.unit.id),
+    supabase.from("ingredients").select("purchase_price, price_updated_at").eq("org_id", orgId).is("archived_at", null),
+    supabase.from("periods").select("id, revenue, purchases").eq("unit_id", ctx.unit.id).eq("month", monthStart).maybeSingle(),
+    supabase.from("ingredient_price_history").select("ingredient_id, unit_cost, changed_at").eq("org_id", orgId).gte("changed_at", sinceHistory).order("changed_at").limit(1000),
+  ]);
+
+  const { data: salesRows } = period
+    ? await supabase.from("period_sales").select("recipe_id, qty_sold").eq("period_id", period.id)
+    : { data: [] as { recipe_id: string; qty_sold: number }[] };
+
+  const cheapest = [...ctx.channels].sort((a, b) => a.fee_pct - b.fee_pct)[0];
+  const feePct = cheapest?.fee_pct ?? 0;
+
+  const byIngredient = new Map(ingredients.map((i) => [i.id, i]));
+  const dishes: DashboardDish[] = recipes.map((r) => {
+    const view = computeRecipe(
+      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct },
+      items.filter((i) => i.recipe_id === r.id && byIngredient.has(i.ingredient_id)).map((i) => ({ ingredient: byIngredient.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
+    );
+    const cost = view.ok ? view.cost.costPerPortion.toNumber() : null;
+    const price = prices.get(r.id) ?? null;
+    return { id: r.id, name: r.name, cost, price, analysis: cost === null ? null : analyzePrice({ cost, settings: ctx.settings, feePct, price }) };
+  });
+
+  const priced = dishes.filter((d) => d.analysis?.at);
+  const belowTarget = priced.filter((d) => d.analysis!.at!.status === "below-target");
+  const avgNetPct = priced.length > 0 ? priced.reduce((s, d) => s + d.analysis!.at!.netPct, 0) / priced.length : null;
+
+  const qty = new Map((salesRows ?? []).map((r) => [r.recipe_id as string, Number(r.qty_sold)]));
+  const summary = summarizeMonth({
+    revenue: Number(period?.revenue ?? 0),
+    purchases: Number(period?.purchases ?? 0),
+    sales: dishes.map((d) => ({ recipeId: d.id, qty: qty.get(d.id) ?? 0, cost: d.cost })),
+    staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
+  });
+
+  const recipesUsing = new Map<string, number>();
+  const seen = new Set<string>();
+  for (const it of items) {
+    const key = `${it.recipe_id}:${it.ingredient_id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recipesUsing.set(it.ingredient_id, (recipesUsing.get(it.ingredient_id) ?? 0) + 1);
+  }
+
+  const staleBefore = Date.now() - STALE_DAYS * 86_400_000;
+  const activeIngs = ingPrices ?? [];
+
+  return {
+    ctx,
+    channelName: cheapest?.name ?? "venda direta",
+    dishes,
+    ingredientCount: activeIngs.length,
+    recipeCount: dishes.length,
+    withPriceCount: dishes.filter((d) => (d.price ?? 0) > 0).length,
+    pricedCount: priced.length,
+    belowTarget,
+    avgNetPct,
+    month: { ...summary, start: monthStart, hasData: summary.revenue > 0 || summary.purchases > 0 || summary.soldUnits > 0 },
+    staleCount: activeIngs.filter((i) => Number(i.purchase_price) > 0 && new Date(i.price_updated_at).getTime() < staleBefore).length,
+    noPriceCount: activeIngs.filter((i) => !(Number(i.purchase_price) > 0)).length,
+    increases: priceIncreaseAlerts({
+      history: (history ?? []).map((h) => ({ ingredient_id: h.ingredient_id as string, unit_cost: Number(h.unit_cost), changed_at: h.changed_at as string })),
+      names: new Map(ingredients.map((i) => [i.id, i.name])),
+      recipesUsing,
+    }),
+  };
+}

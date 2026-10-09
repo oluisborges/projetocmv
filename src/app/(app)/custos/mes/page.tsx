@@ -97,7 +97,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
         </div>
       </div>
 
-      <h2 className="text-lg font-bold capitalize">{monthLabel(month)}</h2>
+      <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
       {hasData ? (
         <section aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
