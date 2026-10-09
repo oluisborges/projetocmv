@@ -1,5 +1,31 @@
 # Shogun Precificação — Plano do projeto
 
+## Estado atual (fases 0 a 7 no ar; falta a Fase 8)
+Produção: https://projetocmv-livid.vercel.app · Supabase `shogun-precificacao-dev` (sa-east-1) · GitHub `oluisborges/projetocmv`.
+
+| Fase | Estado | Observação |
+|---|---|---|
+| 0 Fundação | feita | repo, Next 16, Supabase, Vercel, deploy automático |
+| 1 Acesso e base | feita | login e-mail+senha, painel admin cria cliente/usuário/senha, RLS com testes de isolamento |
+| 2 Insumos | feita | lista editável em lote, reajuste %, catálogo-modelo (41 itens, **FC a revisar pela Shogun**), histórico de preço |
+| 3 Fichas | feita | por marmita (padrão) ou em lote; custo ao vivo; duplicar/arquivar/restaurar |
+| 4 Precificação | feita | preço sugerido, semáforo de lucro, canais de venda, simulador; margem = "estimativa" até salvar os ajustes |
+| 5 Custos | feita | custos fixos + equipe (encargos), faturamento/marmitas por mês, ponto de equilíbrio; despesa fixa % vira automática |
+| 6 Resultado do mês | feita | CMV real × teórico, desvio, mão de obra; sem estoque (aproximado) |
+| 7 Painel | feito | Início: checklist de primeiros passos + painel (lucro médio, abaixo da meta, alertas de aumento de preço, ranking) |
+| 8 Produção | **pendente** | ver "Decisões que dependem do dono do produto" |
+
+Qualidade: 131 testes (cálculos, RLS/regras do banco em Postgres local, telas), 3 rodadas de revisão (segurança, código, produto/UX) com todas as ressalvas reais corrigidas; Lighthouse do login: acessibilidade 100, boas práticas 100.
+
+### Decisões que dependem do dono do produto (Fase 8)
+1. **Plano pago**: Vercel Hobby não permite uso comercial (precisa Pro); Supabase Free pausa projeto parado e não tem backup (precisa Pro). Projeto de produção separado do `-dev`.
+2. **Cadastro público do Supabase**: desligar em Authentication → "Allow new users to sign up" (só dá para fazer no painel do Supabase).
+3. **Limite de tentativas de login**: o limite do Supabase conta o IP da Vercel; ideal regra no firewall da Vercel em `/login` ou CAPTCHA.
+4. **Contato para "esqueci a senha"** no login (link WhatsApp da Shogun).
+5. **Fichas-modelo** (receitas prontas no catálogo) e revisão dos fatores de correção.
+6. **Logo e cores** do Grupo Shogun (hoje paleta provisória).
+7. Fora do MVP, já com arquitetura pronta: Cardápio Web (importar itens e vendas), NF-e XML, estoque, painel agregado da Shogun, preço por canal.
+
 ## Contexto
 O Grupo Shogun atende 30 marmitarias congeladas. O dono não sabe a margem real de cada marmita, precifica no "feeling" e abandona planilhas porque atualizar preço de insumo dá trabalho. Vamos construir uma plataforma web mobile-first (pt-BR, BRL) com insumos, fichas técnicas, precificação, CMV, CMO, custos fixos/ponto de equilíbrio e dashboard.
 **Fator de sucesso: atualizar preços de insumos precisa ser quase sem esforço.**
