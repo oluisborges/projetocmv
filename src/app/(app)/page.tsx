@@ -52,6 +52,19 @@ export default async function HomePage() {
         done: Boolean(ctx?.configured),
       },
       {
+        key: "costs",
+        title: "Cadastre custos fixos e equipe",
+        detail:
+          (ctx?.fixedTotal ?? 0) > 0
+            ? ctx?.fixedAuto
+              ? "Cadastrados: o app já usa isso no preço e mostra seu ponto de equilíbrio."
+              : "Cadastrados. Informe também o faturamento do mês para o app usar no preço."
+            : "Aluguel, energia, equipe… para descobrir quanto precisa vender para empatar.",
+        href: "/custos",
+        cta: (ctx?.fixedTotal ?? 0) > 0 ? "Completar" : "Cadastrar custos",
+        done: Boolean(ctx?.fixedAuto),
+      },
+      {
         key: "prices",
         title: "Defina o preço de venda",
         detail: recipeIds.length === 0 ? "Depois de criar as fichas." : `${pricedRecipes} de ${recipeIds.length} marmitas com preço`,

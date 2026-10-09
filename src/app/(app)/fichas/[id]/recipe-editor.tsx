@@ -108,7 +108,7 @@ function ItemRow({
     <li className="flex flex-col gap-1 py-3">
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{ingredient.name}</p>
+          <p className="line-clamp-2 font-medium leading-snug">{ingredient.name}</p>
           <p className="text-xs text-muted">
             {ingredient.unit_cost <= 0 ? <span className="text-warning">sem preço</span> : formatBRL(cost)}
             {ingredient.correction_factor > 1 ? ` · FC ${formatNumber(ingredient.correction_factor, 2)}` : ""}

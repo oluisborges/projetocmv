@@ -24,7 +24,7 @@ export default async function PricingSettingsPage() {
         <p className="rounded-xl border border-border bg-surface p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
       ) : canWrite ? (
         <>
-          <SettingsForm settings={ctx.settings} />
+          <SettingsForm settings={ctx.settings} fixedAuto={ctx.fixedAuto} />
 
           <section className="flex flex-col gap-3 pt-2">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">

@@ -383,3 +383,27 @@ describe("integridade: item usado em ficha", () => {
     await expect(q(`delete from public.ingredients where id = $1`, [ids.ingA])).rejects.toThrow(/foreign key/i);
   });
 });
+
+describe("custos fixos e equipe", () => {
+  it("dono cria e lê os da própria unidade; viewer lê mas não escreve; outra organização não vê", async () => {
+    await as(ids.ownerA, "dono-a@marmita.com", async () => {
+      await q(`insert into public.fixed_costs (org_id, unit_id, name, monthly_amount) values ($1,$2,'Aluguel',1500)`, [ids.orgA, ids.unitA]);
+      await q(`insert into public.staff (org_id, unit_id, name, area, monthly_salary, charges_pct) values ($1,$2,'Maria','cozinha',2200,0.3)`, [ids.orgA, ids.unitA]);
+    });
+
+    const seenByViewer = await as(ids.viewerA, "viewer-a@marmita.com", () => q(`select name from public.fixed_costs`));
+    expect(seenByViewer.map((r) => r.name)).toEqual(["Aluguel"]);
+    await expect(
+      as(ids.viewerA, "viewer-a@marmita.com", () => q(`insert into public.staff (org_id, unit_id, name, area, monthly_salary) values ($1,$2,'X','cozinha',1)`, [ids.orgA, ids.unitA])),
+    ).rejects.toThrow(/row-level security/i);
+
+    const seenByB = await as(ids.ownerB, "dono-b@marmita.com", () => q(`select * from public.staff`));
+    expect(seenByB).toHaveLength(0);
+  });
+
+  it("área de equipe e valores têm limites no banco", async () => {
+    await expect(q(`insert into public.staff (org_id, unit_id, name, area, monthly_salary) values ($1,$2,'Y','chefe',1)`, [ids.orgA, ids.unitA])).rejects.toThrow(/check constraint/i);
+    await expect(q(`insert into public.fixed_costs (org_id, unit_id, name, monthly_amount) values ($1,$2,'Z',-5)`, [ids.orgA, ids.unitA])).rejects.toThrow(/check constraint/i);
+    await expect(q(`update public.unit_settings set monthly_units = 0 where unit_id = $1`, [ids.unitA])).rejects.toThrow(/check constraint/i);
+  });
+});

@@ -1,5 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
+import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
 import type { PricingSettings } from "@/lib/pricing-view";
 
 export type Channel = { id: string; name: string; fee_pct: number };
@@ -7,6 +9,15 @@ export type Channel = { id: string; name: string; fee_pct: number };
 export type PricingContext = {
   unit: { id: string; name: string };
   settings: PricingSettings;
+  /**
+   * Despesa fixa calculada a partir dos custos cadastrados em Custos (+ faturamento mensal informado).
+   * Quando existe, ela SUBSTITUI o percentual digitado à mão em Ajustes.
+   */
+  fixedAuto: boolean;
+  monthlyRevenue: number | null;
+  monthlyUnits: number | null;
+  /** Custos fixos + equipe por mês (0 se ainda não cadastrou). */
+  fixedTotal: number;
   /** O dono já salvou os ajustes ao menos uma vez? Se não, impostos e despesas ainda são zero e a margem é só estimativa. */
   configured: boolean;
   channels: Channel[];
@@ -52,9 +63,30 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
     ({ data: channels } = await supabase.from("sales_channels").select("id, name, fee_pct").eq("unit_id", unit.id).order("name"));
   }
 
+  const [fixedCosts, staff] = await Promise.all([loadFixedCosts(unit.id), loadStaff(unit.id)]);
+  const monthlyRevenue = settingsRow?.monthly_revenue ? Number(settingsRow.monthly_revenue) : null;
+  const monthlyUnits = settingsRow?.monthly_units ? Number(settingsRow.monthly_units) : null;
+  const fixed = summarizeFixedCosts({
+    fixedCosts: fixedCosts.map((c) => c.monthly_amount),
+    staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
+    monthlyRevenue,
+    monthlyUnits,
+    dishes: [],
+    taxPct: 0,
+    feePct: 0,
+  });
+
+  const base = settingsRow ? toSettings(settingsRow) : DEFAULT_SETTINGS;
+  // Com custos cadastrados e faturamento informado, a despesa fixa do preço é calculada, não chutada.
+  const fixedAuto = fixed.pctOfRevenue !== null && fixed.pctOfRevenue < 1;
+
   return {
     unit,
-    settings: settingsRow ? toSettings(settingsRow) : DEFAULT_SETTINGS,
+    settings: fixedAuto ? { ...base, fixedExpensePct: fixed.pctOfRevenue as number } : base,
+    fixedAuto,
+    monthlyRevenue,
+    monthlyUnits,
+    fixedTotal: fixed.total,
     configured: Boolean(settingsRow?.configured_at),
     channels: (channels ?? []).map((c) => ({ id: c.id, name: c.name, fee_pct: Number(c.fee_pct) })),
   };

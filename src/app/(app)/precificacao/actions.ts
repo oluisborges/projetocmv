@@ -51,7 +51,9 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
   if (!canWrite) return { error: NO_PERMISSION };
 
   const tax = percent(formData.get("tax"), "Impostos");
-  const fixed = percent(formData.get("fixed"), "Despesas fixas");
+  // Despesa fixa calculada em Custos: o campo não é enviado, e o valor digitado antes fica como está.
+  const fixedSent = formData.has("fixed");
+  const fixed = fixedSent ? percent(formData.get("fixed"), "Despesas fixas") : ({ ok: true, value: 0 } as const);
   const profit = percent(formData.get("profit"), "Lucro desejado");
   const min = percent(formData.get("min_margin"), "Margem mínima");
   for (const f of [tax, fixed, profit, min]) if (!f.ok) return { error: f.error };
@@ -66,7 +68,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
       unit_id: unit.id,
       org_id: orgId,
       tax_pct: tax.value,
-      fixed_expense_pct: fixed.value,
+      ...(fixedSent ? { fixed_expense_pct: fixed.value } : {}),
       profit_pct: profit.value,
       min_margin_pct: min.value,
       configured_at: new Date().toISOString(),

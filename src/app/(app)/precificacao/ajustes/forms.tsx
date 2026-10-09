@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -7,7 +8,13 @@ import { addChannel, deleteChannel, saveSettings, updateChannel } from "../actio
 
 const pct = (fraction: number) => String(Number((fraction * 100).toFixed(2))).replace(".", ",");
 
-export function SettingsForm({ settings }: { settings: { taxPct: number; fixedExpensePct: number; profitPct: number; minMarginPct: number } }) {
+export function SettingsForm({
+  settings,
+  fixedAuto,
+}: {
+  settings: { taxPct: number; fixedExpensePct: number; profitPct: number; minMarginPct: number };
+  fixedAuto: boolean;
+}) {
   return (
     <ActionForm action={saveSettings} submitLabel="Salvar ajustes">
       <TextField
@@ -18,14 +25,24 @@ export function SettingsForm({ settings }: { settings: { taxPct: number; fixedEx
         required={false}
         hint={<Hint>O percentual que vai embora em imposto de cada venda (Simples Nacional, por exemplo). Se não souber, pergunte ao seu contador. Se não paga, deixe 0.</Hint>}
       />
-      <TextField
-        label="Despesas fixas (% do faturamento)"
-        name="fixed"
-        inputMode="decimal"
-        defaultValue={pct(settings.fixedExpensePct)}
-        required={false}
-        hint={<Hint>Aluguel, energia dos freezers, sistemas, pró-labore… dividido pelo que você fatura no mês. Em breve o app calcula isso sozinho; por enquanto, informe uma estimativa.</Hint>}
-      />
+      {fixedAuto ? (
+        <div className="flex flex-col gap-1 rounded-xl border border-border bg-surface p-4 text-sm">
+          <p className="font-medium">Despesas fixas: {pct(settings.fixedExpensePct)}% do faturamento</p>
+          <p className="text-muted">Calculado sozinho a partir dos seus custos fixos e da sua equipe.</p>
+          <Link href="/custos" className="inline-flex min-h-11 items-center font-semibold text-primary">
+            Ver ou alterar em Custos →
+          </Link>
+        </div>
+      ) : (
+        <TextField
+          label="Despesas fixas (% do faturamento)"
+          name="fixed"
+          inputMode="decimal"
+          defaultValue={pct(settings.fixedExpensePct)}
+          required={false}
+          hint={<Hint>Aluguel, energia dos freezers, sistemas, pró-labore… dividido pelo que você fatura no mês. Em breve o app calcula isso sozinho; por enquanto, informe uma estimativa.</Hint>}
+        />
+      )}
       <TextField
         label="Lucro que você quer (%)"
         name="profit"
