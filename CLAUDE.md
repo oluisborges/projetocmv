@@ -1,0 +1,24 @@
+# Shogun Precificação
+
+Plataforma web mobile-first para donos de marmitarias congeladas (clientes do Grupo Shogun) controlarem custo e preço: insumos, fichas técnicas, precificação, CMV, CMO, custos fixos/ponto de equilíbrio e dashboard. O plano completo está em `PLAN.md` — leia antes de mexer em modelo de dados ou fórmulas.
+
+@AGENTS.md
+
+## Stack
+Next.js (App Router) + TypeScript estrito + Tailwind v4 + shadcn/ui · Supabase (Auth, Postgres, RLS, Storage) via `@supabase/ssr` · Vercel · Vitest · pnpm.
+
+## Comandos
+- `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm test`
+
+## Convenções
+- Interface em **pt-BR**, moeda BRL (`Intl.NumberFormat`), números com vírgula. Código, tabelas e colunas em inglês.
+- Cálculo **só** em `src/lib/calc` (funções puras, `decimal.js`, sem I/O). Todo cálculo novo nasce com teste Vitest usando casos reais de marmitaria.
+- Dinheiro nunca em `number` float em cálculo: use `decimal.js`.
+- Banco muda **somente** via `supabase/migrations`. Toda tabela nova: RLS + policies + índice em `org_id` na mesma migration.
+- Multi-tenant: toda tabela de negócio tem `org_id` (e as de operação `unit_id`). Admin Shogun = `profiles.is_platform_admin`.
+- `SUPABASE_SERVICE_ROLE_KEY` só em arquivos com `import "server-only"`; nunca em Client Components nem em variável `NEXT_PUBLIC_*`.
+- Mobile-first: projetar em 375px, alvos de toque ≥ 44px, `inputMode="decimal"` em preços, navegação inferior.
+- Todo termo técnico (CMV, CMO, markup, FC, MC) tem tooltip em linguagem simples.
+- Páginas são Server Components por padrão; `"use client"` só quando necessário.
+- Commits pequenos (Conventional Commits). Nunca commitar `.env*`.
+- Fim de cada fase: rodar o app, validar com Chrome DevTools (375×812 e desktop), deploy de preview na Vercel.
