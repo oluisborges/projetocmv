@@ -102,8 +102,8 @@ function ItemRow({
 
   return (
     <li className="flex flex-col gap-1 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{ingredient.name}</p>
           <p className="text-xs text-muted">
             {ingredient.unit_cost <= 0 ? <span className="text-warning">sem preço</span> : formatBRL(cost)}
@@ -125,17 +125,22 @@ function ItemRow({
           />
           <UnitSelect value={item.unit} options={[baseOf(ingredient)]} onChange={changeUnit} disabled={!canWrite} label={`Unidade de ${ingredient.name}`} />
         </div>
-      </div>
-      <div className="flex items-center justify-between">
-        <p role={error ? "alert" : undefined} className="text-xs text-danger">
-          {error}
-        </p>
         {canWrite ? (
-          <button type="button" onClick={onRemove} className="h-9 text-xs font-semibold text-danger">
-            Remover{perPortion ? " embalagem" : ""}
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Remover ${ingredient.name}${perPortion ? " da embalagem" : ""}`}
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl text-xl leading-none text-muted active:bg-background"
+          >
+            ×
           </button>
         ) : null}
       </div>
+      {error ? (
+        <p role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      ) : null}
     </li>
   );
 }
@@ -316,22 +321,20 @@ export function RecipeEditor({
     <div className="flex flex-col gap-6">
       <section aria-live="polite" className="sticky top-[57px] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         {view.ok ? (
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">
-                Custo por porção
-                <Hint>Quanto custa fazer UMA marmita: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem.</Hint>
-              </p>
+          <div className="flex flex-col gap-1">
+            <p className="flex items-center text-xs font-semibold uppercase tracking-wider text-muted">
+              Custo por porção
+              <Hint>Quanto custa fazer UMA marmita: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem.</Hint>
+            </p>
+            <div className="flex items-baseline justify-between gap-3">
               <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(view.cost.costPerPortion.toNumber())}</p>
-            </div>
-            <div className="text-right text-xs text-muted">
-              <p>
-                Ingredientes {formatBRL(view.cost.ingredientCostPerPortion.toNumber())} + embalagem {formatBRL(view.cost.packagingCostPerPortion.toNumber())}
-              </p>
-              <p>
+              <p className="tabular text-right text-xs text-muted">
                 Lote {formatBRL(view.cost.batchCost.toNumber())} · {formatNumber(view.cost.portions.toNumber(), 0)} porções
               </p>
             </div>
+            <p className="tabular text-xs text-muted">
+              Ingredientes {formatBRL(view.cost.ingredientCostPerPortion.toNumber())} + embalagem {formatBRL(view.cost.packagingCostPerPortion.toNumber())}
+            </p>
           </div>
         ) : (
           <p className="text-sm text-muted">

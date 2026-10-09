@@ -51,7 +51,7 @@ export function ChannelRow({ channel }: { channel: { id: string; name: string; f
     <li className="flex flex-col gap-3 py-4">
       <ActionForm action={updateChannel} submitLabel="Salvar canal">
         <input type="hidden" name="id" value={channel.id} />
-        <div className="grid grid-cols-[1fr_7rem] gap-3">
+        <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
           <TextField label="Nome" name="name" defaultValue={channel.name} />
           <TextField label="Taxa (%)" name="fee" inputMode="decimal" defaultValue={pct(channel.fee_pct)} required={false} />
         </div>
@@ -69,7 +69,7 @@ export function ChannelRow({ channel }: { channel: { id: string; name: string; f
 export function AddChannelForm() {
   return (
     <ActionForm action={addChannel} submitLabel="Adicionar canal">
-      <div className="grid grid-cols-[1fr_7rem] gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
         <TextField label="Nome do canal" name="name" placeholder="Ex.: iFood" />
         <TextField label="Taxa (%)" name="fee" inputMode="decimal" required={false} placeholder="Ex.: 27" />
       </div>

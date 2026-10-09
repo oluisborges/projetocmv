@@ -45,56 +45,57 @@ function Row({ row, settings, feePct, canWrite }: { row: PricingRowData; setting
   }
 
   return (
-    <li className="flex flex-col gap-2 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link href={`/precificacao/${row.id}`} className="block truncate font-semibold">
-            {row.name}
-          </Link>
-          {row.cost !== null ? (
-            <p className="text-xs text-muted">
-              custa {formatBRL(row.cost)} por porção
-              {row.missingPrices > 0 ? <span className="text-warning"> · custo incompleto ({row.missingPrices} sem preço)</span> : null}
-            </p>
-          ) : (
-            <p className="text-xs text-warning">Ficha incompleta: termine em Fichas para ver o preço.</p>
-          )}
-        </div>
+    <li className="flex flex-col gap-3 py-4">
+      <div className="min-w-0">
+        <Link href={`/precificacao/${row.id}`} className="block text-base font-semibold leading-snug">
+          {row.name}
+        </Link>
         {row.cost !== null ? (
-          <label className="flex shrink-0 items-center gap-1.5">
-            <span className="sr-only">Preço de venda de {row.name}</span>
-            <span aria-hidden className="text-sm text-muted">
-              R$
-            </span>
-            <input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onBlur={() => text.trim() !== "" && text.trim() !== (saved ? priceFmt.format(saved) : "") && void save(text)}
-              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-              inputMode="decimal"
-              disabled={!canWrite}
-              placeholder="0,00"
-              aria-invalid={state.kind === "error"}
-              className="tabular h-11 w-28 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-            />
-          </label>
-        ) : null}
+          <p className="text-xs text-muted">
+            custa {formatBRL(row.cost)} por porção
+            {row.missingPrices > 0 ? <span className="text-warning"> · custo incompleto ({row.missingPrices} sem preço)</span> : null}
+          </p>
+        ) : (
+          <p className="text-xs text-warning">Ficha incompleta: termine em Fichas para ver o preço.</p>
+        )}
       </div>
 
       {analysis ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          {analysis.at ? (
-            <MarginBadge status={analysis.at.status} pct={analysis.at.netPct} />
-          ) : (
-            <span className="text-xs text-muted">Defina o preço que você cobra</span>
-          )}
-          <div className="flex items-center gap-2 text-xs">
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              {analysis.at ? (
+                <MarginBadge status={analysis.at.status} pct={analysis.at.netPct} />
+              ) : (
+                <span className="text-xs text-muted">Defina o preço que você cobra</span>
+              )}
+            </div>
+            <label className="flex shrink-0 items-center gap-1.5">
+              <span className="sr-only">Preço de venda de {row.name}</span>
+              <span aria-hidden className="text-sm text-muted">
+                R$
+              </span>
+              <input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onBlur={() => text.trim() !== "" && text.trim() !== (saved ? priceFmt.format(saved) : "") && void save(text)}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                inputMode="decimal"
+                disabled={!canWrite}
+                placeholder="0,00"
+                aria-invalid={state.kind === "error"}
+                className="tabular h-11 w-28 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+              />
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 text-xs">
             {analysis.impossible ? (
               <span className="text-danger">Impostos, taxas e lucro somam 100% ou mais</span>
             ) : analysis.suggested !== null ? (
               <>
                 <span className="text-muted">
-                  Sugerido <strong className="tabular text-foreground">{formatBRL(analysis.suggested)}</strong>
+                  Preço sugerido <strong className="tabular text-foreground">{formatBRL(analysis.suggested)}</strong>
                 </span>
                 {canWrite && saved !== analysis.suggested ? (
                   <button
@@ -111,10 +112,10 @@ function Row({ row, settings, feePct, canWrite }: { row: PricingRowData; setting
               </>
             ) : null}
           </div>
-        </div>
+        </>
       ) : null}
 
-      <p role={state.kind === "error" ? "alert" : undefined} className="min-h-4 text-right text-xs">
+      <p role={state.kind === "error" ? "alert" : undefined} className="empty:hidden text-right text-xs">
         {state.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
         {state.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}
         {state.kind === "error" ? <span className="text-danger">{state.message}</span> : null}

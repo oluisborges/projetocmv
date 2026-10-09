@@ -62,7 +62,7 @@ export function TextField({
   list?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1.5 text-sm font-medium">
+    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
       <span>
         {label}
         {hint}
@@ -75,7 +75,7 @@ export function TextField({
         placeholder={placeholder}
         list={list}
         autoComplete="off"
-        className={inputClass}
+        className={`${inputClass} w-full min-w-0`}
       />
     </label>
   );
@@ -93,9 +93,9 @@ export function SelectField({
   options: { value: string; label: string }[];
 }) {
   return (
-    <label className="flex flex-col gap-1.5 text-sm font-medium">
+    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
       {label}
-      <select name={name} defaultValue={defaultValue} className={inputClass}>
+      <select name={name} defaultValue={defaultValue} className={`${inputClass} w-full min-w-0`}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

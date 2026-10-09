@@ -5,7 +5,9 @@ import { PriceList, type IngredientRow } from "./price-list";
 
 export const metadata = { title: "Insumos" };
 
-const button = "flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold";
+const button = "flex h-11 items-center justify-center rounded-xl border px-2 text-sm font-semibold";
+const secondary = "border-border bg-surface";
+const primary = "border-primary bg-primary text-primary-foreground";
 
 export default async function IngredientsPage(props: PageProps<"/insumos">) {
   const { canWrite } = await requireMember();
@@ -34,13 +36,13 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
 
       {canWrite ? (
         <div className="grid grid-cols-3 gap-2">
-          <Link href="/insumos/novo" className={`${button} bg-primary text-primary-foreground border-primary`}>
+          <Link href="/insumos/novo" className={`${button} ${primary}`}>
             + Novo
           </Link>
-          <Link href="/insumos/reajuste" className={button}>
-            Reajustar %
+          <Link href="/insumos/reajuste" className={`${button} ${secondary}`}>
+            Reajustar
           </Link>
-          <Link href="/insumos/catalogo" className={button}>
+          <Link href="/insumos/catalogo" className={`${button} ${secondary}`}>
             Catálogo
           </Link>
         </div>
