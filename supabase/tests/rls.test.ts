@@ -471,3 +471,30 @@ describe("travas no banco", () => {
     await q(`insert into public.recipes (org_id, name, portions, mode) values ($1,'Serving ok',1,'serving')`, [ids.orgA]);
   });
 });
+
+describe("resultado do mês (periods e period_sales)", () => {
+  it("mês só no dia 1, um por unidade, e vendas ligadas à ficha da mesma organização", async () => {
+    await expect(q(`insert into public.periods (org_id, unit_id, month) values ($1,$2,'2026-10-15')`, [ids.orgA, ids.unitA])).rejects.toThrow(/check constraint/i);
+
+    const [p] = await q(`insert into public.periods (org_id, unit_id, month, revenue, purchases) values ($1,$2,'2026-10-01',60000,18000) returning id`, [ids.orgA, ids.unitA]);
+    await expect(q(`insert into public.periods (org_id, unit_id, month) values ($1,$2,'2026-10-01')`, [ids.orgA, ids.unitA])).rejects.toThrow(/duplicate key|unique/i);
+
+    const [recA] = await q(`insert into public.recipes (org_id, name, portions) values ($1,'Prato mês A',1) returning id`, [ids.orgA]);
+    const [recB] = await q(`insert into public.recipes (org_id, name, portions) values ($1,'Prato mês B',1) returning id`, [ids.orgB]);
+    await q(`insert into public.period_sales (period_id, recipe_id, org_id, qty_sold) values ($1,$2,$3,800)`, [p.id, recA.id, ids.orgA]);
+    await expect(q(`insert into public.period_sales (period_id, recipe_id, org_id, qty_sold) values ($1,$2,$3,5)`, [p.id, recB.id, ids.orgA])).rejects.toThrow(/foreign key/i);
+    await expect(q(`insert into public.period_sales (period_id, recipe_id, org_id, qty_sold) values ($1,$2,$3,-1)`, [p.id, recA.id, ids.orgA])).rejects.toThrow(/check constraint|duplicate key/i);
+  });
+
+  it("viewer lê o mês mas não grava; outra organização não enxerga", async () => {
+    // testes anteriores removem o viewer da org A; aqui ele volta como só-leitura
+    await q(`insert into public.memberships (org_id, user_id, role) values ($1,$2,'viewer') on conflict do nothing`, [ids.orgA, ids.viewerA]);
+    const seen = await as(ids.viewerA, "viewer-a@marmita.com", () => q(`select revenue from public.periods`));
+    expect(seen.length).toBeGreaterThan(0);
+    await expect(
+      as(ids.viewerA, "viewer-a@marmita.com", () => q(`insert into public.periods (org_id, unit_id, month) values ($1,$2,'2026-09-01')`, [ids.orgA, ids.unitA])),
+    ).rejects.toThrow(/row-level security/i);
+    const other = await as(ids.ownerB, "dono-b@marmita.com", () => q(`select * from public.periods where org_id = $1`, [ids.orgA]));
+    expect(other).toHaveLength(0);
+  });
+});

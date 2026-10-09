@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CostsTabs } from "@/components/costs-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
@@ -62,6 +63,8 @@ export default async function CostsPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
         <p className="text-muted">O que você paga todo mês, venda ou não venda. Isso entra no preço de cada marmita.</p>
       </section>
+
+      <CostsTabs active="fixed" />
 
       <section aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted">Seu ponto de equilíbrio</p>

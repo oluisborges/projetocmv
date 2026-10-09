@@ -1,0 +1,114 @@
+"use client";
+
+import { useState } from "react";
+import { ActionForm, TextField } from "@/components/forms";
+import { Hint } from "@/components/hint";
+import { formatBRL } from "@/lib/format";
+import { savePeriod, setSoldQty } from "./actions";
+
+const money = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+export function PeriodForm({ month, revenue, purchases }: { month: string; revenue: number; purchases: number }) {
+  return (
+    <ActionForm action={savePeriod} submitLabel="Salvar o mês" key={month}>
+      <input type="hidden" name="month" value={month} />
+      <TextField
+        label="Quanto você faturou no mês (R$)"
+        name="revenue"
+        inputMode="decimal"
+        required={false}
+        defaultValue={revenue > 0 ? money.format(revenue) : ""}
+        placeholder="Ex.: 60.000"
+        hint={<Hint>Tudo que entrou com as vendas das marmitas no mês.</Hint>}
+      />
+      <TextField
+        label="Quanto você comprou de insumos (R$)"
+        name="purchases"
+        inputMode="decimal"
+        required={false}
+        defaultValue={purchases > 0 ? money.format(purchases) : ""}
+        placeholder="Ex.: 18.000"
+        hint={<Hint>A soma das notas de compra de comida e embalagem do mês, tudo que você pagou aos fornecedores.</Hint>}
+      />
+    </ActionForm>
+  );
+}
+
+export function SalesRow({
+  month,
+  recipe,
+  initialQty,
+  canWrite,
+}: {
+  month: string;
+  recipe: { id: string; name: string; cost: number | null };
+  initialQty: number;
+  canWrite: boolean;
+}) {
+  const [saved, setSaved] = useState(initialQty);
+  const [text, setText] = useState(initialQty > 0 ? String(initialQty) : "");
+  const [state, setState] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
+
+  async function commit() {
+    const current = text.trim() === "" ? 0 : Number(text.replace(",", "."));
+    if (current === saved) return;
+    setState({ kind: "saving" });
+    const result = await setSoldQty(month, recipe.id, text);
+    if (result.ok) {
+      setSaved(result.qty);
+      setText(result.qty > 0 ? String(result.qty) : "");
+      setState({ kind: "saved" });
+      setTimeout(() => setState((s) => (s.kind === "saved" ? { kind: "idle" } : s)), 2000);
+    } else {
+      setState({ kind: "error", message: result.error });
+    }
+  }
+
+  return (
+    <li className="flex flex-col gap-1 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="line-clamp-2 font-medium leading-snug">{recipe.name}</p>
+          <p className="text-xs text-muted">
+            {recipe.cost === null ? (
+              <span className="text-warning">ficha incompleta: o custo não entra na conta</span>
+            ) : saved > 0 ? (
+              <>
+                custou <strong className="tabular text-foreground">{formatBRL(recipe.cost * saved)}</strong> ({formatBRL(recipe.cost)} cada)
+              </>
+            ) : (
+              <>custa {formatBRL(recipe.cost)} cada</>
+            )}
+          </p>
+        </div>
+        <label className="flex shrink-0 items-center gap-1.5">
+          <span className="sr-only">Marmitas vendidas de {recipe.name}</span>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              const next = e.currentTarget.closest("li")?.nextElementSibling?.querySelector("input");
+              e.currentTarget.blur();
+              next?.focus();
+            }}
+            inputMode="numeric"
+            enterKeyHint="next"
+            disabled={!canWrite}
+            placeholder="0"
+            aria-invalid={state.kind === "error"}
+            className="tabular h-11 w-24 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+          />
+          <span className="text-sm text-muted">un</span>
+        </label>
+      </div>
+      <p role={state.kind === "error" ? "alert" : undefined} className="empty:hidden text-right text-xs">
+        {state.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
+        {state.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}
+        {state.kind === "error" ? <span className="text-danger">{state.message}</span> : null}
+      </p>
+    </li>
+  );
+}
