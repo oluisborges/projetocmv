@@ -17,7 +17,7 @@ export default async function PricingSettingsPage() {
       </Link>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Ajustes de preço</h1>
-        <p className="text-muted">Esses números entram na conta do preço sugerido de todos os produtos.</p>
+        <p className="text-muted">Esses números entram na conta do lucro de todos os produtos.</p>
       </section>
 
       {!ctx ? (

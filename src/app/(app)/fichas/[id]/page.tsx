@@ -58,22 +58,29 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
       />
 
       {canWrite ? (
-        <div className="flex flex-col gap-6 border-t border-border pt-6">
+        <div className="grid grid-cols-2 gap-3 border-t border-border pt-6">
           <form action={duplicateRecipe}>
             <input type="hidden" name="id" value={recipe.id} />
-            <button type="submit" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold">
-              Duplicar ficha
-            </button>
+            <ConfirmButton
+              title="Duplicar esta ficha?"
+              message="Cria uma cópia com os mesmos ingredientes, para você ajustar sem mexer na original."
+              confirmLabel="Duplicar"
+              destructive={false}
+              className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold"
+            >
+              Duplicar
+            </ConfirmButton>
           </form>
-          <form action={archiveRecipe} className="flex flex-col gap-1.5">
+          <form action={archiveRecipe}>
             <input type="hidden" name="id" value={recipe.id} />
             <ConfirmButton
-              message="Arquivar esta ficha? Ela some da lista, mas dá para restaurar depois em Arquivadas."
+              title="Arquivar esta ficha?"
+              message="Ela some da lista, mas dá para restaurar depois em Arquivadas."
+              confirmLabel="Arquivar"
               className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-danger"
             >
-              Arquivar ficha
+              Arquivar
             </ConfirmButton>
-            <p className="text-center text-xs text-muted">Não é para salvar: o que você digita já é salvo sozinho.</p>
           </form>
         </div>
       ) : null}

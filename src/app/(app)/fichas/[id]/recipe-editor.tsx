@@ -121,8 +121,6 @@ function ItemRow({
           <p className="line-clamp-2 font-medium leading-snug">{ingredient.name}</p>
           <p className="text-xs text-muted">
             {ingredient.unit_cost <= 0 ? <span className="text-warning">sem preço</span> : formatBRL(cost)}
-            {ingredient.correction_factor > 1 ? ` · FC ${formatNumber(ingredient.correction_factor, 2)}` : ""}
-            {yieldFactor !== 1 ? ` · ≈ ${formatNumber(item.netQty / yieldFactor, 0)} g cru` : ""}
             {ingredient.archived ? " · arquivado" : ""}
           </p>
         </div>
@@ -173,6 +171,7 @@ function AddItem({
   options,
   defaultQty,
   label,
+  title,
   lockUnit,
   onAdded,
 }: {
@@ -180,6 +179,8 @@ function AddItem({
   options: EditorIngredient[];
   defaultQty: string;
   label: string;
+  /** Texto do botão que abre o formulário. */
+  title: string;
   lockUnit: boolean;
   onAdded: (item: EditorItem) => void;
 }) {
@@ -188,6 +189,7 @@ function AddItem({
   const [unit, setUnit] = useState<PurchaseUnit>("g");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const selected = options.find((o) => o.id === ingredientId);
   const unitOptions: PurchaseUnit[] = selected ? (lockUnit ? [baseOf(selected)] : unitsFor(baseOf(selected))) : ["g"];
@@ -208,14 +210,23 @@ function AddItem({
     setIngredientId("");
     setQty(defaultQty);
     setError(undefined);
+    setOpen(false);
   }
 
   if (options.length === 0) {
     return <p className="text-sm text-muted">Todos os itens já estão na ficha. Cadastre mais em Insumos.</p>;
   }
 
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="h-12 rounded-xl border border-dashed border-primary text-sm font-semibold text-primary">
+        + {title}
+      </button>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3">
       <select value={ingredientId} onChange={(e) => choose(e.target.value)} aria-label={label} className={inputClass}>
         <option value="">{label}</option>
         {options.map((o) => (
@@ -234,9 +245,14 @@ function AddItem({
           {error}
         </p>
       ) : null}
-      <button type="button" onClick={add} disabled={busy} className="h-11 rounded-xl border border-primary text-sm font-semibold text-primary disabled:opacity-60">
-        {busy ? "Adicionando…" : "+ Adicionar"}
-      </button>
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" onClick={() => setOpen(false)} className="h-11 rounded-xl border border-border text-sm font-semibold">
+          Cancelar
+        </button>
+        <button type="button" onClick={add} disabled={busy} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
+          {busy ? "Adicionando…" : "Adicionar"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -347,117 +363,109 @@ export function RecipeEditor({
       </ul>
     ) : null;
 
+  const savedChip =
+    status.kind === "saving" ? <span className="text-xs text-muted">Salvando…</span> : status.kind === "saved" ? <span className="text-xs text-success">Salvo ✓</span> : null;
+
   return (
     <div className="flex flex-col gap-6">
       <section aria-live="polite" className="sticky top-14 z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         {view.ok ? (
-          <div className="flex flex-col gap-1">
-            <p className="flex items-center text-xs font-semibold uppercase tracking-wider text-muted">
-              {isServing ? "Custo do produto" : "Custo por porção"}
-              <Hint>
-                {isServing
-                  ? "Quanto custa fazer UMA unidade: a soma dos ingredientes que vão nela mais a embalagem."
-                  : "Quanto custa fazer UMA unidade: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem."}
-              </Hint>
+          <div className="flex flex-col gap-0.5">
+            <p className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted">
+              <span>
+                {isServing ? "Custo do produto" : "Custo por porção"}
+                <Hint>
+                  {isServing
+                    ? "Quanto custa fazer UMA unidade: a soma dos ingredientes que vão nela mais a embalagem."
+                    : "Quanto custa fazer UMA unidade: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem."}
+                </Hint>
+              </span>
+              {savedChip}
             </p>
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(view.cost.costPerPortion.toNumber())}</p>
-              {isServing ? null : (
-                <p className="tabular text-right text-xs text-muted">
-                  Lote {formatBRL(view.cost.batchCost.toNumber())} · {formatNumber(view.cost.portions.toNumber(), 0)} porções
-                </p>
-              )}
-            </div>
-            <p className="tabular text-xs text-muted">
-              Ingredientes {formatBRL(view.cost.ingredientCostPerPortion.toNumber())} + embalagem {formatBRL(view.cost.packagingCostPerPortion.toNumber())}
-            </p>
+            <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(view.cost.costPerPortion.toNumber())}</p>
+            {isServing ? null : (
+              <p className="tabular text-xs text-muted">
+                Lote {formatBRL(view.cost.batchCost.toNumber())} · {formatNumber(view.cost.portions.toNumber(), 0)} porções
+              </p>
+            )}
           </div>
         ) : (
-          <p className="text-sm text-muted">
-            {view.reason === "no-items"
-              ? "Adicione os ingredientes para ver o custo."
-              : view.reason === "no-portions"
-                ? "Informe quantas porções a receita rende (ou o peso de cada porção)."
-                : "Confira as porções e a perda de cocção."}
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted">
+              {view.reason === "no-items"
+                ? "Adicione os ingredientes para ver o custo."
+                : view.reason === "no-portions"
+                  ? "Informe quantas porções a receita rende (ou o peso de cada porção)."
+                  : "Confira as porções e a perda de cocção."}
+            </p>
+            {savedChip}
+          </div>
         )}
         {view.ok && view.missingPrices > 0 ? (
           <p className="pt-1 text-xs text-warning">
             {view.missingPrices} {view.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Insumos.
           </p>
         ) : null}
+        {status.kind === "error" ? (
+          <p role="alert" className="pt-1 text-sm text-danger">
+            {status.message}
+          </p>
+        ) : null}
       </section>
+
+      <label className="flex flex-col gap-1.5 text-sm font-medium">
+        Nome
+        <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => saveSettings()} disabled={!canWrite} className={inputClass} />
+      </label>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Ingredientes de UMA unidade" : "Ingredientes do lote"}</h2>
         {renderItems("batch")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" title="Adicionar ingrediente" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
         <p className="text-xs text-muted">
-          {isServing
-            ? "Digite quantos gramas PRONTOS vão em UMA unidade (o arroz já cozido, o frango já grelhado, do jeito que vai na bandeja). O app converte para o peso cru e já considera a limpeza."
-            : "Digite a quantidade do LOTE INTEIRO (a receita toda), já limpa. Dá para usar kg ou g. O custo considera a perda de limpeza sozinho."}
+          {isServing ? "Digite as gramas PRONTAS, do jeito que vai na embalagem (arroz já cozido, frango já grelhado)." : "Digite a quantidade do lote inteiro, já limpa. Dá para usar kg ou g."}
         </p>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Embalagem do produto" : "Embalagem (por porção)"}</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Embalagem</h2>
         {renderItems("portion")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Bandeja, filme, etiqueta…" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Bandeja, filme, etiqueta…" title="Adicionar embalagem" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Nome" : "Rendimento"}</h2>
-        <label className="flex flex-col gap-1.5 text-sm font-medium">
-          {isServing ? "Nome do produto" : "Nome"}
-          <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => saveSettings()} disabled={!canWrite} className={inputClass} />
-        </label>
-        {isServing ? null : (
-          <>
-        <label className="flex flex-col gap-1.5 text-sm font-medium">
-          Rende (porções)
-          <input value={portions} onChange={(e) => setPortions(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
-        </label>
-        <div className="flex flex-col gap-1.5 text-sm font-medium">
-          <label htmlFor="portion-weight">Peso da porção</label>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-            <input
-              id="portion-weight"
-              value={portionWeight}
-              onChange={(e) => setPortionWeight(e.target.value)}
-              onBlur={() => saveSettings()}
-              inputMode="decimal"
-              disabled={!canWrite}
-              className={inputClass}
-            />
-            <UnitSelect value={weightUnit} options={["g"]} onChange={(u) => changeWeightUnit(u as "g" | "kg")} disabled={!canWrite} label="Unidade do peso da porção" />
+      {isServing ? null : (
+        <details open className="rounded-xl border border-border bg-surface">
+          <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Rendimento do lote</summary>
+          <div className="flex flex-col gap-4 border-t border-border p-4">
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
+              Rende (porções)
+              <input value={portions} onChange={(e) => setPortions(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
+            </label>
+            <div className="flex flex-col gap-1.5 text-sm font-medium">
+              <label htmlFor="portion-weight">Peso da porção</label>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                <input id="portion-weight" value={portionWeight} onChange={(e) => setPortionWeight(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
+                <UnitSelect value={weightUnit} options={["g"]} onChange={(u) => changeWeightUnit(u as "g" | "kg")} disabled={!canWrite} label="Unidade do peso da porção" />
+              </div>
+            </div>
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
+              <span>
+                Perda de cocção (%)
+                <Hint>Quanto a comida perde de peso ao cozinhar. Serve para calcular quantas porções saem quando você informa o peso da porção.</Hint>
+              </span>
+              <input value={cookingLoss} onChange={(e) => setCookingLoss(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
+            </label>
           </div>
-        </div>
-        <label className="flex flex-col gap-1.5 text-sm font-medium">
-          <span>
-            Perda de cocção (%)
-            <Hint>Quanto a comida perde de peso ao cozinhar. Serve para calcular quantas porções saem quando você informa o peso da porção.</Hint>
-          </span>
-          <input value={cookingLoss} onChange={(e) => setCookingLoss(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
-        </label>
-          </>
-        )}
-        <p role={status.kind === "error" ? "alert" : undefined} className="min-h-5 text-sm">
-          {status.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
-          {status.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}
-          {status.kind === "error" ? <span className="text-danger">{status.message}</span> : null}
-        </p>
-      </section>
+        </details>
+      )}
 
-      <div className="flex flex-col gap-2">
-        <button type="button" onClick={finish} className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground">
-          Concluir
-        </button>
-        <p className="text-center text-xs text-muted">Tudo é salvo automaticamente enquanto você edita. Este botão só volta para a lista.</p>
-      </div>
+      <button type="button" onClick={finish} className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground">
+        Concluir
+      </button>
     </div>
   );
 }

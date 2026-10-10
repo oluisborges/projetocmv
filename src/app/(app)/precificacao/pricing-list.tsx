@@ -94,29 +94,6 @@ function Row({ row, settings, feePct, canWrite, configured }: { row: PricingRowD
             </label>
           </div>
 
-          <div className="flex items-center justify-between gap-2 text-xs">
-            {analysis.impossible ? (
-              <span className="text-danger">Impostos, taxas e lucro somam 100% ou mais</span>
-            ) : analysis.suggested !== null ? (
-              <>
-                <span className="text-muted">
-                  Preço sugerido <strong className="tabular text-foreground">{formatBRL(analysis.suggested)}</strong>
-                </span>
-                {canWrite && saved !== analysis.suggested ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setText(priceFmt.format(analysis.suggested!));
-                      void save(String(analysis.suggested));
-                    }}
-                    className="h-11 rounded-lg border border-primary px-4 font-semibold text-primary"
-                  >
-                    Usar
-                  </button>
-                ) : null}
-              </>
-            ) : null}
-          </div>
         </>
       ) : null}
 

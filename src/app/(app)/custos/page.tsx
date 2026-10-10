@@ -159,7 +159,7 @@ export default async function CostsPage() {
 
       {overRevenue ? (
         <p className="rounded-xl bg-danger/10 p-3 text-sm text-danger">
-          Suas contas ({formatPct(summary.pctOfRevenue!)} do faturamento) passam do que você fatura. Confira os valores: por enquanto o preço sugerido não conta os custos fixos.
+          Suas contas ({formatPct(summary.pctOfRevenue!)} do faturamento) passam do que você fatura. Confira os valores: por enquanto o lucro calculado não conta os custos fixos.
         </p>
       ) : null}
 

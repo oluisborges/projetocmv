@@ -43,7 +43,7 @@ export function Simulator({
   const channel = channels.find((c) => c.id === channelId) ?? channels[0];
   const feePct = channel?.fee_pct ?? 0;
 
-  const initial = currentPrice ?? analyzePrice({ cost, settings, feePct }).suggested ?? 0;
+  const initial = currentPrice ?? 0;
   const [text, setText] = useState(initial > 0 ? priceFmt.format(initial) : "");
   const [saved, setSaved] = useState(currentPrice);
   const [state, setState] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
@@ -131,21 +131,6 @@ export function Simulator({
           </div>
         ) : null}
 
-        {analysis.impossible ? (
-          <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-            Impostos, taxas, despesas e lucro desejado somam 100% ou mais: não existe preço que feche a conta. Revise em Ajustes.
-          </p>
-        ) : analysis.suggested !== null ? (
-          <div className="flex items-center justify-between gap-2 text-sm">
-            <span className="text-muted">
-              Para ganhar {formatPct(settings.profitPct)} limpo: <strong className="tabular text-foreground">{formatBRL(analysis.suggested)}</strong>
-            </span>
-            <button type="button" onClick={() => setText(priceFmt.format(analysis.suggested!))} className="h-11 shrink-0 rounded-lg border border-primary px-4 font-semibold text-primary">
-              Colocar no campo
-            </button>
-          </div>
-        ) : null}
-
         {canWrite ? (
           <button type="button" onClick={save} disabled={!(price > 0) || state.kind === "saving"} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
             {state.kind === "saving" ? "Salvando…" : saved === price ? "Este é o preço atual" : "Definir como preço do produto"}
@@ -189,13 +174,10 @@ export function Simulator({
               const a = analyzePrice({ cost, settings, feePct: c.fee_pct, price });
               return (
                 <li key={c.id} className="flex flex-col gap-1.5 py-3">
-                  <div className="flex items-baseline justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="font-medium">{c.name}</span>
-                    <span className="tabular text-sm text-muted">
-                      preço certo <strong className="text-foreground">{a.suggested !== null ? formatBRL(a.suggested) : "—"}</strong>
-                    </span>
+                    {a.at ? <MarginBadge status={a.at.status} pct={a.at.netPct} estimate={!configured} /> : <span className="text-sm text-muted">defina o preço</span>}
                   </div>
-                  {a.at ? <MarginBadge status={a.at.status} pct={a.at.netPct} estimate={!configured} /> : null}
                 </li>
               );
             })}

@@ -84,25 +84,17 @@ export function SettingsForm({
         </div>
       )}
       <TextField
-        label="Lucro que você quer (%)"
-        name="profit"
+        label="Lucro mínimo que você aceita (%)"
+        name="min_margin"
         inputMode="decimal"
-        defaultValue={pct(settings.profitPct)}
+        defaultValue={pct(settings.minMarginPct)}
         required={false}
-        hint={<Hint>De cada R$ 100 vendidos, quanto você quer que sobre limpo no bolso depois de pagar tudo. É isso que o preço sugerido protege.</Hint>}
+        hint={<Hint>De cada R$ 100 vendidos, quanto no mínimo você quer que sobre limpo no bolso. Abaixo disso o app avisa em vermelho que o produto está dando pouco lucro.</Hint>}
       />
-      <details className="rounded-xl border border-border bg-surface">
-        <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Avançado</summary>
-        <div className="flex flex-col gap-4 border-t border-border p-4">
-          <TextField
-            label="Lucro mínimo aceitável (%)"
-            name="min_margin"
-            inputMode="decimal"
-            defaultValue={pct(settings.minMarginPct)}
-            required={false}
-            hint={<Hint>Abaixo disso o app avisa em vermelho que o produto está dando pouco lucro. Costuma ser menor que o lucro que você quer.</Hint>}
-          />
-          {!fixedAuto ? (
+      {!fixedAuto ? (
+        <details className="rounded-xl border border-border bg-surface">
+          <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Avançado</summary>
+          <div className="flex flex-col gap-4 border-t border-border p-4">
             <TextField
               label="Despesas fixas à mão (% do que vende)"
               name="fixed"
@@ -111,9 +103,9 @@ export function SettingsForm({
               required={false}
               hint={<Hint>Só se não quiser informar as contas em Custos. Digite uma estimativa do quanto de cada venda vai para despesas fixas.</Hint>}
             />
-          ) : null}
-        </div>
-      </details>
+          </div>
+        </details>
+      ) : null}
     </ActionForm>
   );
 }

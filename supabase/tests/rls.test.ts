@@ -410,6 +410,34 @@ describe("custos fixos e equipe", () => {
   });
 });
 
+describe("histórico mensal (month_snapshots)", () => {
+  const snap = JSON.stringify({ v: 1, fixedTotal: 1500, staffTotal: 2860, taxPct: 0.06, feePct: 0, products: [] });
+
+  it("dono grava a foto do mês; viewer lê mas não grava; outra organização não vê; um mês por unidade", async () => {
+    await as(ids.ownerA, "dono-a@marmita.com", () =>
+      q(`insert into public.month_snapshots (org_id, unit_id, month, data) values ($1,$2,'2026-09-01',$3::jsonb)`, [ids.orgA, ids.unitA, snap]),
+    );
+    const seenByViewer = await as(ids.viewerA, "viewer-a@marmita.com", () => q(`select month from public.month_snapshots`));
+    expect(seenByViewer).toHaveLength(1);
+    await expect(
+      as(ids.viewerA, "viewer-a@marmita.com", () =>
+        q(`insert into public.month_snapshots (org_id, unit_id, month, data) values ($1,$2,'2026-08-01',$3::jsonb)`, [ids.orgA, ids.unitA, snap]),
+      ),
+    ).rejects.toThrow(/row-level security/i);
+    expect(await as(ids.ownerB, "dono-b@marmita.com", () => q(`select * from public.month_snapshots`))).toHaveLength(0);
+    await expect(
+      as(ids.ownerA, "dono-a@marmita.com", () =>
+        q(`insert into public.month_snapshots (org_id, unit_id, month, data) values ($1,$2,'2026-09-01',$3::jsonb)`, [ids.orgA, ids.unitA, snap]),
+      ),
+    ).rejects.toThrow(/duplicate key|unique/i);
+  });
+
+  it("o mês precisa ser dia 1 e a unidade precisa ser da organização", async () => {
+    await expect(q(`insert into public.month_snapshots (org_id, unit_id, month, data) values ($1,$2,'2026-09-15',$3::jsonb)`, [ids.orgA, ids.unitA, snap])).rejects.toThrow(/check constraint/i);
+    await expect(q(`insert into public.month_snapshots (org_id, unit_id, month, data) values ($1,$2,'2026-07-01',$3::jsonb)`, [ids.orgB, ids.unitA, snap])).rejects.toThrow(/foreign key/i);
+  });
+});
+
 describe("endurecimento: remoção de vínculos e unidades", () => {
   it("dono não remove outro dono nem a si mesmo; remove quem não é dono; admin remove qualquer um", async () => {
     await q(`insert into public.memberships (org_id, user_id, role) values ($1,$2,'owner') on conflict do nothing`, [ids.orgA, ids.newbie]);

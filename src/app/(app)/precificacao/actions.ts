@@ -54,7 +54,9 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
   // Despesa fixa calculada em Custos: o campo não é enviado, e o valor digitado antes fica como está.
   const fixedSent = formData.has("fixed");
   const fixed = fixedSent ? percent(formData.get("fixed"), "Despesas fixas") : ({ ok: true, value: 0 } as const);
-  const profit = percent(formData.get("profit"), "Lucro desejado");
+  // O lucro desejado saiu da tela (não há mais preço sugerido): se não vier no formulário, o valor guardado fica como está.
+  const profitSent = formData.has("profit");
+  const profit = profitSent ? percent(formData.get("profit"), "Lucro desejado") : ({ ok: true, value: 0 } as const);
   const min = percent(formData.get("min_margin"), "Margem mínima");
   for (const f of [tax, fixed, profit, min]) if (!f.ok) return { error: f.error };
   if (!tax.ok || !fixed.ok || !profit.ok || !min.ok) return { error: "Confira os campos." };
@@ -69,7 +71,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
       org_id: orgId,
       tax_pct: tax.value,
       ...(fixedSent ? { fixed_expense_pct: fixed.value } : {}),
-      profit_pct: profit.value,
+      ...(profitSent ? { profit_pct: profit.value } : {}),
       min_margin_pct: min.value,
       configured_at: new Date().toISOString(),
     },

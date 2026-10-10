@@ -68,7 +68,9 @@ export default async function IngredientPage(props: PageProps<"/insumos/[id]">) 
         <form action={archiveIngredient} className="pt-2">
           <input type="hidden" name="id" value={ing.id} />
           <ConfirmButton
-            message="Arquivar este insumo? Ele some da lista, mas as fichas que o usam continuam calculando."
+            title="Arquivar este insumo?"
+            confirmLabel="Arquivar"
+            message="Ele some da lista, mas as fichas que o usam continuam calculando."
             className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-danger"
           >
             Arquivar insumo

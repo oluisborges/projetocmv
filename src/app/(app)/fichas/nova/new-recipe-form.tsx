@@ -18,7 +18,6 @@ export function NewRecipeForm() {
       <input type="hidden" name="mode" value={mode} />
 
       <TextField label="Nome do produto" name="name" placeholder="Ex.: Frango grelhado com arroz e feijão" />
-      <TextField label="Categoria (opcional)" name="category" required={false} placeholder="Ex.: Tradicional" />
 
       <fieldset className="flex flex-col gap-2">
         <legend className="pb-1 text-sm font-medium">Como você monta essa receita?</legend>

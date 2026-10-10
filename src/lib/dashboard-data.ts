@@ -1,4 +1,5 @@
 import "server-only";
+import { saveMonthSnapshot } from "@/lib/snapshot-data";
 import { summarizeFixedCosts, type FixedCostSummary } from "@/lib/fixed-costs-view";
 import { summarizePanel, type PanelSummary } from "@/lib/panel-view";
 import { loadStaff } from "@/lib/costs-data";
@@ -122,6 +123,18 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
     taxPct: ctx.settings.taxPct,
     feePct,
   });
+
+  // Fotografia do mês para o Histórico (só quem edita grava).
+  if (canWrite) {
+    await saveMonthSnapshot(orgId, ctx.unit.id, {
+      v: 1,
+      fixedTotal: ctx.fixedTotal - ctx.staffTotal,
+      staffTotal: ctx.staffTotal,
+      taxPct: ctx.settings.taxPct,
+      feePct,
+      products: dishes.map((d) => ({ id: d.id, name: d.name, cost: d.cost, price: d.price })),
+    });
+  }
 
   return {
     ctx,
