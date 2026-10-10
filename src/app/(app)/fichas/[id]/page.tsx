@@ -66,7 +66,7 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
               message="Cria uma cópia com os mesmos ingredientes, para você ajustar sem mexer na original."
               confirmLabel="Duplicar"
               destructive={false}
-              className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold"
+              className="h-11 w-full card text-sm font-semibold"
             >
               Duplicar
             </ConfirmButton>
@@ -77,7 +77,7 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
               title="Arquivar esta ficha?"
               message="Ela some da lista, mas dá para restaurar depois em Arquivadas."
               confirmLabel="Arquivar"
-              className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-danger"
+              className="h-11 w-full card text-sm font-semibold text-danger"
             >
               Arquivar
             </ConfirmButton>

@@ -27,7 +27,7 @@ export default async function AdminPage() {
         <p className="text-muted">Crie a marmitaria do cliente e a senha de acesso. Depois passe e-mail e senha para ele.</p>
       </section>
 
-      <details className="rounded-xl border border-border bg-surface p-4" open={(orgs?.length ?? 0) === 0}>
+      <details className="card p-4" open={(orgs?.length ?? 0) === 0}>
         <summary className="cursor-pointer text-base font-semibold">Nova marmitaria</summary>
         <div className="pt-4">
           <AdminForm action={createOrganization} submitLabel="Criar marmitaria">
@@ -47,7 +47,7 @@ export default async function AdminPage() {
         {(orgs ?? []).map((org) => {
           const members = (memberships ?? []).filter((m) => m.org_id === org.id);
           return (
-            <article key={org.id} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+            <article key={org.id} className="flex flex-col gap-3 card p-4">
               <header className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="truncate text-lg font-bold">{org.name}</h3>
@@ -99,7 +99,7 @@ export default async function AdminPage() {
                       <select
                         name="role"
                         defaultValue="manager"
-                        className="h-11 rounded-xl border border-border bg-surface px-3 text-base"
+                        className="h-11 card px-3 text-base"
                       >
                         <option value="manager">Gerente (edita)</option>
                         <option value="owner">Dono (edita e gerencia)</option>

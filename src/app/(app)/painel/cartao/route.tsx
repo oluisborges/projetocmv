@@ -15,5 +15,9 @@ export async function GET(request: Request) {
     .then((b) => `data:image/png;base64,${Buffer.from(b).toString("base64")}`)
     .catch(() => null);
 
-  return shareCardImage({ orgName, month: monthLabel(currentMonthStart()), composition: data.panel.composition, configured: data.ctx.configured, logo });
+  try {
+    return shareCardImage({ orgName, month: monthLabel(currentMonthStart()), composition: data.panel.composition, configured: data.ctx.configured, logo });
+  } catch {
+    return new Response("Não foi possível gerar a imagem.", { status: 500 });
+  }
 }

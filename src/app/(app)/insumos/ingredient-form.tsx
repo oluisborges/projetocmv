@@ -21,7 +21,7 @@ export type IngredientDefaults = {
 const decimal = (n: number | undefined) => (n === undefined ? undefined : String(n).replace(".", ","));
 
 const inputClass =
-  "h-12 w-full min-w-0 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
+  "h-12 w-full min-w-0 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 /**
  * Rendimento depois de pronto, perguntado do jeito da cozinha ("1 kg cru vira quantos kg?"), com a ajuda SEMPRE visível:
@@ -82,7 +82,7 @@ export function IngredientForm({
           name="kind"
           value={kind}
           onChange={(e) => setKind(e.target.value)}
-          className="h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         >
           <option value="insumo">Insumo (comida)</option>
           <option value="embalagem">Embalagem (bandeja, filme, etiqueta…)</option>
@@ -128,7 +128,7 @@ export function IngredientForm({
       />
 
       {kind === "insumo" ? (
-        <details open={!defaults.id} className="rounded-xl border border-border bg-surface">
+        <details open={!defaults.id} className="card">
           <summary className="flex min-h-14 cursor-pointer flex-col justify-center px-4 py-2 text-sm">
             <span className="font-semibold text-primary">Perdas e rendimento (avançado)</span>
             {defaults.id ? (

@@ -60,7 +60,7 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
           canWrite={canWrite}
         />
       ) : (
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm">
+        <p className="card p-4 text-sm">
           A ficha ainda está incompleta. <Link href={`/fichas/${recipe.id}`} className="font-semibold text-primary">Termine a ficha</Link> para calcular o preço.
         </p>
       )}

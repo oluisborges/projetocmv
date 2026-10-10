@@ -21,7 +21,7 @@ export function LoginForm() {
           autoCapitalize="none"
           defaultValue={state.email}
           required
-          className="h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </label>
       <label className="flex flex-col gap-1.5 text-sm font-medium">
@@ -31,7 +31,7 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </label>
 

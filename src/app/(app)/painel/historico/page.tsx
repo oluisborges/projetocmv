@@ -48,7 +48,7 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
   const { summary: s } = entry;
   const hasNumbers = s.revenue > 0 || s.purchases > 0;
   return (
-    <details open={open} className="group rounded-xl border border-border bg-surface">
+    <details open={open} className="group card">
       <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-1 flex-col leading-tight">
           <span className="font-bold first-letter:uppercase">{monthLabel(entry.month)}</span>
@@ -166,7 +166,7 @@ function Chart({ entries }: { entries: HistoryEntry[] }) {
   if (shown.length < 2) return null;
   const max = Math.max(...shown.map((e) => e.summary.revenue));
   return (
-    <section aria-label="Faturamento por mês" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+    <section aria-label="Faturamento por mês" className="flex flex-col gap-3 card p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-muted">Faturamento por mês</p>
       <ol className="flex h-40 items-end gap-2">
         {shown.map((e) => {
@@ -200,7 +200,7 @@ export default async function HistoricoPage() {
       <PainelTabs active="historico" />
 
       {!history || history.entries.length === 0 ? (
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm">
+        <p className="card p-4 text-sm">
           O histórico começa a se formar quando você informa o faturamento do mês em{" "}
           <Link href="/custos/mes" className="font-semibold text-primary underline">
             Custos → Resultado do mês

@@ -34,14 +34,14 @@ export default async function RecipesPage() {
       ) : null}
 
       {cards.length === 0 ? (
-        <p className="rounded-xl border border-border bg-surface p-5 text-sm text-muted">
+        <p className="card p-5 text-sm text-muted">
           Nenhuma ficha ainda. Antes, cadastre os preços dos insumos em <Link href="/insumos" className="font-semibold text-primary">Insumos</Link>; depois monte a primeira ficha.
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
           {cards.map(({ recipe, view }) => (
             <li key={recipe.id}>
-              <Link href={`/fichas/${recipe.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4">
+              <Link href={`/fichas/${recipe.id}`} className="flex items-center justify-between gap-3 card p-4">
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{recipe.name}</p>
                   <p className="truncate text-xs text-muted">
@@ -72,7 +72,7 @@ export default async function RecipesPage() {
       )}
 
       {archived.length > 0 ? (
-        <details className="rounded-xl border border-border bg-surface px-4">
+        <details className="card px-4">
           <summary className="flex h-12 cursor-pointer items-center text-sm font-semibold text-muted">Arquivadas ({archived.length})</summary>
           <ul className="divide-y divide-border">
             {archived.map((a) => (

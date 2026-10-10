@@ -62,7 +62,7 @@ export function Field({
         required
         autoComplete={type === "password" ? "new-password" : autoComplete}
         autoCapitalize="none"
-        className="h-11 rounded-xl border border-border bg-surface px-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="h-11 card px-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
     </label>
   );

@@ -21,7 +21,7 @@ export default async function PricingSettingsPage() {
       </section>
 
       {!ctx ? (
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
+        <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
       ) : canWrite ? (
         <>
           <SettingsForm settings={ctx.settings} fixedAuto={ctx.fixedAuto} configured={ctx.configured} />
@@ -34,7 +34,7 @@ export default async function PricingSettingsPage() {
                 sem taxa, deixe em 0%.
               </Hint>
             </h2>
-            <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+            <ul className="divide-y divide-border card px-4">
               {ctx.channels.map((c) => (
                 <ChannelRow key={c.id} channel={c} />
               ))}
@@ -43,7 +43,7 @@ export default async function PricingSettingsPage() {
           </section>
         </>
       ) : (
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm">Só quem tem acesso de gerente ou dono altera os ajustes.</p>
+        <p className="card p-4 text-sm">Só quem tem acesso de gerente ou dono altera os ajustes.</p>
       )}
     </>
   );

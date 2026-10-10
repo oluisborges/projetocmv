@@ -19,7 +19,7 @@ const moneyInput = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, ma
 const pctText = (fraction: number) => String(Number((fraction * 100).toFixed(2))).replace(".", ",");
 
 const smallInput =
-  "tabular h-11 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
+  "tabular h-11 card px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
 
 export function MonthlyNumbersForm({ revenue, units }: { revenue: number | null; units: number | null }) {
   return (

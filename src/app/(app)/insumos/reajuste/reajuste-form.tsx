@@ -38,7 +38,7 @@ export function AdjustForm({ categories, total }: { categories: { name: string; 
           required
           autoComplete="off"
           placeholder="Ex.: 8"
-          className="h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </label>
 
@@ -48,7 +48,7 @@ export function AdjustForm({ categories, total }: { categories: { name: string; 
           name="category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         >
           <option value="">Todos ({total})</option>
           {categories.map((c) => (

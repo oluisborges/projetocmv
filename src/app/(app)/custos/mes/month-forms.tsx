@@ -102,7 +102,7 @@ export function SalesRow({
             disabled={!canWrite}
             placeholder="0"
             aria-invalid={state.kind === "error"}
-            className="tabular h-11 w-24 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            className="tabular h-11 w-24 card px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           />
           <span className="text-sm text-muted">un</span>
         </label>

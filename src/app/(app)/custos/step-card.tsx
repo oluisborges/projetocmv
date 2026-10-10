@@ -6,7 +6,7 @@ import { useState } from "react";
 export function StepCard({ index, title, status, done, startOpen, children }: { index: number; title: string; status: string; done: boolean; startOpen: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(startOpen);
   return (
-    <div className="rounded-xl border border-border bg-surface">
+    <div className="card">
       <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left">
         <span aria-hidden className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${done ? "bg-success text-primary-foreground" : "bg-border text-muted"}`}>
           {done ? "✓" : index}

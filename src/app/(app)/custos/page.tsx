@@ -20,7 +20,7 @@ export default async function CostsPage() {
     return (
       <>
         <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
+        <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
       </>
     );
   }
@@ -83,7 +83,7 @@ export default async function CostsPage() {
       body: (
         <>
           {fixedCosts.length > 0 ? (
-            <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+            <ul className="divide-y divide-border card px-4">
               {fixedCosts.map((c) => (
                 <FixedCostRow key={c.id} cost={c} canWrite={canWrite} />
               ))}
@@ -101,7 +101,7 @@ export default async function CostsPage() {
       body: (
         <>
           {staff.length > 0 ? (
-            <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+            <ul className="divide-y divide-border card px-4">
               {staff.map((m) => (
                 <StaffRowView key={m.id} person={m} canWrite={canWrite} />
               ))}

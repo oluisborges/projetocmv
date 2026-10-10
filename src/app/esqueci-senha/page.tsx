@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Esqueceu a senha?</h1>
       </header>
 
-      <section className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-5">
+      <section className="flex flex-col gap-4 card p-5">
         <p className="leading-relaxed">
           Por segurança, a senha é trocada pela equipe da Shogun. <strong>Mande uma mensagem no grupo de WhatsApp do Grupo Shogun</strong> pedindo uma nova senha.
         </p>

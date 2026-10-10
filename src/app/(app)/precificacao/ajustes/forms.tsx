@@ -43,7 +43,7 @@ export function SettingsForm({
         <select
           value={regime}
           onChange={(e) => setRegime(e.target.value)}
-          className="h-12 rounded-xl border border-border bg-surface px-3 text-base"
+          className="h-12 card px-3 text-base"
         >
           <option value="" disabled>
             Escolha uma opção
@@ -67,7 +67,7 @@ export function SettingsForm({
         hint={<Hint>Quanto de cada R$ 100 vendidos vai embora em imposto. É uma estimativa para o preço: seu contador sabe o número exato.</Hint>}
       />
       {fixedAuto ? (
-        <div className="flex flex-col gap-1 rounded-xl border border-border bg-surface p-4 text-sm">
+        <div className="flex flex-col gap-1 card p-4 text-sm">
           <p className="font-medium">Despesas fixas: {pct(settings.fixedExpensePct)}% do que você vende</p>
           <p className="text-muted">Calculado sozinho a partir das suas contas e da sua equipe.</p>
           <Link href="/custos" className="inline-flex min-h-11 items-center font-semibold text-primary">
@@ -75,7 +75,7 @@ export function SettingsForm({
           </Link>
         </div>
       ) : (
-        <div className="flex flex-col gap-1 rounded-xl border border-border bg-surface p-4 text-sm">
+        <div className="flex flex-col gap-1 card p-4 text-sm">
           <p className="font-medium">Despesas fixas (aluguel, luz, equipe…)</p>
           <p className="text-muted">Conte quanto paga por mês e quanto vende em Custos: o app calcula esse percentual para você.</p>
           <Link href="/custos" className="inline-flex min-h-11 items-center font-semibold text-primary">
@@ -92,7 +92,7 @@ export function SettingsForm({
         hint={<Hint>De cada R$ 100 vendidos, quanto no mínimo você quer que sobre limpo no bolso. Abaixo disso o app avisa em vermelho que o produto está dando pouco lucro.</Hint>}
       />
       {!fixedAuto ? (
-        <details className="rounded-xl border border-border bg-surface">
+        <details className="card">
           <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Avançado</summary>
           <div className="flex flex-col gap-4 border-t border-border p-4">
             <TextField

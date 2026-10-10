@@ -41,7 +41,7 @@ export type EditorRecipe = {
 const fmt = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(Number(n.toFixed(4))).replace(".", ","));
 
 const inputClass =
-  "h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
+  "h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
 
 const baseOf = (ing: EditorIngredient) => baseUnitOf(ing.purchase_unit as PurchaseUnit);
 
@@ -60,7 +60,7 @@ function UnitSelect({ value, options, onChange, disabled, label }: { value: stri
       onChange={(e) => onChange(e.target.value as PurchaseUnit)}
       disabled={disabled || options.length < 2}
       aria-label={label}
-      className="h-11 rounded-xl border border-border bg-surface px-2 text-base outline-none focus:border-primary disabled:opacity-60"
+      className="h-11 card px-2 text-base outline-none focus:border-primary disabled:opacity-60"
     >
       {options.map((u) => (
         <option key={u} value={u}>
@@ -134,7 +134,7 @@ function ItemRow({
             disabled={!canWrite}
             aria-label={`Quantidade de ${ingredient.name}`}
             aria-invalid={Boolean(error)}
-            className="tabular h-11 w-20 rounded-xl border border-border bg-surface px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            className="tabular h-11 w-20 card px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           />
           <UnitSelect value={item.unit} options={lockUnit ? [baseOf(ingredient)] : unitsFor(baseOf(ingredient))} onChange={changeUnit} disabled={!canWrite} label={`Unidade de ${ingredient.name}`} />
         </div>
@@ -230,7 +230,7 @@ function AddItem({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3">
+    <div className="flex flex-col gap-2 card p-3">
       <label className="flex flex-col gap-1.5 text-sm font-medium">
         {field}
         <span className="relative">
@@ -360,7 +360,7 @@ export function RecipeEditor({
 
   const renderItems = (scope: "batch" | "portion") =>
     itemsOf(scope).length > 0 ? (
-      <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+      <ul className="divide-y divide-border card px-4">
         {itemsOf(scope).map((item) => (
           <ItemRow
             key={item.id}
@@ -382,7 +382,7 @@ export function RecipeEditor({
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-live="polite" className="sticky top-14 z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <section aria-live="polite" className="sticky top-16 z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         {view.ok ? (
           <div className="flex flex-col gap-0.5">
             <p className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted">
@@ -452,7 +452,7 @@ export function RecipeEditor({
       </section>
 
       {isServing ? null : (
-        <details open className="rounded-xl border border-border bg-surface">
+        <details open className="card">
           <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Rendimento do lote</summary>
           <div className="flex flex-col gap-4 border-t border-border p-4">
             <label className="flex flex-col gap-1.5 text-sm font-medium">

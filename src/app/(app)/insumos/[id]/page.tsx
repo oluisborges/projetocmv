@@ -41,7 +41,7 @@ export default async function IngredientPage(props: PageProps<"/insumos/[id]">) 
       {canWrite ? (
         <IngredientForm action={updateIngredient} submitLabel="Salvar alterações" defaults={ing} categories={categories} />
       ) : (
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm">
+        <p className="card p-4 text-sm">
           {formatBRL(ing.purchase_price)} por {formatPurchaseSize(ing.purchase_qty, ing.purchase_unit)}
         </p>
       )}
@@ -49,7 +49,7 @@ export default async function IngredientPage(props: PageProps<"/insumos/[id]">) 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Histórico de preço</h2>
         {history && history.length > 0 ? (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+          <ul className="divide-y divide-border card px-4">
             {history.map((h) => (
               <li key={h.id} className="flex items-baseline justify-between py-3 text-sm">
                 <span className="text-muted">{date.format(new Date(h.changed_at))}</span>
@@ -71,7 +71,7 @@ export default async function IngredientPage(props: PageProps<"/insumos/[id]">) 
             title="Arquivar este insumo?"
             confirmLabel="Arquivar"
             message="Ele some da lista, mas as fichas que o usam continuam calculando."
-            className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-danger"
+            className="h-11 w-full card text-sm font-semibold text-danger"
           >
             Arquivar insumo
           </ConfirmButton>

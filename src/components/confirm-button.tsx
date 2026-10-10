@@ -44,7 +44,7 @@ export function ConfirmButton({
             <p className="text-sm leading-relaxed text-muted">{message}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => dialog.current?.close()} className="h-12 rounded-xl border border-border bg-surface font-semibold">
+            <button type="button" onClick={() => dialog.current?.close()} className="h-12 card font-semibold">
               Cancelar
             </button>
             <button

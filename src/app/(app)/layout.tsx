@@ -24,22 +24,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       ) : null}
-      <header className={`sticky z-10 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur ${active?.viewingAs ? "top-[3.75rem]" : "top-0"}`}>
-        <Link href="/" className="flex min-w-0 items-center gap-2.5">
-          <Image src="/brand/helmet.png" alt="Grupo Shogun" width={149} height={160} priority className="h-9 w-auto shrink-0" />
+      <header className={`sticky z-10 flex h-16 items-center justify-between gap-3 bg-primary px-4 text-primary-foreground shadow-md ${active?.viewingAs ? "top-[3.75rem]" : "top-0"}`}>
+        <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-accent" />
+        <Link href="/" className="flex min-w-0 items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+            <Image src="/brand/helmet.png" alt="Grupo Shogun" width={149} height={160} priority className="h-8 w-auto" />
+          </span>
           <span className="flex min-w-0 flex-col leading-tight">
             <span className="truncate font-[family-name:var(--font-heading)] text-base font-extrabold">{orgName ?? "Shogun Precificação"}</span>
-            {orgName ? <span className="text-xs text-muted">Shogun Precificação</span> : null}
+            {orgName ? <span className="text-xs font-medium text-accent">Shogun Precificação</span> : null}
           </span>
         </Link>
         <nav className="flex items-center gap-2">
           {session.isPlatformAdmin ? (
-            <Link href="/admin" className="rounded-lg px-3 py-2 text-sm font-semibold text-primary">
+            <Link href="/admin" className="rounded-lg px-3 py-2 text-sm font-semibold text-accent">
               Admin
             </Link>
           ) : null}
           <form action={signOut}>
-            <button type="submit" className="h-10 rounded-lg border border-border bg-surface px-3 text-sm font-medium">
+            <button type="submit" className="h-10 rounded-lg border border-white/25 bg-white/10 px-3 text-sm font-medium text-white">
               Sair
             </button>
           </form>

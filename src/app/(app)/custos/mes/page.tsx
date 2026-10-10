@@ -27,7 +27,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     return (
       <>
         <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
+        <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
       </>
     );
   }
@@ -116,7 +116,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
             Ainda não há fichas. Monte em <Link href="/fichas" className="font-semibold text-primary">Fichas</Link>.
           </p>
         ) : (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+          <ul className="divide-y divide-border card px-4">
             {dishes.map((d) => (
               <SalesRow key={`${d.id}-${month}`} month={month} recipe={{ id: d.id, name: d.name, cost: d.cost }} initialQty={d.qty} canWrite={canWrite} />
             ))}
@@ -126,7 +126,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       {/* resultado depois dos dois passos de preenchimento */}
       {hasData ? (
-        <section aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+        <section aria-live="polite" className="flex flex-col gap-3 card p-4">
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <dt className="text-muted">
@@ -197,7 +197,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
           ) : null}
         </section>
       ) : (
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
+        <p className="card p-4 text-sm text-muted">
           Informe o faturamento, as compras e quantas unidades vendeu de cada produto. O app mostra se o que você gastou bate com o que deveria.
         </p>
       )}

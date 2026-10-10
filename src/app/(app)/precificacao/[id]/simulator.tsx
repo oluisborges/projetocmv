@@ -99,7 +99,7 @@ export function Simulator({
         </p>
       ) : null}
 
-      <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
+      <section className="flex flex-col gap-3 card p-4">
         <label className="flex flex-col gap-1.5 text-sm font-medium">
           Preço de venda
           <div className="flex items-center gap-2">
@@ -148,7 +148,7 @@ export function Simulator({
             Para onde vai o dinheiro
             <Hint>De cada venda, quanto cobre o custo, quanto vai para impostos e taxas, quanto paga as despesas fixas e quanto sobra de lucro.</Hint>
           </h2>
-          <ul className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4">
+          <ul className="flex flex-col gap-2 card p-4">
             {parts.map((p) => (
               <li key={p.key} className="flex flex-col gap-1">
                 <div className="flex items-baseline justify-between gap-3 text-sm">
@@ -169,7 +169,7 @@ export function Simulator({
       {channels.length > 1 ? (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Em cada canal de venda</h2>
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+          <ul className="divide-y divide-border card px-4">
             {channels.map((c) => {
               const a = analyzePrice({ cost, settings, feePct: c.fee_pct, price });
               return (

@@ -4,13 +4,13 @@ import { ShareButton } from "@/components/share-button";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import type { Dashboard } from "@/lib/dashboard-data";
 
-const card = "flex flex-col gap-1 rounded-xl border border-border bg-surface p-4";
+const card = "flex flex-col gap-1 card p-4";
 
 type Part = { key: string; label: string; pct: number; swatch: string; hint: string };
 
 function Tile({ label, value, hint, help, tone = "default" }: { label: string; value: string; hint?: string; help: React.ReactNode; tone?: "default" | "bad" | "good" }) {
   return (
-    <div className={card}>
+    <div className={`${card} border-l-4 ${tone === "bad" ? "border-l-danger" : tone === "good" ? "border-l-success" : "border-l-accent"}`}>
       <p className="flex items-center text-xs font-semibold uppercase tracking-wider text-muted">
         {label}
         <Hint label={`O que é ${label}?`}>{help}</Hint>
@@ -28,7 +28,7 @@ export function PainelView({ data }: { data: Dashboard }) {
 
   if (!panel) {
     return (
-      <p className="rounded-xl border border-border bg-surface p-4 text-sm">
+      <p className="card p-4 text-sm">
         O painel aparece quando você tiver pelo menos um produto com custo e preço de venda. <Link href="/precificacao" className="font-semibold text-primary underline">Definir preços</Link>
       </p>
     );
@@ -88,7 +88,7 @@ export function PainelView({ data }: { data: Dashboard }) {
             <span key={p.key} className={`${p.swatch} h-full`} style={{ width: `${(Math.max(p.pct, 0) / barTotal) * 100}%` }} />
           ))}
         </div>
-        <ul className="flex flex-col divide-y divide-border rounded-xl border border-border bg-surface px-4">
+        <ul className="flex flex-col divide-y divide-border card px-4">
           {parts.map((p) => (
             <li key={p.key} className="flex items-center gap-3 py-3">
               <span aria-hidden className={`size-3.5 shrink-0 rounded-full ${p.swatch}`} />
@@ -143,7 +143,7 @@ export function PainelView({ data }: { data: Dashboard }) {
           Gasto com insumos de cada produto
           <Hint label="Como ler?">Quanto de cada R$ 100 do preço vai para ingredientes e embalagem. Barras maiores pedem atenção.</Hint>
         </h2>
-        <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+        <ul className="divide-y divide-border card px-4">
           {panel.cmvRanking.slice(0, 8).map((d, i) => (
             <li key={d.id}>
               <Link href={`/precificacao/${d.id}`} className="flex min-h-14 flex-col justify-center gap-1.5 py-3">

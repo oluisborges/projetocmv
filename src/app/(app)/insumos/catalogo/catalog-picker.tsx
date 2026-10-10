@@ -91,7 +91,7 @@ export function CatalogPicker({ items, recipes }: { items: CatalogItem[]; recipe
         const available = list.filter((i) => !i.imported).map((i) => i.id);
         const allOn = available.length > 0 && available.every((id) => selected.has(id));
         return (
-          <fieldset key={group} className="flex flex-col rounded-xl border border-border bg-surface px-4">
+          <fieldset key={group} className="flex flex-col card px-4">
             <legend className="sr-only">{group}</legend>
             <div className="flex items-center justify-between border-b border-border py-3">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">{group}</h3>

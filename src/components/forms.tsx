@@ -65,7 +65,7 @@ export function ActionForm({
 }
 
 const inputClass =
-  "h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
+  "h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 export function TextField({
   label,

@@ -68,7 +68,7 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
       ) : null}
 
       {items.length === 0 ? (
-        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5">
+        <div className="flex flex-col gap-3 card p-5">
           <h2 className="text-lg font-bold">Comece pelo catálogo da Shogun</h2>
           <p className="text-sm text-muted">
             Escolha os insumos e embalagens que você usa e só preencha o preço de cada um. Dá muito menos trabalho do que cadastrar do zero.

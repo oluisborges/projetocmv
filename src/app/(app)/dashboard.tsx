@@ -3,7 +3,7 @@ import { MarginBadge } from "@/components/margin-badge";
 import { formatBRL, formatPct } from "@/lib/format";
 import type { Dashboard } from "@/lib/dashboard-data";
 
-const card = "flex flex-col gap-1 rounded-xl border border-border bg-surface p-4";
+const card = "flex flex-col gap-1 card p-4";
 
 function Kpi({ label, value, hint, tone = "default", href }: { label: string; value: string; hint?: string; tone?: "default" | "bad"; href?: string }) {
   const body = (
@@ -158,7 +158,7 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
       {variant === "full" && worst.length > 0 ? (
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Das que dão menos lucro para as que dão mais</h2>
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+          <ul className="divide-y divide-border card px-4">
             {worst.map((d) => (
               <li key={d.id}>
                 <Link href={`/precificacao/${d.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3">

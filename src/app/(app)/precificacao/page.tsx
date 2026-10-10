@@ -15,7 +15,7 @@ export default async function PricingPage() {
     return (
       <>
         <h1 className="text-2xl font-extrabold tracking-tight">Preços</h1>
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
+        <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
       </>
     );
   }
@@ -44,13 +44,13 @@ export default async function PricingPage() {
         <p className="text-muted">Quanto cobrar em cada produto e quanto sobra de verdade.</p>
       </section>
 
-      <Link href="/precificacao/ajustes" className="flex h-11 items-center justify-between rounded-xl border border-border bg-surface px-4 text-sm font-semibold">
+      <Link href="/precificacao/ajustes" className="flex h-11 items-center justify-between card px-4 text-sm font-semibold">
         <span>Impostos, taxas e meta de lucro</span>
         <span className="text-primary">Ajustar →</span>
       </Link>
 
       {rows.length === 0 ? (
-        <p className="rounded-xl border border-border bg-surface p-5 text-sm text-muted">
+        <p className="card p-5 text-sm text-muted">
           Ainda não há fichas técnicas. Monte a primeira em <Link href="/fichas" className="font-semibold text-primary">Fichas</Link>: o preço sai do custo dela.
         </p>
       ) : (

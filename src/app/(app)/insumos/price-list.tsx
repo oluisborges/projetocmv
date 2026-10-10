@@ -137,7 +137,7 @@ export function PriceList({ items, canWrite }: { items: IngredientRow[]; canWrit
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Buscar insumo…"
         aria-label="Buscar insumo"
-        className="h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
@@ -155,9 +155,9 @@ export function PriceList({ items, canWrite }: { items: IngredientRow[]; canWrit
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">Nenhum insumo encontrado.</p>
+        <p className="card p-4 text-sm text-muted">Nenhum insumo encontrado.</p>
       ) : (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+        <ul className="divide-y divide-border card px-4">
           {visible.map((item) => (
             <PriceRow key={item.id} item={item} canWrite={canWrite} />
           ))}
