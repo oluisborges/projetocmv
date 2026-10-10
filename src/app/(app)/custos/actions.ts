@@ -12,7 +12,7 @@ export type Result = { ok: true } | { ok: false; error: string };
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 const NO_UNIT = "Sua marmitaria ainda não tem unidade cadastrada.";
-const AREAS = ["cozinha", "embalagem", "entrega"] as const;
+const AREAS = ["cozinha", "marketing", "limpeza", "comercial", "outros"] as const;
 
 /** Valor em reais (> 0) ou nulo se vazio. Erro se preenchido e inválido. */
 function money(raw: unknown, label: string, { optional = false, max = 10_000_000 } = {}): { ok: true; value: number | null } | { ok: false; error: string } {

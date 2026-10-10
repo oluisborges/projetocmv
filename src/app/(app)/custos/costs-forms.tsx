@@ -117,7 +117,7 @@ export function AddFixedCostForm() {
   );
 }
 
-const AREA_LABEL: Record<string, string> = { cozinha: "Cozinha", embalagem: "Embalagem", entrega: "Entrega" };
+const AREA_LABEL: Record<string, string> = { cozinha: "Cozinha", marketing: "Marketing", limpeza: "Limpeza", comercial: "Comercial", outros: "Outros" };
 
 export function StaffRowView({
   person,
@@ -195,8 +195,10 @@ export function AddStaffForm() {
         defaultValue="cozinha"
         options={[
           { value: "cozinha", label: "Cozinha" },
-          { value: "embalagem", label: "Embalagem" },
-          { value: "entrega", label: "Entrega" },
+          { value: "marketing", label: "Marketing" },
+          { value: "limpeza", label: "Limpeza" },
+          { value: "comercial", label: "Comercial" },
+          { value: "outros", label: "Outros" },
         ]}
       />
       <div className="grid grid-cols-2 gap-3">

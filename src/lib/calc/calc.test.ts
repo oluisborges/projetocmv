@@ -168,8 +168,8 @@ describe("CMO", () => {
       [
         { area: "cozinha", monthlySalary: 2200, chargesPct: 0.3 },
         { area: "cozinha", monthlySalary: 1800, chargesPct: 0.3 },
-        { area: "embalagem", monthlySalary: 1700, chargesPct: 0.3 },
-        { area: "entrega", monthlySalary: 1500, chargesPct: 0 },
+        { area: "limpeza", monthlySalary: 1700, chargesPct: 0.3 },
+        { area: "comercial", monthlySalary: 1500, chargesPct: 0 },
       ],
       60000,
     );

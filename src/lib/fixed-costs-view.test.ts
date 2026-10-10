@@ -5,7 +5,7 @@ const base = {
   fixedCosts: [1500, 800, 200], // aluguel, energia dos freezers, sistema
   staff: [
     { area: "cozinha" as const, monthlySalary: 2200, chargesPct: 0.3 }, // 2.860
-    { area: "entrega" as const, monthlySalary: 1500, chargesPct: 0 }, // 1.500
+    { area: "comercial" as const, monthlySalary: 1500, chargesPct: 0 }, // 1.500
   ],
   monthlyRevenue: 60000,
   monthlyUnits: 1400,
