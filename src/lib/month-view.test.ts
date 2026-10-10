@@ -3,7 +3,7 @@ import { currentMonthStart, lastMonths, monthLabel, monthStart, summarizeMonth }
 
 const staff = [
   { area: "cozinha" as const, monthlySalary: 2200, chargesPct: 0.3 }, // 2.860
-  { area: "comercial" as const, monthlySalary: 1500, chargesPct: 0 }, // 1.500
+  { area: "entrega" as const, monthlySalary: 1500, chargesPct: 0 }, // 1.500
 ];
 
 describe("summarizeMonth", () => {

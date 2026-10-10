@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
 export type FixedCostRow = { id: string; name: string; monthly_amount: number };
-export type StaffRow = { id: string; name: string; area: "cozinha" | "marketing" | "limpeza" | "comercial" | "outros"; monthly_salary: number; charges_pct: number };
+export type StaffRow = { id: string; name: string; area: "cozinha" | "entrega" | "marketing" | "limpeza" | "comercial" | "outros"; monthly_salary: number; charges_pct: number };
 
 export async function loadFixedCosts(unitId: string): Promise<FixedCostRow[]> {
   const supabase = await createClient();
