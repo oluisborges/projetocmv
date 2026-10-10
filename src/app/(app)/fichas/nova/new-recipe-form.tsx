@@ -57,7 +57,7 @@ export function NewRecipeForm() {
             inputMode="decimal"
             required={false}
             placeholder="Ex.: 25"
-            hint={<Hint>Quanto a comida perde de peso ao cozinhar (água e gordura). Frango grelhado costuma perder uns 25%. Se não souber, deixe em branco.</Hint>}
+            hint={<Hint>Quanto a comida perde de peso ao cozinhar (água e gordura). Frango grelhado costuma perder cerca de 25%. Se não souber, deixe em branco.</Hint>}
           />
         </>
       ) : null}

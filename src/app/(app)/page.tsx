@@ -92,7 +92,7 @@ export default async function HomePage() {
             <h2 className="font-semibold">
               {doneCount === 0 ? "Vamos começar" : `Você já fez ${doneCount} de ${steps.length}`}
             </h2>
-            <span className="text-muted">faltam uns {remainingMinutes} min</span>
+            <span className="text-muted">faltam cerca de {remainingMinutes} min</span>
           </div>
           <ol className="flex gap-1.5" aria-label={`${doneCount} de ${steps.length} passos feitos`}>
             {steps.map((step) => (

@@ -129,7 +129,7 @@ export default async function CostsPage() {
           <>
             <p className="tabular text-3xl font-extrabold tracking-tight">{formatNumber(summary.breakEven.units, 0)} unidades por mês</p>
             <p className="text-sm opacity-90">
-              Uns {formatNumber(summary.breakEven.perDay, 0)} por dia · {formatBRL(summary.breakEven.revenue)} de faturamento
+              Cerca de {formatNumber(summary.breakEven.perDay, 0)} por dia · {formatBRL(summary.breakEven.revenue)} de faturamento
             </p>
           </>
         ) : summary.total > 0 && dishes.length > 0 ? (
