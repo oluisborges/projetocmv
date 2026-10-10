@@ -66,9 +66,9 @@ function readIngredientForm(formData: FormData): { ok: true; value: IngredientIn
   const qty = num(formData.get("purchase_qty"));
   const price = num(formData.get("purchase_price"), { allowZero: true });
   const fc = kind === "embalagem" ? 1 : num(formData.get("correction_factor"));
-  // Rendimento digitado em %, guardado como fator (250% -> 2,5). Vazio = 100%. Embalagem não rende.
-  const yieldText = String(formData.get("cooking_yield_pct") ?? "").trim();
-  const yieldPct = kind === "embalagem" || yieldText === "" ? 100 : Number(parseDecimal(yieldText) ?? NaN);
+  // Rendimento depois de pronto: "1 kg cru vira quantos kg?" (arroz 2,5; frango 0,75). Vazio = 1. Embalagem não rende.
+  const yieldText = String(formData.get("cooking_yield") ?? "").trim();
+  const cookingYield = kind === "embalagem" || yieldText === "" ? 1 : Number(parseDecimal(yieldText) ?? NaN);
 
   if (!name || name.length > 80) return { ok: false, error: "Dê um nome ao insumo (até 80 letras)." };
   if (!(UNITS as readonly string[]).includes(unit)) return { ok: false, error: "Escolha a unidade de compra." };
@@ -77,8 +77,8 @@ function readIngredientForm(formData: FormData): { ok: true; value: IngredientIn
   if (price === null) return { ok: false, error: "Informe o preço pago, como 14,50." };
   if (fc === null || fc < 1 || fc > 10) return { ok: false, error: "O fator de correção precisa ser 1 ou mais (ex.: 1,15)." };
   if (category && category.length > 40) return { ok: false, error: "Categoria muito longa." };
-  if (!Number.isFinite(yieldPct) || yieldPct < 10 || yieldPct > 1000) {
-    return { ok: false, error: "Rendimento depois de pronto: digite entre 10 e 1000 (%). Ex.: 250 para arroz, 75 para frango." };
+  if (!Number.isFinite(cookingYield) || cookingYield < 0.1 || cookingYield > 10) {
+    return { ok: false, error: "Depois de pronto, 1 kg vira quantos kg? Digite entre 0,1 e 10. Ex.: 2,5 para arroz, 0,75 para frango, 1 se não muda." };
   }
 
   return {
@@ -91,7 +91,7 @@ function readIngredientForm(formData: FormData): { ok: true; value: IngredientIn
       purchase_qty: qty,
       purchase_price: price,
       correction_factor: fc,
-      cooking_yield: Number((yieldPct / 100).toFixed(3)),
+      cooking_yield: Number(cookingYield.toFixed(3)),
     },
   };
 }
@@ -198,5 +198,5 @@ export async function importFromCatalog(_prev: FormState, formData: FormData): P
   if (error) return fail("Não foi possível importar.");
 
   revalidatePath("/insumos");
-  redirect("/insumos?importado=1");
+  redirect(recipeIds.data.length > 0 ? `/insumos?importado=fichas&n=${recipeIds.data.length}` : "/insumos?importado=1");
 }

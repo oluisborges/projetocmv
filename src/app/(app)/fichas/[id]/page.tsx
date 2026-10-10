@@ -51,6 +51,7 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
           unit_cost: i.unit_cost,
           correction_factor: i.correction_factor,
           cooking_yield: i.cooking_yield,
+          category: i.category,
           archived: Boolean(i.archived_at),
         }))}
         canWrite={canWrite}

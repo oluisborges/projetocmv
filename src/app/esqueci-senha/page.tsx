@@ -22,7 +22,11 @@ export default function ForgotPasswordPage() {
         <p className="leading-relaxed">
           Por segurança, a senha é trocada pela equipe da Shogun. <strong>Mande uma mensagem no grupo de WhatsApp do Grupo Shogun</strong> pedindo uma nova senha.
         </p>
-        <p className="text-sm text-muted">Informe no pedido o e-mail que você usa para entrar. Você recebe a senha nova no próprio grupo e pode usar na hora.</p>
+        <p className="text-sm text-muted">
+          Informe no pedido o e-mail que você usa para entrar. A equipe confirma que é você e passa uma <strong>senha provisória</strong>. No primeiro acesso, o app
+          pede para você criar a sua própria senha.
+        </p>
+        <p className="text-sm text-muted">Se no grupo houver pessoas de fora da sua marmitaria, peça que a senha provisória venha em mensagem privada.</p>
 
         {WHATSAPP_URL ? (
           <a

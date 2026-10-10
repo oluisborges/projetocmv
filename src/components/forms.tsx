@@ -76,6 +76,8 @@ export function TextField({
   placeholder,
   hint,
   list,
+  type = "text",
+  autoComplete = "off",
 }: {
   label: string;
   name: string;
@@ -85,6 +87,8 @@ export function TextField({
   placeholder?: string;
   hint?: React.ReactNode;
   list?: string;
+  type?: "text" | "password";
+  autoComplete?: string;
 }) {
   return (
     <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
@@ -99,7 +103,8 @@ export function TextField({
         required={required}
         placeholder={placeholder}
         list={list}
-        autoComplete="off"
+        type={type}
+        autoComplete={autoComplete}
         className={`${inputClass} w-full min-w-0`}
       />
     </label>

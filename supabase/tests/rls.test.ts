@@ -580,7 +580,8 @@ describe("rendimento depois de pronto e fichas-modelo", () => {
     expect(Number(byName.get("Arroz branco")!.cooking_yield)).toBe(2.5);
     expect(byName.get("Bandeja 750 ml")!.scope).toBe("portion");
     expect(byName.get("Etiqueta")!.scope).toBe("portion");
-    expect(items.length).toBe(8); // 4 ingredientes + bandeja, filme, etiqueta, lacre
+    expect(items.length).toBe(11); // 4 ingredientes + óleo, sal, alho + bandeja, filme, etiqueta, lacre
+    expect(byName.has("Óleo de soja") && byName.has("Sal") && byName.has("Alho")).toBe(true);
   });
 
   it("rendimento precisa estar entre 0 e 10", async () => {
@@ -590,29 +591,60 @@ describe("rendimento depois de pronto e fichas-modelo", () => {
 });
 
 describe("cadastro público bloqueado no banco", () => {
-  const asAuthAdmin = async (fn: () => Promise<unknown>) => {
+  /** Imita o GoTrue: INSERT sem a marca, UPDATE do app_metadata, COMMIT. Tudo na mesma transação e como supabase_auth_admin. */
+  const gotrueCreate = async (email: string, opts: { marker: boolean; userMeta?: string }) => {
     await db.exec("create role supabase_auth_admin nologin").catch(() => {});
     await db.exec("grant all on auth.users to supabase_auth_admin; grant usage on schema auth to supabase_auth_admin");
-    await db.exec("set role supabase_auth_admin");
+    await db.exec("begin");
     try {
-      return await fn();
+      await db.exec("set role supabase_auth_admin");
+      await db.query(`insert into auth.users (email, raw_app_meta_data, raw_user_meta_data) values ($1, '{"provider":"email"}', $2::jsonb)`, [email, opts.userMeta ?? "{}"]);
+      if (opts.marker) {
+        await db.query(`update auth.users set raw_app_meta_data = raw_app_meta_data || '{"admin_created": true}'::jsonb where email = $1`, [email]);
+      }
+      await db.exec("commit"); // o gatilho adiado roda aqui
+    } catch (e) {
+      await db.exec("rollback").catch(() => {});
+      throw e;
     } finally {
-      await db.exec("reset role");
+      await db.exec("reset role").catch(() => {});
     }
   };
 
-  it("conta criada pelo GoTrue sem a marca do painel é recusada (cadastro público)", async () => {
-    await expect(asAuthAdmin(() => q(`insert into auth.users (email) values ('curioso@exemplo.com')`))).rejects.toThrow(/cadastro público desativado/);
-    // o cliente consegue mandar user_metadata, mas não app_metadata: tentar forjar no metadata do usuário não adianta
-    await expect(
-      asAuthAdmin(() => q(`insert into auth.users (email, raw_user_meta_data) values ('esperto@exemplo.com', '{"admin_created": true}')`)),
-    ).rejects.toThrow(/cadastro público desativado/);
+  it("conta criada pelo GoTrue sem a marca (cadastro público) é recusada no commit", async () => {
+    await expect(gotrueCreate("curioso@exemplo.com", { marker: false })).rejects.toThrow(/cadastro público desativado/);
+    // forjar a marca no user_metadata (que o cliente controla) não adianta
+    await expect(gotrueCreate("esperto@exemplo.com", { marker: false, userMeta: '{"admin_created": true}' })).rejects.toThrow(/cadastro público desativado/);
   });
 
-  it("conta criada pelo painel (app_metadata.admin_created) e inserção direta no SQL passam", async () => {
-    await asAuthAdmin(() => db.query(`insert into auth.users (email, raw_app_meta_data) values ('cliente@exemplo.com', '{"admin_created": true}')`));
-    await q(`insert into auth.users (email) values ('direto@exemplo.com')`); // papel postgres (SQL editor)
+  it("conta criada pelo painel (INSERT e depois UPDATE do app_metadata, na mesma transação) passa", async () => {
+    await gotrueCreate("cliente@exemplo.com", { marker: true });
+    const [row] = await q(`select raw_app_meta_data ->> 'admin_created' as m from auth.users where email = 'cliente@exemplo.com'`);
+    expect(row.m).toBe("true");
+  });
+
+  it("inserção direta no SQL (papel postgres) continua permitida", async () => {
+    await q(`insert into auth.users (email) values ('direto@exemplo.com')`);
     const rows = await q(`select email from auth.users where email in ('cliente@exemplo.com','direto@exemplo.com','curioso@exemplo.com','esperto@exemplo.com') order by email`);
     expect(rows.map((r) => r.email)).toEqual(["cliente@exemplo.com", "direto@exemplo.com"]);
+  });
+});
+
+describe("correções da revisão de produto (Fase 8)", () => {
+  it("feijoada usa feijão preto e a parmegiana tem empanado", async () => {
+    const feij = await q(`select ti.name from public.template_recipe_items tri join public.template_ingredients ti on ti.id = tri.template_ingredient_id join public.template_recipes tr on tr.id = tri.template_recipe_id where tr.name = 'Feijoada completa'`);
+    const names = feij.map((r) => r.name);
+    expect(names).toContain("Feijão preto");
+    expect(names).not.toContain("Feijão carioca");
+    const parm = await q(`select ti.name from public.template_recipe_items tri join public.template_ingredients ti on ti.id = tri.template_ingredient_id join public.template_recipes tr on tr.id = tri.template_recipe_id where tr.name = 'Frango à parmegiana com arroz'`);
+    expect(parm.map((r) => r.name)).toEqual(expect.arrayContaining(["Farinha de rosca", "Ovo", "Óleo de soja", "Sal", "Alho"]));
+  });
+
+  it("trocar a senha no primeiro acesso: só o servidor escreve a marca", async () => {
+    const [row] = await q(`select must_change_password from public.profiles where id = $1`, [ids.ownerA]);
+    expect(row.must_change_password).toBe(false);
+    await expect(
+      as(ids.ownerA, "dono-a@marmita.com", () => q(`update public.profiles set must_change_password = false where id = $1`, [ids.ownerA])),
+    ).rejects.toThrow(/permission denied/i);
   });
 });

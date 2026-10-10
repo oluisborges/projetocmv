@@ -25,9 +25,9 @@ export function BottomNav() {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex h-14 items-center justify-center text-sm font-semibold ${active ? "text-primary" : "text-muted"}`}
+                className={`relative flex h-14 items-center justify-center text-sm ${active ? "bg-primary/10 font-extrabold text-primary" : "font-semibold text-muted"}`}
               >
-                {active ? <span aria-hidden className="absolute inset-x-5 top-0 h-1 rounded-b-full bg-accent" /> : null}
+                {active ? <span aria-hidden className="absolute inset-x-5 top-0 h-1 rounded-b-full bg-primary" /> : null}
                 {item.label}
               </Link>
             </li>

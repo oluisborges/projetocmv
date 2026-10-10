@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { D, baseUnitOf, fromBaseQty, grossQty, toBaseQty, unitsFor, type PurchaseUnit } from "@/lib/calc";
@@ -17,8 +18,12 @@ export type EditorIngredient = {
   correction_factor: number;
   /** Peso pronto ÷ peso cru. 1 = não muda. Só vale em ficha por marmita. */
   cooking_yield: number;
+  category: string | null;
   archived: boolean;
 };
+
+/** Categorias que quase sempre mudam de peso ao cozinhar: se o rendimento ficou em 1, provavelmente foi esquecido. */
+const CHANGES_WEIGHT = /prote|gr[ãa]o|massa/i;
 /** `netQty` fica SEMPRE na unidade-base (g/ml/un); `unit` é só como o dono vê e digita. */
 export type EditorItem = { id: string; ingredientId: string; netQty: number; unit: PurchaseUnit; scope: "batch" | "portion" };
 export type EditorRecipe = {
@@ -117,7 +122,7 @@ function ItemRow({
           <p className="text-xs text-muted">
             {ingredient.unit_cost <= 0 ? <span className="text-warning">sem preço</span> : formatBRL(cost)}
             {ingredient.correction_factor > 1 ? ` · FC ${formatNumber(ingredient.correction_factor, 2)}` : ""}
-            {yieldFactor !== 1 ? ` · pronto ${formatNumber(yieldFactor * 100, 0)}% do cru` : ""}
+            {yieldFactor !== 1 ? ` · ≈ ${formatNumber(item.netQty / yieldFactor, 0)} g cru` : ""}
             {ingredient.archived ? " · arquivado" : ""}
           </p>
         </div>
@@ -151,6 +156,14 @@ function ItemRow({
           {error}
         </p>
       ) : null}
+      {perPortion || yieldFactor !== 1 || !lockUnit || !CHANGES_WEIGHT.test(ingredient.category ?? "") ? null : (
+        <p className="text-xs text-warning">
+          Rendimento não informado: {ingredient.name} muda de peso ao cozinhar e o custo pode estar alto demais.{" "}
+          <Link href={`/insumos/${ingredient.id}`} className="font-semibold underline">
+            Informar
+          </Link>
+        </p>
+      )}
     </li>
   );
 }

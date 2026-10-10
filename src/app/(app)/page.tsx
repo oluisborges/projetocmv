@@ -84,8 +84,8 @@ export default async function HomePage() {
             {doneCount} de {steps.length}
           </span>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-border" aria-hidden>
-          <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+        <div className="h-2 overflow-hidden rounded-full bg-primary/15" aria-hidden>
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
         </div>
 
         <ol className="flex flex-col gap-3">
@@ -156,6 +156,15 @@ export default async function HomePage() {
           Abrir painel Shogun
         </Link>
       ) : null}
+
+      <div className="flex flex-col items-center gap-1 pt-2 text-sm">
+        <Link href="/conta/senha" className="inline-flex min-h-11 items-center font-semibold text-primary">
+          Trocar minha senha
+        </Link>
+        <Link href="/privacidade" className="inline-flex min-h-11 items-center text-muted underline">
+          Como seus dados são tratados
+        </Link>
+      </div>
     </>
   );
 }

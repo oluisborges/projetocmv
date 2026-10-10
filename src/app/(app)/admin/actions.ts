@@ -40,6 +40,13 @@ async function createUser(
     const taken = /already|registered|exists/i.test(error?.message ?? "");
     return { ok: false, error: taken ? "Esse e-mail já tem conta." : "Não foi possível criar o usuário." };
   }
+
+  // A senha foi escolhida por outra pessoa (e passou por mensagem): quem recebe precisa criar a própria no primeiro acesso.
+  const { error: flagError } = await admin.from("profiles").update({ must_change_password: true }).eq("id", data.user.id);
+  if (flagError) {
+    await admin.auth.admin.deleteUser(data.user.id); // sem a obrigação de troca não deixamos a conta existir
+    return { ok: false, error: "Não foi possível criar o usuário." };
+  }
   return { ok: true, userId: data.user.id };
 }
 
@@ -123,5 +130,8 @@ export async function resetPassword(_prev: AdminState, formData: FormData): Prom
   const { error } = await admin.auth.admin.updateUserById(parsed.data.userId, { password: parsed.data.password });
   if (error) return fail("Não foi possível trocar a senha.");
 
-  return { ok: "Senha trocada. Passe a nova senha para o cliente." };
+  const { error: flagError } = await admin.from("profiles").update({ must_change_password: true }).eq("id", parsed.data.userId);
+  if (flagError) return fail("A senha foi trocada, mas não deu para exigir a troca no primeiro acesso. Tente de novo.");
+
+  return { ok: "Senha provisória definida. Passe para o cliente: no primeiro acesso ele cria a própria senha." };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { signIn, type LoginState } from "./actions";
 
@@ -18,6 +19,7 @@ export function LoginForm() {
           inputMode="email"
           autoComplete="username"
           autoCapitalize="none"
+          defaultValue={state.email}
           required
           className="h-12 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
@@ -36,6 +38,14 @@ export function LoginForm() {
       {state.error ? (
         <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
           {state.error}
+          {state.locked ? (
+            <>
+              {" "}
+              <Link href="/esqueci-senha" className="font-semibold underline">
+                Esqueci minha senha
+              </Link>
+            </>
+          ) : null}
         </p>
       ) : null}
 

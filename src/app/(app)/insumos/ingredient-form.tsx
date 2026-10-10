@@ -14,11 +14,48 @@ export type IngredientDefaults = {
   purchase_qty?: number;
   purchase_price?: number;
   correction_factor?: number;
-  /** fator: 2.5 = 250% */
+  /** Peso pronto ÷ peso cru: 2.5 = 1 kg cru vira 2,5 kg pronto. */
   cooking_yield?: number;
 };
 
 const decimal = (n: number | undefined) => (n === undefined ? undefined : String(n).replace(".", ","));
+
+const inputClass =
+  "h-12 w-full min-w-0 rounded-xl border border-border bg-surface px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
+
+/**
+ * Rendimento depois de pronto, perguntado do jeito da cozinha ("1 kg cru vira quantos kg?"), com a ajuda SEMPRE visível:
+ * quem deixa 1 num arroz ou numa carne faz a ficha cobrar o dobro ou mais, e ninguém percebe.
+ */
+function YieldField({ defaultValue }: { defaultValue: number }) {
+  const [value, setValue] = useState(decimal(defaultValue) ?? "1");
+  const chip = (active: boolean) =>
+    `h-11 rounded-full border px-4 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex flex-col gap-1.5 text-sm font-medium">
+        Depois de pronto, 1 kg (cru e limpo) vira quantos kg?
+        <input name="cooking_yield" value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" autoComplete="off" className={inputClass} />
+      </label>
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Atalhos de rendimento">
+        <button type="button" className={chip(value === "1")} onClick={() => setValue("1")}>
+          Não muda (1)
+        </button>
+        <button type="button" className={chip(value === "2,5")} onClick={() => setValue("2,5")}>
+          Cresce: arroz, feijão, massa
+        </button>
+        <button type="button" className={chip(value === "0,75")} onClick={() => setValue("0,75")}>
+          Encolhe: carnes
+        </button>
+      </div>
+      <p className="text-xs leading-relaxed text-muted">
+        Arroz 2,5 · Feijão 2,2 · Macarrão 2,3 · Frango grelhado 0,75 · Carne moída 0,7 · Salada, molho, queijo 1. É assim que o app converte os gramas
+        PRONTOS da marmita para o que você compra cru.
+      </p>
+    </div>
+  );
+}
 
 export function IngredientForm({
   action,
@@ -92,22 +129,6 @@ export function IngredientForm({
 
       {kind === "insumo" ? (
         <TextField
-          label="Rendimento depois de pronto (%)"
-          name="cooking_yield_pct"
-          inputMode="decimal"
-          required={false}
-          defaultValue={defaults.cooking_yield ? String(Number((defaults.cooking_yield * 100).toFixed(1))).replace(".", ",") : "100"}
-          hint={
-            <Hint>
-              Quanto o item pesa depois de pronto, comparado ao que você pesou cru e limpo. Arroz: 250% (1 kg cru vira 2,5 kg cozido). Frango grelhado: 75%. Salada ou item
-              que você já pesa cru na marmita: 100%.
-            </Hint>
-          }
-        />
-      ) : null}
-
-      {kind === "insumo" ? (
-        <TextField
           label="Fator de correção"
           name="correction_factor"
           inputMode="decimal"
@@ -120,6 +141,8 @@ export function IngredientForm({
           }
         />
       ) : null}
+
+      {kind === "insumo" ? <YieldField defaultValue={defaults.cooking_yield ?? 1} /> : null}
     </ActionForm>
   );
 }

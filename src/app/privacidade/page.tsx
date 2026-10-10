@@ -2,6 +2,8 @@ import Link from "next/link";
 
 export const metadata = { title: "Como seus dados são tratados" };
 
+// Texto-base em linguagem simples. Antes de abrir o app para todos os clientes, o Grupo Shogun deve revisar com o jurídico e
+// acrescentar a razão social, o CNPJ e o contato oficial do encarregado de dados (LGPD).
 export default function PrivacyPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-6 px-4 py-10">
@@ -11,7 +13,7 @@ export default function PrivacyPage() {
 
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold tracking-tight">Como seus dados são tratados</h1>
-        <p className="text-muted">Texto simples sobre o que o app guarda e quem vê. Este texto-base deve ser revisado pelo jurídico do Grupo Shogun antes do uso com clientes.</p>
+        <p className="text-muted">Em palavras simples: o que o app guarda, quem vê, onde fica e como pedir a exclusão.</p>
       </header>
 
       <section className="flex flex-col gap-2">
@@ -37,8 +39,30 @@ export default function PrivacyPage() {
       </section>
 
       <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-bold">Onde ficam os dados</h2>
+        <p className="leading-relaxed">
+          No banco de dados do Supabase, em servidores em São Paulo (Brasil). O site é hospedado na Vercel. Os dois são empresas de infraestrutura que guardam os dados em nosso nome.
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-bold">Por quanto tempo</h2>
+        <p className="leading-relaxed">Enquanto a sua conta estiver ativa. Se você pedir a exclusão, apagamos a conta e os dados da sua marmitaria.</p>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-lg font-bold">Cookies e registros de segurança</h2>
+        <ul className="list-disc space-y-1 pl-5 leading-relaxed">
+          <li>Usamos só o cookie necessário para manter você logado. Não usamos cookies de propaganda.</li>
+          <li>Para proteger a sua conta, guardamos por até 1 dia as tentativas de login erradas, de forma codificada (sem mostrar e-mail ou endereço de internet), para bloquear quem tenta adivinhar senhas.</li>
+        </ul>
+      </section>
+
+      <section className="flex flex-col gap-2">
         <h2 className="text-lg font-bold">Seus direitos</h2>
-        <p className="leading-relaxed">Você pode pedir uma cópia dos seus dados, a correção deles ou a exclusão da sua conta. Fale com a equipe do Grupo Shogun pelo grupo de WhatsApp.</p>
+        <p className="leading-relaxed">
+          Você pode pedir uma cópia dos seus dados, a correção deles ou a exclusão da sua conta. Fale com a equipe do Grupo Shogun pelo grupo de WhatsApp.
+        </p>
       </section>
     </main>
   );

@@ -17,6 +17,7 @@ export type IngredientRecord = {
   correction_factor: number;
   /** Peso pronto ÷ peso cru. 1 = não muda de peso ao preparar. */
   cooking_yield: number;
+  category: string | null;
   archived_at: string | null;
 };
 
@@ -50,7 +51,7 @@ export async function loadIngredients(): Promise<IngredientRecord[]> {
   if (!orgId) return [];
   const supabase = await createClient();
   const data = await fetchAll((from, to) =>
-    supabase.from("ingredients").select("id, name, kind, purchase_unit, unit_cost, correction_factor, cooking_yield, archived_at").eq("org_id", orgId).order("id").range(from, to),
+    supabase.from("ingredients").select("id, name, category, kind, purchase_unit, unit_cost, correction_factor, cooking_yield, archived_at").eq("org_id", orgId).order("id").range(from, to),
   );
   return data.map((i) => ({ ...i, unit_cost: Number(i.unit_cost), correction_factor: Number(i.correction_factor), cooking_yield: Number(i.cooking_yield) })) as IngredientRecord[];
 }
