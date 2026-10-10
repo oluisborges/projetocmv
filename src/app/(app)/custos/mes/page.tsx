@@ -73,7 +73,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     <>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
-        <p className="text-muted">O que você pagou de comida e de equipe, comparado com o que as marmitas vendidas deveriam ter custado.</p>
+        <p className="text-muted">Quanto você gastou no mês, comparado com o que deveria.</p>
       </section>
 
       <CostsTabs active="month" />
@@ -100,6 +100,31 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
+      {canWrite ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">1. Faturamento e compras do mês</h2>
+          <PeriodForm month={month} revenue={revenue} purchases={purchases} />
+        </section>
+      ) : null}
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+          2. Marmitas vendidas ({formatNumber(summary.soldUnits, 0)})
+        </h2>
+        {dishes.length === 0 ? (
+          <p className="text-sm text-muted">
+            Ainda não há fichas. Monte em <Link href="/fichas" className="font-semibold text-primary">Fichas</Link>.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+            {dishes.map((d) => (
+              <SalesRow key={`${d.id}-${month}`} month={month} recipe={{ id: d.id, name: d.name, cost: d.cost }} initialQty={d.qty} canWrite={canWrite} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* resultado depois dos dois passos de preenchimento */}
       {hasData ? (
         <section aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
           <dl className="grid grid-cols-2 gap-3 text-sm">
@@ -129,8 +154,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
             >
               {summary.deviationPct === null ? (
                 <p>
-                  Você comprou <strong>{formatBRL(summary.purchases)}</strong> e as marmitas vendidas deveriam ter custado{" "}
-                  <strong>{formatBRL(summary.theoreticalCost ?? 0)}</strong>. <strong>Informe o faturamento do mês</strong> para o app dizer se essa diferença é grande ou pequena.
+                  Comprou <strong>{formatBRL(summary.purchases)}</strong>; o esperado era <strong>{formatBRL(summary.theoreticalCost ?? 0)}</strong>. <strong>Informe o faturamento</strong> para avaliar a diferença.
                 </p>
               ) : !bigGap ? (
                 <p>
@@ -138,14 +162,16 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
                 </p>
               ) : summary.deviationCost > 0 ? (
                 <p>
-                  <strong>Você gastou {formatBRL(summary.deviationCost)} a mais</strong> em insumos do que as marmitas vendidas explicam. Pode ser sobra de estoque, desperdício, perda no preparo, preço de insumo
-                  desatualizado nas fichas ou alguma venda que ainda não foi informada
-                  {summary.salesWithoutCost > 0 ? ` (e ${summary.salesWithoutCost} ${summary.salesWithoutCost === 1 ? "ficha incompleta não entra" : "fichas incompletas não entram"} na conta)` : ""}.
+                  <strong>Gastou {formatBRL(summary.deviationCost)} a mais</strong> do que as vendas explicam.
+                  <Hint>
+                    Pode ser sobra de estoque, desperdício, perda no preparo, preço de insumo desatualizado nas fichas ou venda não informada
+                    {summary.salesWithoutCost > 0 ? ` (e ${summary.salesWithoutCost} ${summary.salesWithoutCost === 1 ? "ficha incompleta não entra" : "fichas incompletas não entram"} na conta)` : ""}.
+                  </Hint>
                 </p>
               ) : (
                 <p>
-                  <strong>Você gastou {formatBRL(Math.abs(summary.deviationCost))} a menos</strong> do que o esperado. Provavelmente usou estoque que comprou no mês anterior, ou informou vendas a mais, ou o custo de alguma ficha
-                  está acima do real.
+                  <strong>Gastou {formatBRL(Math.abs(summary.deviationCost))} a menos</strong> do que o esperado.
+                  <Hint>Provavelmente usou estoque comprado no mês anterior, informou vendas a mais, ou o custo de alguma ficha está acima do real.</Hint>
                 </p>
               )}
             </div>
@@ -176,29 +202,6 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
         </p>
       )}
 
-      {canWrite ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Números do mês</h2>
-          <PeriodForm month={month} revenue={revenue} purchases={purchases} />
-        </section>
-      ) : null}
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          Marmitas vendidas ({formatNumber(summary.soldUnits, 0)})
-        </h2>
-        {dishes.length === 0 ? (
-          <p className="text-sm text-muted">
-            Ainda não há fichas. Monte em <Link href="/fichas" className="font-semibold text-primary">Fichas</Link>.
-          </p>
-        ) : (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
-            {dishes.map((d) => (
-              <SalesRow key={`${d.id}-${month}`} month={month} recipe={{ id: d.id, name: d.name, cost: d.cost }} initialQty={d.qty} canWrite={canWrite} />
-            ))}
-          </ul>
-        )}
-      </section>
     </>
   );
 }

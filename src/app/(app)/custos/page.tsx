@@ -7,6 +7,7 @@ import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
+import { StepCard } from "./step-card";
 import { AddFixedCostForm, AddStaffForm, FixedCostRow, MonthlyNumbersForm, StaffRowView } from "./costs-forms";
 
 export const metadata = { title: "Custos" };
@@ -55,107 +56,127 @@ export default async function CostsPage() {
     feePct,
   });
 
-  const empty = fixedCosts.length === 0 && staff.length === 0;
+  const salesDone = Boolean(ctx.monthlyRevenue && ctx.monthlyUnits);
+  const fixedDone = fixedCosts.length > 0;
+  const staffDone = staff.length > 0;
+  const doneCount = [salesDone, fixedDone, staffDone].filter(Boolean).length;
+  const firstOpen = !salesDone ? "sales" : !fixedDone ? "fixed" : !staffDone ? "staff" : null;
+  const overRevenue = summary.pctOfRevenue !== null && !ctx.fixedAuto;
+
+  const steps: { key: string; title: string; done: boolean; status: string; body: React.ReactNode }[] = [
+    {
+      key: "sales",
+      title: "Quanto você vende por mês",
+      done: salesDone,
+      status: salesDone ? `${formatBRL(ctx.monthlyRevenue!)} · ${formatNumber(ctx.monthlyUnits!, 0)} marmitas` : "falta preencher",
+      body: canWrite ? (
+        <MonthlyNumbersForm revenue={ctx.monthlyRevenue} units={ctx.monthlyUnits} />
+      ) : (
+        <p className="text-sm text-muted">Ainda não informado.</p>
+      ),
+    },
+    {
+      key: "fixed",
+      title: "Contas fixas (aluguel, luz, gás…)",
+      done: fixedDone,
+      status: fixedDone ? `${fixedCosts.length} ${fixedCosts.length === 1 ? "conta" : "contas"} · ${formatBRL(summary.fixedTotal)}/mês` : "nenhuma ainda",
+      body: (
+        <>
+          {fixedCosts.length > 0 ? (
+            <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+              {fixedCosts.map((c) => (
+                <FixedCostRow key={c.id} cost={c} canWrite={canWrite} />
+              ))}
+            </ul>
+          ) : null}
+          {canWrite ? <AddFixedCostForm /> : null}
+        </>
+      ),
+    },
+    {
+      key: "staff",
+      title: "Equipe (inclua você)",
+      done: staffDone,
+      status: staffDone ? `${staff.length} ${staff.length === 1 ? "pessoa" : "pessoas"} · ${formatBRL(summary.staffTotal)}/mês` : "ninguém ainda",
+      body: (
+        <>
+          {staff.length > 0 ? (
+            <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
+              {staff.map((m) => (
+                <StaffRowView key={m.id} person={m} canWrite={canWrite} />
+              ))}
+            </ul>
+          ) : null}
+          {canWrite ? <AddStaffForm /> : null}
+          <p className="text-xs text-muted">Coloque seu pró-labore como uma pessoa da equipe: seu trabalho tem custo e precisa estar no preço.</p>
+        </>
+      ),
+    },
+  ];
 
   return (
     <>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
-        <p className="text-muted">O que você paga todo mês, venda ou não venda. Isso entra no preço de cada marmita.</p>
+        <p className="text-muted">O que você paga todo mês, venda ou não venda.</p>
       </section>
 
       <CostsTabs active="fixed" />
 
-      <section aria-live="polite" className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted">Seu ponto de equilíbrio</p>
+      <section aria-live="polite" className="flex flex-col gap-2 rounded-2xl bg-primary p-5 text-primary-foreground">
+        <p className="text-xs font-semibold uppercase tracking-wider opacity-90">Para não ter prejuízo, você precisa vender</p>
         {summary.breakEven ? (
           <>
-          <p className="text-lg leading-snug">
-            Para empatar você precisa vender <strong className="tabular">{formatNumber(summary.breakEven.units, 0)} marmitas por mês</strong> (cerca de{" "}
-            <strong className="tabular">{formatNumber(summary.breakEven.perDay, 0)} por dia</strong>), o que dá{" "}
-            <strong className="tabular">{formatBRL(summary.breakEven.revenue)}</strong> de faturamento.
-          </p>
-          <p className="text-xs text-muted">
-            Considerando 30 dias por mês, o preço atual das suas marmitas e a venda por <strong>{cheapest?.name ?? "venda direta"}</strong> (a de menor taxa).
-            {ctx.configured ? "" : " É uma estimativa: ainda faltam os impostos nos Ajustes."}
-          </p>
+            <p className="tabular text-3xl font-extrabold tracking-tight">{formatNumber(summary.breakEven.units, 0)} marmitas por mês</p>
+            <p className="text-sm opacity-90">
+              Uns {formatNumber(summary.breakEven.perDay, 0)} por dia · {formatBRL(summary.breakEven.revenue)} de faturamento
+            </p>
           </>
-        ) : empty ? (
-          <p className="text-muted">Cadastre seus custos fixos e a equipe abaixo para descobrir quanto precisa vender para não ter prejuízo.</p>
-        ) : dishes.length === 0 ? (
-          <p className="text-muted">
-            Falta o preço de venda das marmitas para calcular. <Link href="/precificacao" className="font-semibold text-primary">Definir preços</Link>
+        ) : summary.total > 0 && dishes.length > 0 ? (
+          <p className="text-base font-semibold">Com os preços de hoje, cada venda perde dinheiro. Revise em Preços.</p>
+        ) : summary.total > 0 ? (
+          <p className="text-base">
+            Falta o preço de venda das marmitas.{" "}
+            <Link href="/precificacao" className="font-bold underline">
+              Definir preços
+            </Link>
           </p>
         ) : (
-          <p className="text-warning">Com os preços de hoje, suas marmitas não cobrem os custos: cada venda perde dinheiro. Revise em Preços.</p>
+          <p className="text-base">Preencha os passos abaixo e eu calculo isso para você.</p>
         )}
-
         {summary.total > 0 ? (
-          <dl className="grid grid-cols-2 gap-3 border-t border-border pt-3 text-sm">
-            <div>
-              <dt className="text-muted">Custos fixos + equipe</dt>
-              <dd className="tabular font-bold">{formatBRL(summary.total)}/mês</dd>
-            </div>
-            <div>
-              <dt className="text-muted">Cada marmita paga</dt>
-              <dd className="tabular font-bold">{summary.perUnit !== null ? formatBRL(summary.perUnit) : "informe as marmitas/mês"}</dd>
-            </div>
-            <div className="col-span-2">
-              <dt className="text-muted">Peso nas vendas</dt>
-              <dd className="font-bold">
-                {summary.pctOfRevenue !== null && !ctx.fixedAuto ? (
-                  <span className="font-normal text-danger">
-                    Seus custos fixos (<span className="tabular">{formatPct(summary.pctOfRevenue)}</span> do faturamento) passam do que você fatura. Confira os valores: enquanto isso o preço sugerido NÃO está
-                    contando os custos fixos.
-                  </span>
-                ) : summary.pctOfRevenue !== null ? (
-                  <>
-                    <span className="tabular">{formatPct(summary.pctOfRevenue)}</span> do faturamento <span className="font-normal text-muted">· já usado no preço sugerido</span>
-                  </>
-                ) : (
-                  <span className="font-normal text-muted">informe o faturamento do mês para o app usar isso no preço</span>
-                )}
-              </dd>
-            </div>
-          </dl>
+          <p className="border-t border-white/25 pt-2 text-sm opacity-90">
+            Total de contas e equipe: <strong className="tabular">{formatBRL(summary.total)}</strong> por mês
+            {summary.pctOfRevenue !== null && !overRevenue ? (
+              <>
+                {" "}
+                (<span className="tabular">{formatPct(summary.pctOfRevenue)}</span> do que você fatura, já no preço)
+              </>
+            ) : null}
+          </p>
         ) : null}
       </section>
 
-      {canWrite ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Números do mês</h2>
-          <MonthlyNumbersForm revenue={ctx.monthlyRevenue} units={ctx.monthlyUnits} />
-        </section>
+      {overRevenue ? (
+        <p className="rounded-xl bg-danger/10 p-3 text-sm text-danger">
+          Suas contas ({formatPct(summary.pctOfRevenue!)} do faturamento) passam do que você fatura. Confira os valores: por enquanto o preço sugerido não conta os custos fixos.
+        </p>
       ) : null}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          Custos fixos ({fixedCosts.length}) · {formatBRL(summary.fixedTotal)}
-        </h2>
-        {fixedCosts.length > 0 ? (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
-            {fixedCosts.map((c) => (
-              <FixedCostRow key={c.id} cost={c} canWrite={canWrite} />
-            ))}
-          </ul>
-        ) : null}
-        {canWrite ? <AddFixedCostForm /> : null}
-      </section>
+      <div className="flex items-baseline justify-between text-sm">
+        <h2 className="font-semibold">{doneCount === 3 ? "Tudo preenchido" : `${doneCount} de 3 preenchidos`}</h2>
+        <Link href="/custos/mes" className="font-semibold text-primary">
+          Fechar o mês →
+        </Link>
+      </div>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          Equipe ({staff.length}) · {formatBRL(summary.staffTotal)}
-        </h2>
-        {staff.length > 0 ? (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
-            {staff.map((m) => (
-              <StaffRowView key={m.id} person={m} canWrite={canWrite} />
-            ))}
-          </ul>
-        ) : null}
-        {canWrite ? <AddStaffForm /> : null}
-        <p className="text-xs text-muted">Inclua você também: coloque seu pró-labore como uma pessoa da equipe. Seu trabalho tem custo e precisa estar no preço.</p>
-      </section>
+      <div className="flex flex-col gap-3">
+        {steps.map((st, i) => (
+          <StepCard key={st.key} index={i + 1} title={st.title} status={st.status} done={st.done} startOpen={st.key === firstOpen}>
+            {st.body}
+          </StepCard>
+        ))}
+      </div>
     </>
   );
 }
