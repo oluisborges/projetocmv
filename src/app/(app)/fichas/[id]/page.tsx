@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ConfirmButton } from "@/components/confirm-button";
 import { isPurchaseUnit, baseUnitOf } from "@/lib/calc";
 import { requireMember } from "@/lib/auth";
+import { loadSafetyMargin } from "@/lib/pricing-data";
 import { loadIngredients, loadRecipe } from "@/lib/recipes-data";
 import { archiveRecipe, duplicateRecipe } from "../actions";
 import { RecipeEditor } from "./recipe-editor";
@@ -11,11 +12,11 @@ import { RecipeEditor } from "./recipe-editor";
 export const metadata = { title: "Ficha técnica" };
 
 export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const { id } = await props.params;
   if (!z.uuid().safeParse(id).success) notFound();
 
-  const [loaded, ingredients] = await Promise.all([loadRecipe(id), loadIngredients()]);
+  const [loaded, ingredients, safetyMarginPct] = await Promise.all([loadRecipe(id), loadIngredients(), loadSafetyMargin(orgId)]);
   if (!loaded) notFound();
   const { recipe, items } = loaded;
 
@@ -24,7 +25,15 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
       <Link href="/fichas" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
         ← Fichas
       </Link>
-      <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
+      <div className="flex flex-col gap-0.5">
+        <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
+        {recipe.updated_at ? (
+          <p className="text-xs text-muted">
+            Última alteração em{" "}
+            {new Date(recipe.updated_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" })}
+          </p>
+        ) : null}
+      </div>
 
       <RecipeEditor
         recipe={{
@@ -35,7 +44,10 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
           portionWeightGrams: recipe.portion_weight,
           portionWeightUnit: "g",
           cookingLossPct: recipe.cooking_loss_pct,
+          code: recipe.code ?? "",
+          portionNote: recipe.portion_note ?? "",
         }}
+        safetyMarginPct={safetyMarginPct}
         initialItems={items.map((i) => {
           const base = ingredients.find((x) => x.id === i.ingredient_id)?.purchase_unit;
           const baseUnit = base && isPurchaseUnit(base) ? baseUnitOf(base) : "g";

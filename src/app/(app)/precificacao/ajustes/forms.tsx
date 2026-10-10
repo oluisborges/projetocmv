@@ -28,7 +28,7 @@ export function SettingsForm({
   fixedAuto,
   configured,
 }: {
-  settings: { taxPct: number; fixedExpensePct: number; profitPct: number; minMarginPct: number };
+  settings: { taxPct: number; fixedExpensePct: number; profitPct: number; minMarginPct: number; otherPct?: number; safetyMarginPct?: number };
   fixedAuto: boolean;
   configured: boolean;
 }) {
@@ -65,6 +65,22 @@ export function SettingsForm({
         defaultValue={taxDefault}
         required={false}
         hint={<Hint>Quanto de cada R$ 100 vendidos vai embora em imposto. É uma estimativa para o preço: seu contador sabe o número exato.</Hint>}
+      />
+      <TextField
+        label="Outras taxas sobre cada venda (%) · opcional"
+        name="other"
+        inputMode="decimal"
+        defaultValue={pct(settings.otherPct ?? 0)}
+        required={false}
+        hint={<Hint>Comissão de vendedor, taxa de plataforma ou qualquer outra porcentagem que sai de cada venda e não é imposto nem taxa de canal. Sem nenhuma, deixe 0.</Hint>}
+      />
+      <TextField
+        label="Margem de segurança nos insumos (%)"
+        name="safety"
+        inputMode="decimal"
+        defaultValue={pct(settings.safetyMarginPct ?? 0)}
+        required={false}
+        hint={<Hint>Soma esse percentual ao custo dos ingredientes de cada ficha para cobrir perdas e desperdício. Para retirar, deixe 0.</Hint>}
       />
       {fixedAuto ? (
         <div className="flex flex-col gap-1 card p-4 text-sm">

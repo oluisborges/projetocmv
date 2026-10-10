@@ -25,6 +25,8 @@ function build(over: Partial<Dashboard> = {}): Dashboard {
       fixedPctOfRevenue: 0.12,
       monthlyRevenue: 60000,
       monthlyUnits: 1400,
+      revenueSource: "manual",
+      revenueMonths: 0,
       fixedTotal: 7200,
       staffTotal: 4360,
       configured: true,

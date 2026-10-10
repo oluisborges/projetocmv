@@ -27,7 +27,7 @@ export default async function PricingPage() {
     const costItems: CostItem[] = items
       .filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id))
       .map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope }));
-    const view = computeRecipe({ portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving" }, costItems);
+    const view = computeRecipe({ portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving", safetyMarginPct: ctx.settings.safetyMarginPct }, costItems);
     return {
       id: r.id,
       name: r.name,

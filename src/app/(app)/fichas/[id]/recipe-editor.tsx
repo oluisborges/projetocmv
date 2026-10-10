@@ -7,7 +7,7 @@ import { D, baseUnitOf, fromBaseQty, grossQty, toBaseQty, unitsFor, type Purchas
 import { Hint } from "@/components/hint";
 import { formatBRL, formatNumber, parseDecimal, UNIT_LABEL } from "@/lib/format";
 import { computeRecipe } from "@/lib/recipe-cost";
-import { addRecipeItem, removeRecipeItem, updateRecipeItemQty, updateRecipeSettings } from "../actions";
+import { addRecipeItem, removeRecipeItem, updateRecipeDetails, updateRecipeItemQty, updateRecipeSettings } from "../actions";
 
 export type EditorIngredient = {
   id: string;
@@ -35,6 +35,8 @@ export type EditorRecipe = {
   portionWeightGrams: number | null;
   portionWeightUnit: "g" | "kg";
   cookingLossPct: number;
+  code: string;
+  portionNote: string;
 };
 
 /** 1.5 -> "1,5". Até 4 casas, sem zeros sobrando. */
@@ -276,11 +278,14 @@ export function RecipeEditor({
   initialItems,
   ingredients,
   canWrite,
+  safetyMarginPct,
 }: {
   recipe: EditorRecipe;
   initialItems: EditorItem[];
   ingredients: EditorIngredient[];
   canWrite: boolean;
+  /** Margem de segurança sobre os insumos, vinda dos Ajustes (fração). */
+  safetyMarginPct: number;
 }) {
   const router = useRouter();
   const isServing = recipe.mode === "serving";
@@ -292,6 +297,8 @@ export function RecipeEditor({
     recipe.portionWeightGrams === null ? "" : fmt(fromBaseQty(recipe.portionWeightGrams, recipe.portionWeightUnit).toNumber()),
   );
   const [cookingLoss, setCookingLoss] = useState(fmt(Number((recipe.cookingLossPct * 100).toFixed(2))));
+  const [code, setCode] = useState(recipe.code);
+  const [note, setNote] = useState(recipe.portionNote);
   const [status, setStatus] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
 
   const byId = useMemo(() => new Map(ingredients.map((i) => [i.id, i])), [ingredients]);
@@ -308,10 +315,11 @@ export function RecipeEditor({
         portionWeight: typedWeight === null ? null : toBaseQty(typedWeight, weightUnit).toNumber(),
         cookingLossPct: isServing ? 0 : (num(cookingLoss) ?? 0) / 100,
         useCookingYield: isServing,
+        safetyMarginPct,
       },
       items.flatMap((i) => (byId.has(i.ingredientId) ? [{ ingredient: byId.get(i.ingredientId)!, netQty: i.netQty, scope: i.scope }] : [])),
     );
-  }, [items, portions, portionWeight, weightUnit, cookingLoss, byId, isServing]);
+  }, [items, portions, portionWeight, weightUnit, cookingLoss, byId, isServing, safetyMarginPct]);
 
   async function saveSettings(over: { portionWeight?: string; weightUnit?: "g" | "kg" } = {}): Promise<boolean> {
     setStatus({ kind: "saving" });
@@ -331,6 +339,18 @@ export function RecipeEditor({
     }
     setStatus({ kind: "error", message: result.error });
     return false;
+  }
+
+  async function saveDetails() {
+    setStatus({ kind: "saving" });
+    const result = await updateRecipeDetails({ id: recipe.id, code, note });
+    if (result.ok) {
+      setStatus({ kind: "saved" });
+      setTimeout(() => setStatus((s) => (s.kind === "saved" ? { kind: "idle" } : s)), 2000);
+      router.refresh(); // a data da última alteração vem do servidor
+    } else {
+      setStatus({ kind: "error", message: result.error });
+    }
   }
 
   // Trocar g/kg não muda o peso: 300 g vira 0,3 kg.
@@ -402,6 +422,14 @@ export function RecipeEditor({
                 Lote {formatBRL(view.cost.batchCost.toNumber())} · {formatNumber(view.cost.portions.toNumber(), 0)} porções
               </p>
             )}
+            {safetyMarginPct > 0 ? (
+              <p className="text-xs text-muted">
+                Inclui {formatNumber(safetyMarginPct * 100, 1)}% de margem de segurança nos insumos.{" "}
+                <Link href="/precificacao/ajustes" className="font-semibold text-primary underline">
+                  Alterar
+                </Link>
+              </p>
+            ) : null}
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3">
@@ -450,6 +478,29 @@ export function RecipeEditor({
           <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Escolha a embalagem" field="Embalagem" title="Adicionar embalagem" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
       </section>
+
+      <details className="card">
+        <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Detalhes (opcional)</summary>
+        <div className="flex flex-col gap-4 border-t border-border p-4">
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Código do produto
+            <input value={code} onChange={(e) => setCode(e.target.value)} onBlur={saveDetails} disabled={!canWrite} maxLength={40} placeholder="Ex.: 100" className={inputClass} />
+          </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Observação sobre a porção
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              onBlur={saveDetails}
+              disabled={!canWrite}
+              maxLength={200}
+              rows={2}
+              placeholder="Ex.: porção de 300 g, embalagem de 750 ml"
+              className="rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            />
+          </label>
+        </div>
+      </details>
 
       {isServing ? null : (
         <details open className="card">

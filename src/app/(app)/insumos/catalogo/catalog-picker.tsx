@@ -16,9 +16,17 @@ export type CatalogItem = {
 
 export type CatalogRecipe = { id: string; name: string; category: string | null; itemCount: number; imported: boolean };
 
+const plain = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
 export function CatalogPicker({ items, recipes }: { items: CatalogItem[]; recipes: CatalogRecipe[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectedRecipes, setSelectedRecipes] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+
+  // Quem não combina com a busca só fica escondido (não sai do formulário): o que já foi marcado continua marcado.
+  const q = plain(query);
+  const matches = (i: CatalogItem) => q === "" || plain(i.name).includes(q) || plain(i.category ?? "").includes(q);
+  const visibleCount = items.filter(matches).length;
 
   const groups = new Map<string, CatalogItem[]>();
   for (const i of items) {
@@ -87,11 +95,33 @@ export function CatalogPicker({ items, recipes }: { items: CatalogItem[]; recipe
       ) : null}
 
       <h2 className="pt-2 text-sm font-semibold uppercase tracking-wider text-muted">Insumos e embalagens</h2>
+      <div className="sticky top-16 z-10 -mx-4 bg-background/95 px-4 py-2 backdrop-blur">
+        <label className="flex h-12 items-center gap-2 card px-4 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+          <span aria-hidden className="text-muted">
+            ⌕
+          </span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+            placeholder={`Buscar entre ${items.length} insumos e embalagens`}
+            aria-label="Buscar insumo ou embalagem"
+            className="w-full bg-transparent text-base outline-none"
+          />
+        </label>
+        {q !== "" ? (
+          <p role="status" className="px-1 pt-1.5 text-xs text-muted">
+            {visibleCount === 0 ? "Nada encontrado. Confira a escrita ou cadastre um insumo novo em Insumos → + Novo." : `${visibleCount} ${visibleCount === 1 ? "resultado" : "resultados"}`}
+          </p>
+        ) : null}
+      </div>
       {[...groups].map(([group, list]) => {
-        const available = list.filter((i) => !i.imported).map((i) => i.id);
+        const shown = list.filter(matches);
+        const available = shown.filter((i) => !i.imported).map((i) => i.id);
         const allOn = available.length > 0 && available.every((id) => selected.has(id));
         return (
-          <fieldset key={group} className="flex flex-col card px-4">
+          <fieldset key={group} className={`flex flex-col card px-4 ${shown.length === 0 ? "hidden" : ""}`}>
             <legend className="sr-only">{group}</legend>
             <div className="flex items-center justify-between border-b border-border py-3">
               <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">{group}</h3>
@@ -103,7 +133,7 @@ export function CatalogPicker({ items, recipes }: { items: CatalogItem[]; recipe
             </div>
             <ul className="divide-y divide-border">
               {list.map((i) => (
-                <li key={i.id}>
+                <li key={i.id} className={matches(i) ? "" : "hidden"}>
                   <label className={`flex min-h-12 items-center gap-3 py-2 ${i.imported ? "opacity-50" : ""}`}>
                     <input
                       type="checkbox"

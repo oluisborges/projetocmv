@@ -30,6 +30,10 @@ export type RecipeRecord = {
   cooking_loss_pct: number;
   /** serving = quantidades de UMA unidade; batch = receita em lote que rende N porções. */
   mode: "serving" | "batch";
+  /** Só vêm na ficha aberta (loadRecipe). */
+  code?: string | null;
+  portion_note?: string | null;
+  updated_at?: string;
 };
 
 export type RecipeItemRecord = { id: string; recipe_id: string; ingredient_id: string; net_qty: number; qty_unit: string | null; scope: "batch" | "portion" };
@@ -62,7 +66,7 @@ export async function loadRecipe(id: string): Promise<{ recipe: RecipeRecord; it
   if (!orgId) return null;
   const supabase = await createClient();
   const [{ data: recipe }, { data: items }] = await Promise.all([
-    supabase.from("recipes").select("id, name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("id", id).eq("org_id", orgId).eq("active", true).maybeSingle(),
+    supabase.from("recipes").select("id, name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode, code, portion_note, updated_at").eq("id", id).eq("org_id", orgId).eq("active", true).maybeSingle(),
     supabase.from("recipe_items").select("id, recipe_id, ingredient_id, net_qty, qty_unit, scope").eq("recipe_id", id).order("id"),
   ]);
   if (!recipe) return null;

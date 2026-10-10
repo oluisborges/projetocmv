@@ -175,6 +175,25 @@ export async function updateRecipeSettings(input: {
   return { ok: true };
 }
 
+/** Código do produto e observação sobre a porção: campos de organização, opcionais. */
+export async function updateRecipeDetails(input: { id: string; code: string; note: string }): Promise<Result> {
+  const { canWrite } = await requireMember();
+  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+
+  const id = z.uuid().safeParse(input.id);
+  if (!id.success) return { ok: false, error: "Ficha inválida." };
+  const code = input.code.trim();
+  const note = input.note.trim();
+  if (code.length > 40) return { ok: false, error: "O código pode ter até 40 caracteres." };
+  if (note.length > 200) return { ok: false, error: "A observação pode ter até 200 caracteres." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("recipes").update({ code: code || null, portion_note: note || null }).eq("id", id.data).select("id").maybeSingle();
+  if (error || !data) return { ok: false, error: "Não foi possível salvar." };
+  revalidatePath("/fichas");
+  return { ok: true };
+}
+
 /** Quantidade + unidade escolhida -> quantidade na unidade-base do item (g/ml/un). `null` se inválida. */
 function toBase(qtyText: string, unit: string, ingredientUnit: string): { qty: number; unit: PurchaseUnit } | { error: string } {
   const parsed = parseDecimal(qtyText);

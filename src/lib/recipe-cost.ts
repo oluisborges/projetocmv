@@ -19,6 +19,8 @@ export type CostSettings = {
   cookingLossPct: number;
   /** Ficha "por unidade": as quantidades são gramas PRONTOS, então cada insumo converte pelo seu rendimento. */
   useCookingYield?: boolean;
+  /** Margem de segurança sobre os insumos (fração). */
+  safetyMarginPct?: number;
 };
 
 const isCountedInUnits = (unit?: string) => Boolean(unit && isPurchaseUnit(unit) && baseUnitOf(unit) === "un");
@@ -48,6 +50,7 @@ export function computeRecipe(settings: CostSettings, items: CostItem[]): Recipe
       cookingLossPct: settings.cookingLossPct,
       portions: settings.portions ?? undefined,
       portionWeight: settings.portionWeight ?? undefined,
+      safetyMarginPct: settings.safetyMarginPct ?? 0,
     });
     return { ok: true, cost, missingPrices: items.filter((i) => i.ingredient.unit_cost <= 0).length };
   } catch (e) {

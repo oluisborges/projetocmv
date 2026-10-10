@@ -38,7 +38,7 @@ export default async function CostsPage() {
   const dishes = recipes.flatMap((r) => {
     const price = prices.get(r.id) ?? 0;
     const view = computeRecipe(
-      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving" },
+      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving", safetyMarginPct: ctx.settings.safetyMarginPct },
       items.filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id)).map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
     );
     return view.ok && price > 0 ? [{ price, cost: view.cost.costPerPortion.toNumber() }] : [];
@@ -53,7 +53,7 @@ export default async function CostsPage() {
     monthlyUnits: ctx.monthlyUnits,
     dishes,
     taxPct: ctx.settings.taxPct,
-    feePct,
+    feePct: feePct + (ctx.settings.otherPct ?? 0),
   });
 
   const salesDone = Boolean(ctx.monthlyRevenue && ctx.monthlyUnits);
@@ -68,12 +68,30 @@ export default async function CostsPage() {
       key: "sales",
       title: "Quanto você vende por mês",
       done: salesDone,
-      status: salesDone ? `${formatBRL(ctx.monthlyRevenue!)} · ${formatNumber(ctx.monthlyUnits!, 0)} unidades` : "falta preencher",
-      body: canWrite ? (
-        <MonthlyNumbersForm revenue={ctx.monthlyRevenue} units={ctx.monthlyUnits} />
-      ) : (
-        <p className="text-sm text-muted">Ainda não informado.</p>
-      ),
+      status: salesDone
+        ? `${formatBRL(ctx.monthlyRevenue!)} · ${formatNumber(ctx.monthlyUnits!, 0)} unidades${ctx.revenueSource === "history" ? ` · média de ${ctx.revenueMonths} ${ctx.revenueMonths === 1 ? "mês" : "meses"}` : ""}`
+        : "falta preencher",
+      body:
+        ctx.revenueSource === "history" ? (
+          <>
+            <p className="text-sm leading-relaxed">
+              Calculado pela <strong>média dos {ctx.revenueMonths === 1 ? "mês" : `${ctx.revenueMonths} últimos meses`}</strong> em que você informou o faturamento. Para mudar, ajuste os meses em
+              Resultado do mês.
+            </p>
+            <Link href="/custos/mes" className="inline-flex min-h-11 items-center font-semibold text-primary">
+              Abrir Resultado do mês →
+            </Link>
+          </>
+        ) : canWrite ? (
+          <>
+            <MonthlyNumbersForm revenue={ctx.monthlyRevenue} units={ctx.monthlyUnits} />
+            <p className="text-xs text-muted">
+              Quando você informar o faturamento de cada mês em <Link href="/custos/mes" className="font-semibold text-primary underline">Resultado do mês</Link>, o app passa a usar a média desses meses.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted">Ainda não informado.</p>
+        ),
     },
     {
       key: "fixed",
@@ -89,7 +107,7 @@ export default async function CostsPage() {
               ))}
             </ul>
           ) : null}
-          {canWrite ? <AddFixedCostForm /> : null}
+          {canWrite ? <AddFixedCostForm existing={fixedCosts.map((c) => c.name)} /> : null}
         </>
       ),
     },

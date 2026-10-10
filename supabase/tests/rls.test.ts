@@ -410,6 +410,28 @@ describe("custos fixos e equipe", () => {
   });
 });
 
+describe("ajustes opcionais e campos de ficha", () => {
+  it("margem de segurança e outras taxas têm limites; padrão 10% e 0%", async () => {
+    const [row] = await q(`select safety_margin_pct, other_pct from public.unit_settings where unit_id = $1`, [ids.unitA]);
+    expect(Number(row.safety_margin_pct)).toBeCloseTo(0.1, 6);
+    expect(Number(row.other_pct)).toBe(0);
+    await expect(q(`update public.unit_settings set safety_margin_pct = 1 where unit_id = $1`, [ids.unitA])).rejects.toThrow(/check constraint/i);
+    await expect(q(`update public.unit_settings set other_pct = -0.01 where unit_id = $1`, [ids.unitA])).rejects.toThrow(/check constraint/i);
+  });
+
+  it("código e observação da ficha têm tamanho máximo", async () => {
+    await expect(q(`update public.recipes set code = $1`, ["x".repeat(41)])).rejects.toThrow(/check constraint/i);
+    await expect(q(`update public.recipes set portion_note = $1`, ["x".repeat(201)])).rejects.toThrow(/check constraint/i);
+  });
+
+  it("o catálogo-modelo ganhou os itens das planilhas, sem nomes repetidos", async () => {
+    const [{ n }] = await q(`select count(*)::int as n from public.template_ingredients`);
+    expect(n).toBeGreaterThan(100);
+    const [{ dup }] = await q(`select count(*)::int as dup from (select lower(name) from public.template_ingredients group by 1 having count(*) > 1) d`);
+    expect(dup).toBe(0);
+  });
+});
+
 describe("histórico mensal (month_snapshots)", () => {
   const snap = JSON.stringify({ v: 1, fixedTotal: 1500, staffTotal: 2860, taxPct: 0.06, feePct: 0, products: [] });
 

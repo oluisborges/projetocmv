@@ -60,8 +60,13 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
   const profitSent = formData.has("profit");
   const profit = profitSent ? percent(formData.get("profit"), "Lucro desejado") : ({ ok: true, value: 0 } as const);
   const min = percent(formData.get("min_margin"), "Margem mínima");
-  for (const f of [tax, fixed, profit, min]) if (!f.ok) return { error: f.error };
-  if (!tax.ok || !fixed.ok || !profit.ok || !min.ok) return { error: "Confira os campos." };
+  // Campos opcionais: se não vierem no formulário, o valor guardado fica como está.
+  const otherSent = formData.has("other");
+  const other = otherSent ? percent(formData.get("other"), "Outras taxas") : ({ ok: true, value: 0 } as const);
+  const safetySent = formData.has("safety");
+  const safety = safetySent ? percent(formData.get("safety"), "Margem de segurança") : ({ ok: true, value: 0 } as const);
+  for (const f of [tax, fixed, profit, min, other, safety]) if (!f.ok) return { error: f.error };
+  if (!tax.ok || !fixed.ok || !profit.ok || !min.ok || !other.ok || !safety.ok) return { error: "Confira os campos." };
 
   const unit = await activeUnit(orgId);
   if (!unit) return { error: "Sua marmitaria ainda não tem unidade cadastrada." };
@@ -75,6 +80,8 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
       ...(fixedSent ? { fixed_expense_pct: fixed.value } : {}),
       ...(profitSent ? { profit_pct: profit.value } : {}),
       min_margin_pct: min.value,
+      ...(otherSent ? { other_pct: other.value } : {}),
+      ...(safetySent ? { safety_margin_pct: safety.value } : {}),
       configured_at: new Date().toISOString(),
     },
     { onConflict: "unit_id" },

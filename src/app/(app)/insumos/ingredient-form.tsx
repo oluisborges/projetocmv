@@ -118,6 +118,10 @@ export function IngredientForm({
         />
       </div>
 
+      <p className="-mt-2 text-xs text-muted">
+        Lata, caixa, pacote ou dúzia? Escolha “unidade” e digite quantas vêm (uma dúzia: 12; uma caixa com 30 ovos: 30).
+      </p>
+
       <TextField
         label="Quanto você paga (R$)"
         name="purchase_price"

@@ -103,15 +103,58 @@ export function FixedCostRow({ cost, canWrite }: { cost: { id: string; name: str
   );
 }
 
-export function AddFixedCostForm() {
+/** Contas que quase toda marmitaria tem. Salário e pró-labore ficam em "Equipe". */
+const SUGGESTED_COSTS = [
+  "Aluguel",
+  "Energia elétrica",
+  "Água",
+  "Gás",
+  "Internet",
+  "Plataforma de pedidos",
+  "Contador",
+  "Materiais de limpeza",
+  "Combustível",
+  "Vale-transporte / ajuda de custo",
+  "Manutenção",
+  "Anúncios",
+  "Provisão de 13º e férias",
+];
+
+const plain = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+export function AddFixedCostForm({ existing }: { existing: string[] }) {
+  const have = new Set(existing.map(plain));
+  const suggestions = SUGGESTED_COSTS.filter((n) => !have.has(plain(n)));
+
+  // O campo de nome continua livre: a pessoa pode tocar numa sugestão ou digitar uma conta nova.
+  function pick(name: string, button: HTMLButtonElement) {
+    const form = button.closest("form");
+    const input = form?.querySelector<HTMLInputElement>('input[name="name"]');
+    if (!input) return;
+    input.value = name;
+    form?.querySelector<HTMLInputElement>('input[name="amount"]')?.focus();
+  }
+
   return (
-    <ActionForm action={addFixedCost} submitLabel="Adicionar custo" resetOnOk>
-      <TextField label="O que é" name="name" list="sugestoes-custos" placeholder="Ex.: Aluguel" />
-      <datalist id="sugestoes-custos">
-        {["Aluguel", "Energia elétrica (freezers)", "Gás", "Água", "Internet", "Sistema de pedidos", "Contador", "Manutenção", "Anúncios"].map((n) => (
-          <option key={n} value={n} />
-        ))}
-      </datalist>
+    <ActionForm action={addFixedCost} submitLabel="Adicionar conta" resetOnOk>
+      {suggestions.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-medium">Toque numa conta comum ou digite outra abaixo</p>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={(e) => pick(n, e.currentTarget)}
+                className="min-h-10 rounded-full border border-border bg-background px-3.5 text-sm font-medium text-foreground active:bg-primary/10"
+              >
+                + {n}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <TextField label="Nome da conta" name="name" placeholder="Ex.: Aluguel, ou outra conta sua" />
       <TextField label="Quanto por mês (R$)" name="amount" inputMode="decimal" placeholder="Ex.: 1.500" />
     </ActionForm>
   );

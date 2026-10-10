@@ -18,6 +18,10 @@ export type PricingSettings = {
   profitPct: number;
   /** Meta mínima de margem líquida. */
   minMarginPct: number;
+  /** Outras taxas sobre cada venda (comissão, por exemplo), fração. Opcional; padrão 0. */
+  otherPct?: number;
+  /** Margem de segurança sobre o custo dos insumos, fração. Entra no custo da ficha, não no preço. */
+  safetyMarginPct?: number;
 };
 
 export type PriceAnalysis = {
@@ -41,7 +45,7 @@ const ceilCents = (v: number) => D(v).mul(100).ceil().div(100).toNumber();
 /** Tudo que a tela de preço mostra, num lugar só (e testado). `feePct` é a taxa do canal de venda escolhido. */
 export function analyzePrice(input: { cost: number; settings: PricingSettings; feePct: number; price?: number | null }): PriceAnalysis {
   const { cost, settings, feePct } = input;
-  const rates = { taxPct: settings.taxPct, salesFeePct: feePct, fixedExpensePct: settings.fixedExpensePct, profitPct: settings.profitPct };
+  const rates = { taxPct: settings.taxPct, salesFeePct: feePct + (settings.otherPct ?? 0), fixedExpensePct: settings.fixedExpensePct, profitPct: settings.profitPct };
 
   let suggested: number | null = null;
   let impossible = false;
@@ -77,6 +81,7 @@ export function priceBreakdown(input: { price: number; cost: number; settings: P
     { key: "cost", label: "Custo do produto", value: D(cost) },
     { key: "tax", label: "Impostos", value: D(price).mul(settings.taxPct) },
     { key: "fee", label: "Taxa do canal de venda", value: D(price).mul(feePct) },
+    ...((settings.otherPct ?? 0) > 0 ? [{ key: "other", label: "Outras taxas sobre a venda", value: D(price).mul(settings.otherPct ?? 0) }] : []),
     { key: "fixed", label: "Despesas fixas", value: D(price).mul(settings.fixedExpensePct) },
   ];
   const used = parts.reduce((s, p) => s.plus(p.value), D(0));

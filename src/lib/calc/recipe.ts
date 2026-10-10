@@ -35,6 +35,8 @@ export type RecipeInput = {
   portions?: Num;
   /** Peso de cada porção pronta (g). */
   portionWeight?: Num;
+  /** Margem de segurança sobre o custo dos insumos do lote (fração: 0.10 = +10%), para cobrir perdas e desperdício. Padrão 0. */
+  safetyMarginPct?: Num;
 };
 
 export type RecipeCost = {
@@ -63,7 +65,10 @@ export function recipeCost(r: RecipeInput): RecipeCost {
   const batchItems = r.items.filter((i) => i.scope === "batch");
   const portionItems = r.items.filter((i) => i.scope === "portion");
 
-  const batchCost = batchItems.reduce((s, i) => s.plus(itemCost(i)), D(0));
+  const safety = D(r.safetyMarginPct ?? 0);
+  if (safety.lt(0)) throw new RangeError("Margem de segurança não pode ser negativa");
+  // A margem cobre só o que vai no lote (insumos); embalagem é contada pelo valor exato.
+  const batchCost = batchItems.reduce((s, i) => s.plus(itemCost(i)), D(0)).mul(D(1).plus(safety));
   const yieldWeight = batchItems
     .filter((i) => i.countsForYield !== false)
     .reduce((s, i) => s.plus(i.netQty), D(0))

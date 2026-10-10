@@ -74,7 +74,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   const byIngredient = new Map(ingredients.map((i) => [i.id, i]));
   const dishes: DashboardDish[] = recipes.map((r) => {
     const view = computeRecipe(
-      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving" },
+      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving", safetyMarginPct: ctx.settings.safetyMarginPct },
       items.filter((i) => i.recipe_id === r.id && byIngredient.has(i.ingredient_id)).map((i) => ({ ingredient: byIngredient.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
     );
     const cost = view.ok ? view.cost.costPerPortion.toNumber() : null;
@@ -121,7 +121,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
     monthlyUnits: ctx.monthlyUnits,
     dishes: dishes.filter((d) => d.cost !== null && (d.price ?? 0) > 0).map((d) => ({ price: d.price as number, cost: d.cost as number })),
     taxPct: ctx.settings.taxPct,
-    feePct,
+    feePct: feePct + (ctx.settings.otherPct ?? 0),
   });
 
   // Fotografia do mês para o Histórico (só quem edita grava).

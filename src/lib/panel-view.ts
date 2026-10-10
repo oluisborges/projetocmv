@@ -30,11 +30,11 @@ export function summarizePanel(input: { dishes: PanelDish[]; settings: PricingSe
   for (const d of priced) {
     const parts = Object.fromEntries(
       priceBreakdown({ price: d.price as number, cost: d.cost as number, settings: input.settings, feePct: input.feePct }).map((p) => [p.key, p.pct]),
-    ) as Record<"cost" | "tax" | "fee" | "fixed" | "profit", number>;
+    ) as Record<"cost" | "tax" | "fee" | "fixed" | "profit", number> & { other?: number };
     sum.cmv = sum.cmv.plus(parts.cost);
     sum.cmo = sum.cmo.plus(D(parts.fixed).mul(share));
     sum.fixed = sum.fixed.plus(D(parts.fixed).mul(D(1).minus(share)));
-    sum.commercial = sum.commercial.plus(parts.tax).plus(parts.fee);
+    sum.commercial = sum.commercial.plus(parts.tax).plus(parts.fee).plus(parts.other ?? 0);
     sum.profit = sum.profit.plus(parts.profit);
     ranking.push({ id: d.id, name: d.name, pct: parts.cost });
   }
