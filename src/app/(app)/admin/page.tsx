@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { viewAsOrganization } from "../actions";
 import { addMember, createOrganization, resetPassword } from "./actions";
 import { AdminForm, Field } from "./admin-form";
 
@@ -47,9 +48,17 @@ export default async function AdminPage() {
           const members = (memberships ?? []).filter((m) => m.org_id === org.id);
           return (
             <article key={org.id} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
-              <header>
-                <h3 className="text-lg font-bold">{org.name}</h3>
-                <p className="text-xs text-muted">{members.length} usuário(s)</p>
+              <header className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="truncate text-lg font-bold">{org.name}</h3>
+                  <p className="text-xs text-muted">{members.length} usuário(s)</p>
+                </div>
+                <form action={viewAsOrganization}>
+                  <input type="hidden" name="orgId" value={org.id} />
+                  <button type="submit" className="h-11 shrink-0 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
+                    Ver como esta marmitaria
+                  </button>
+                </form>
               </header>
 
               <ul className="flex flex-col divide-y divide-border">

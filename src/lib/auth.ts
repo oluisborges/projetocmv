@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -50,17 +51,45 @@ export async function requireUser(): Promise<Session> {
   return session;
 }
 
-export type Member = { session: Session; orgId: string; orgName: string; canWrite: boolean };
+/** Cookie com a marmitaria que o admin Shogun escolheu "ver como". Só vale se a sessão for de admin (conferido a cada requisição). */
+export const VIEW_AS_COOKIE = "shogun_view_as";
+
+export type ActiveOrg = { orgId: string; orgName: string; canWrite: boolean; /** admin vendo como a marmitaria */ viewingAs: boolean };
 
 /**
- * Usuário de uma marmitaria. A organização vem SEMPRE da sessão (servidor), nunca de um campo do formulário.
- * Hoje cada usuário tem uma marmitaria; quem não tem (ex.: admin Shogun) volta para o início.
+ * Marmitaria em uso agora. Vem SEMPRE do servidor: da sessão (vínculo do usuário) ou, só para admin Shogun,
+ * da marmitaria escolhida no cookie, conferida no banco. Cookie forjado por quem não é admin é ignorado.
+ */
+export const getActiveOrg = cache(async (): Promise<ActiveOrg | null> => {
+  const session = await getSession();
+  if (!session) return null;
+
+  if (session.isPlatformAdmin) {
+    const wanted = (await cookies()).get(VIEW_AS_COOKIE)?.value;
+    if (wanted && UUID.test(wanted)) {
+      const supabase = await createClient();
+      const { data: org } = await supabase.from("organizations").select("id, name").eq("id", wanted).maybeSingle();
+      if (org) return { orgId: org.id, orgName: org.name, canWrite: true, viewingAs: true };
+    }
+  }
+
+  const m = session.memberships[0];
+  return m ? { orgId: m.org.id, orgName: m.org.name, canWrite: m.role !== "viewer", viewingAs: false } : null;
+});
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export type Member = { session: Session; orgId: string; orgName: string; canWrite: boolean; viewingAs: boolean };
+
+/**
+ * Usuário de uma marmitaria. A organização vem SEMPRE do servidor (ver getActiveOrg), nunca de um campo do formulário.
+ * Quem não tem marmitaria (ex.: admin Shogun sem "ver como") volta para o início.
  */
 export async function requireMember(): Promise<Member> {
   const session = await requireUser();
-  const m = session.memberships[0];
-  if (!m) redirect("/");
-  return { session, orgId: m.org.id, orgName: m.org.name, canWrite: m.role !== "viewer" };
+  const active = await getActiveOrg();
+  if (!active) redirect("/");
+  return { session, ...active };
 }
 
 /** Só admin Shogun passa. Para qualquer outra pessoa a página simplesmente "não existe". */

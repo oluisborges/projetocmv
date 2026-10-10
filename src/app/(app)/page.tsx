@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadDashboard } from "@/lib/dashboard-data";
 import { DashboardView } from "./dashboard";
 
@@ -7,11 +7,12 @@ type Step = { key: string; title: string; detail: string; href: string; cta: str
 
 export default async function HomePage() {
   const session = await requireUser();
-  const member = session.memberships[0];
-  const firstName = session.fullName?.split(" ")[0];
-  const canWrite = member ? member.role !== "viewer" : false;
+  const member = await getActiveOrg();
+  // Em "ver como", quem aparece no cumprimento é a marmitaria, não o admin.
+  const firstName = member?.viewingAs ? null : session.fullName?.split(" ")[0];
+  const canWrite = member?.canWrite ?? false;
 
-  const data = member ? await loadDashboard(member.org.id, canWrite) : null;
+  const data = member ? await loadDashboard(member.orgId, canWrite) : null;
 
   let steps: Step[] = [];
   if (data) {

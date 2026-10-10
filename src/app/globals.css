@@ -54,3 +54,13 @@ h3 {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Barra de "carregando" do menu inferior: corre da esquerda para a direita enquanto a página abre. */
+@keyframes nav-loading {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.nav-loading { animation: nav-loading 0.9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .nav-loading { animation: none; }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 
 const ITEMS = [
@@ -10,6 +10,18 @@ const ITEMS = [
   { href: "/precificacao", label: "Preços", match: (p: string) => p.startsWith("/precificacao") },
   { href: "/custos", label: "Custos", match: (p: string) => p.startsWith("/custos") },
 ];
+
+/** Enquanto a página do toque carrega, o botão mostra uma barra animada no topo e o texto "pulsa". */
+function NavLabel({ label }: { label: string }) {
+  const { pending } = useLinkStatus();
+  return (
+    <>
+      {pending ? <span aria-hidden className="nav-loading absolute inset-x-0 top-0 h-1 bg-accent" /> : null}
+      <span className={pending ? "animate-pulse" : undefined}>{label}</span>
+      {pending ? <span className="sr-only"> carregando</span> : null}
+    </>
+  );
+}
 
 /** Navegação inferior fixa: no celular o polegar alcança tudo. */
 export function BottomNav() {
@@ -28,7 +40,7 @@ export function BottomNav() {
                 className={`relative flex h-14 items-center justify-center text-sm ${active ? "bg-primary/10 font-extrabold text-primary" : "font-semibold text-muted"}`}
               >
                 {active ? <span aria-hidden className="absolute inset-x-5 top-0 h-1 rounded-b-full bg-primary" /> : null}
-                {item.label}
+                <NavLabel label={item.label} />
               </Link>
             </li>
           );

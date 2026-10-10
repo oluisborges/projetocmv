@@ -1,11 +1,10 @@
 import "server-only";
-import { getSession } from "@/lib/auth";
+import { getActiveOrg } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-/** Organização do usuário logado (a mais antiga, ver getSession). Sem vínculo = sem dados. */
+/** Marmitaria em uso (do vínculo do usuário ou, para admin, a escolhida em "ver como"). Sem ela = sem dados. */
 async function currentOrgId(): Promise<string | null> {
-  const session = await getSession();
-  return session?.memberships[0]?.org.id ?? null;
+  return (await getActiveOrg())?.orgId ?? null;
 }
 
 export type IngredientRecord = {
