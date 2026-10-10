@@ -52,6 +52,7 @@ const { data, error } = await admin.auth.admin.createUser({
   password,
   email_confirm: true,
   user_metadata: fullName ? { full_name: fullName } : {},
+  app_metadata: { admin_created: true },
 });
 if (error || !data.user) {
   console.error(`\nNão foi possível criar o usuário: ${error?.message ?? "erro desconhecido"}`);

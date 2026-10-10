@@ -15,7 +15,8 @@ const SUPABASE_STUB = `
   create table auth.users (
     id uuid primary key default gen_random_uuid(),
     email text,
-    raw_user_meta_data jsonb
+    raw_user_meta_data jsonb,
+    raw_app_meta_data jsonb
   );
   create function auth.jwt() returns jsonb language sql stable as
     $$ select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
@@ -585,5 +586,33 @@ describe("rendimento depois de pronto e fichas-modelo", () => {
   it("rendimento precisa estar entre 0 e 10", async () => {
     await expect(q(`insert into public.ingredients (org_id, name, purchase_unit, purchase_qty, cooking_yield) values ($1,'Zero','kg',1,0)`, [ids.orgA])).rejects.toThrow(/check constraint/i);
     await expect(q(`insert into public.ingredients (org_id, name, purchase_unit, purchase_qty, cooking_yield) values ($1,'Enorme','kg',1,11)`, [ids.orgA])).rejects.toThrow(/check constraint/i);
+  });
+});
+
+describe("cadastro público bloqueado no banco", () => {
+  const asAuthAdmin = async (fn: () => Promise<unknown>) => {
+    await db.exec("create role supabase_auth_admin nologin").catch(() => {});
+    await db.exec("grant all on auth.users to supabase_auth_admin; grant usage on schema auth to supabase_auth_admin");
+    await db.exec("set role supabase_auth_admin");
+    try {
+      return await fn();
+    } finally {
+      await db.exec("reset role");
+    }
+  };
+
+  it("conta criada pelo GoTrue sem a marca do painel é recusada (cadastro público)", async () => {
+    await expect(asAuthAdmin(() => q(`insert into auth.users (email) values ('curioso@exemplo.com')`))).rejects.toThrow(/cadastro público desativado/);
+    // o cliente consegue mandar user_metadata, mas não app_metadata: tentar forjar no metadata do usuário não adianta
+    await expect(
+      asAuthAdmin(() => q(`insert into auth.users (email, raw_user_meta_data) values ('esperto@exemplo.com', '{"admin_created": true}')`)),
+    ).rejects.toThrow(/cadastro público desativado/);
+  });
+
+  it("conta criada pelo painel (app_metadata.admin_created) e inserção direta no SQL passam", async () => {
+    await asAuthAdmin(() => db.query(`insert into auth.users (email, raw_app_meta_data) values ('cliente@exemplo.com', '{"admin_created": true}')`));
+    await q(`insert into auth.users (email) values ('direto@exemplo.com')`); // papel postgres (SQL editor)
+    const rows = await q(`select email from auth.users where email in ('cliente@exemplo.com','direto@exemplo.com','curioso@exemplo.com','esperto@exemplo.com') order by email`);
+    expect(rows.map((r) => r.email)).toEqual(["cliente@exemplo.com", "direto@exemplo.com"]);
   });
 });

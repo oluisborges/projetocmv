@@ -33,6 +33,8 @@ async function createUser(
     password: input.password,
     email_confirm: true,
     user_metadata: { full_name: input.fullName },
+    // app_metadata só pode ser definido pelo servidor (o cliente não consegue forjar). O banco só aceita novas contas com esta marca.
+    app_metadata: { admin_created: true },
   });
   if (error || !data.user) {
     const taken = /already|registered|exists/i.test(error?.message ?? "");
