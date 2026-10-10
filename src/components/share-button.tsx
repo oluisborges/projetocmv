@@ -16,7 +16,10 @@ export function ShareButton({ className, children }: { className?: string; child
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [canShare, setCanShare] = useState(false);
 
-  useEffect(() => () => card && URL.revokeObjectURL(card.url), [card]);
+  useEffect(() => {
+    if (!card) return;
+    return () => URL.revokeObjectURL(card.url);
+  }, [card]);
 
   async function open() {
     dialog.current?.showModal();
