@@ -33,7 +33,7 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
       {importado === "fichas" ? (
         <p role="status" className="rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
           Fichas criadas em <Link href="/fichas" className="font-semibold underline">Fichas</Link>, com os insumos e as embalagens delas. Preencha aqui o preço que você paga em cada
-          insumo e confira as gramas de cada marmita.
+          insumo e confira as gramas de cada produto.
         </p>
       ) : importado ? (
         <p role="status" className="rounded-xl bg-success/10 px-4 py-3 text-sm text-success">

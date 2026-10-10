@@ -4,7 +4,7 @@ import { NoPortionsError, baseUnitOf, isPurchaseUnit, recipeCost, type RecipeCos
 export type CostIngredient = {
   unit_cost: number;
   correction_factor: number;
-  /** Peso pronto ÷ peso cru (arroz 2,5; frango 0,75). Só vale em ficha "por marmita" (`useCookingYield`). */
+  /** Peso pronto ÷ peso cru (arroz 2,5; frango 0,75). Só vale em ficha "por unidade" (`useCookingYield`). */
   cooking_yield?: number;
   /** Unidade de compra (kg, g, l, ml, un). Itens em "un" (ovo, bandeja) não têm peso e não entram no rendimento. */
   purchase_unit?: string;
@@ -17,7 +17,7 @@ export type CostSettings = {
   portionWeight: number | null;
   /** fração: 0.25 = 25% */
   cookingLossPct: number;
-  /** Ficha "por marmita": as quantidades são gramas PRONTOS, então cada insumo converte pelo seu rendimento. */
+  /** Ficha "por unidade": as quantidades são gramas PRONTOS, então cada insumo converte pelo seu rendimento. */
   useCookingYield?: boolean;
 };
 

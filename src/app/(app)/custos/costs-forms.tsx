@@ -35,13 +35,13 @@ export function MonthlyNumbersForm({ revenue, units }: { revenue: number | null;
           hint={<Hint>A MÉDIA do que entra por mês com as vendas. Com isso o app calcula quanto dos seus custos fixos pesa em cada real vendido e já usa no preço. O faturamento de cada mês específico você informa na aba Resultado do mês.</Hint>}
         />
         <TextField
-          label="Quantas marmitas você vende por mês"
+          label="Quantas unidades você vende por mês"
           name="units"
           inputMode="decimal"
           required={false}
           defaultValue={units ? String(units) : ""}
           placeholder="Ex.: 1400"
-          hint={<Hint>A média de marmitas vendidas por mês. Serve para mostrar quanto de custo fixo cada marmita precisa pagar.</Hint>}
+          hint={<Hint>A média de unidades vendidas por mês (somando todos os produtos). Serve para mostrar quanto de custo fixo cada unidade precisa pagar.</Hint>}
         />
       </div>
     </ActionForm>

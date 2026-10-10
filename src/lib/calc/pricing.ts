@@ -52,7 +52,7 @@ export const netMarginPct = (price: Num, cost: Num, rates: NetRates): Decimal =>
 export const fixedExpensePct = (monthlyFixedCosts: Num, monthlyRevenue: Num): Decimal =>
   safeDiv(monthlyFixedCosts, monthlyRevenue);
 
-/** Despesa fixa por marmita (R$) = custos fixos mensais ÷ marmitas vendidas no mês. */
+/** Despesa fixa por unidade (R$) = custos fixos mensais ÷ marmitas vendidas no mês. */
 export const fixedCostPerUnit = (monthlyFixedCosts: Num, monthlyUnitsSold: Num): Decimal =>
   safeDiv(monthlyFixedCosts, monthlyUnitsSold);
 

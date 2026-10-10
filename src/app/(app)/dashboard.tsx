@@ -22,7 +22,7 @@ function Kpi({ label, value, hint, tone = "default", href }: { label: string; va
   );
 }
 
-/** Painel do Início: o que o dono precisa ver em 10 segundos. Só aparece quando já há marmita com preço. */
+/** Painel do Início: o que o dono precisa ver em 10 segundos. Só aparece quando já há produto com preço. */
 export function DashboardView({ data, variant = "full" }: { data: Dashboard; variant?: "full" | "alerts" }) {
   const { ctx, month } = data;
   const estimate = !ctx.configured;
@@ -41,7 +41,7 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
       text: (
         <>
           <strong>
-            {data.belowTarget.length} {data.belowTarget.length === 1 ? "marmita está" : "marmitas estão"} abaixo da sua meta de lucro
+            {data.belowTarget.length} {data.belowTarget.length === 1 ? "produto está" : "produtos estão"} abaixo da sua meta de lucro
           </strong>{" "}
           ({names}
           {data.belowTarget.length > 2 ? "…" : ""})
@@ -58,7 +58,7 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
       text: (
         <>
           <strong>{inc.name} subiu {formatPct(inc.pct, 0)}</strong> nos últimos dias
-          {inc.recipes > 0 ? `: afeta ${inc.recipes} ${inc.recipes === 1 ? "marmita" : "marmitas"}` : ""}
+          {inc.recipes > 0 ? `: afeta ${inc.recipes} ${inc.recipes === 1 ? "produto" : "produtos"}` : ""}
         </>
       ),
       href: "/insumos",
@@ -71,7 +71,7 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
       tone: "warn",
       text: (
         <>
-          <strong>{data.noPriceCount} {data.noPriceCount === 1 ? "insumo sem preço" : "insumos sem preço"}</strong>: o custo das marmitas está incompleto
+          <strong>{data.noPriceCount} {data.noPriceCount === 1 ? "insumo sem preço" : "insumos sem preço"}</strong>: o custo dos produtos está incompleto
         </>
       ),
       href: "/insumos",
@@ -112,13 +112,13 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
         <Kpi
           label="Lucro médio"
           value={data.avgNetPct !== null ? formatPct(data.avgNetPct) : "—"}
-          hint={estimate ? "estimativa: faltam impostos" : `por marmita, vendendo por ${data.channelName}`}
+          hint={estimate ? "estimativa: faltam impostos" : `por unidade, vendendo por ${data.channelName}`}
           href="/precificacao"
         />
         <Kpi
           label="Abaixo da meta"
           value={String(data.belowTarget.length)}
-          hint={`de ${data.pricedCount} ${data.pricedCount === 1 ? "marmita com preço" : "marmitas com preço"}`}
+          hint={`de ${data.pricedCount} ${data.pricedCount === 1 ? "produto com preço" : "produtos com preço"}`}
           tone={data.belowTarget.length > 0 && !estimate ? "bad" : "default"}
           href="/precificacao"
         />
@@ -152,7 +152,7 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
           </ul>
         </div>
       ) : (
-        <p className="rounded-xl bg-success/10 p-3 text-sm text-success">Nada pedindo atenção agora. Preços em dia e marmitas dentro da meta.</p>
+        <p className="rounded-xl bg-success/10 p-3 text-sm text-success">Nada pedindo atenção agora. Preços em dia e produtos dentro da meta.</p>
       )}
 
       {variant === "full" && worst.length > 0 ? (
@@ -165,7 +165,7 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 font-medium leading-snug">{d.name}</span>
                     <span className="tabular text-xs text-muted">
-                      {d.analysis!.at!.net >= 0 ? "sobra" : "falta"} {formatBRL(Math.abs(d.analysis!.at!.net))} por marmita
+                      {d.analysis!.at!.net >= 0 ? "sobra" : "falta"} {formatBRL(Math.abs(d.analysis!.at!.net))} por unidade
                     </span>
                   </span>
                   <MarginBadge status={d.analysis!.at!.status} pct={d.analysis!.at!.netPct} estimate={estimate} />

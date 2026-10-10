@@ -31,15 +31,15 @@ export type Dashboard = {
   withPriceCount: number;
   pricedCount: number;
   belowTarget: DashboardDish[];
-  /** Lucro líquido médio das marmitas com preço (fração), ou `null` se nenhuma tem preço. */
+  /** Lucro líquido médio dos produtos com preço (fração), ou `null` se nenhuma tem preço. */
   avgNetPct: number | null;
   month: MonthSummary & { start: string; hasData: boolean };
   staleCount: number;
   noPriceCount: number;
   increases: PriceIncreaseAlert[];
-  /** Médias das marmitas com preço (CMV, CMO, despesas, lucro); `null` se nenhuma tem custo e preço. */
+  /** Médias dos produtos com preço (CMV, CMO, despesas, lucro); `null` se nenhuma tem custo e preço. */
   panel: PanelSummary | null;
-  /** Equilíbrio do mês (precisa de custos cadastrados e de marmita com preço). */
+  /** Equilíbrio do mês (precisa de custos cadastrados e de produto com preço). */
   breakEven: FixedCostSummary["breakEven"];
 };
 

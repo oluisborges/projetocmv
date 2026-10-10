@@ -28,7 +28,7 @@ export function PainelView({ data }: { data: Dashboard }) {
   if (!panel) {
     return (
       <p className="rounded-xl border border-border bg-surface p-4 text-sm">
-        O painel aparece quando você tiver pelo menos uma marmita com custo e preço de venda. <Link href="/precificacao" className="font-semibold text-primary underline">Definir preços</Link>
+        O painel aparece quando você tiver pelo menos um produto com custo e preço de venda. <Link href="/precificacao" className="font-semibold text-primary underline">Definir preços</Link>
       </p>
     );
   }
@@ -37,7 +37,7 @@ export function PainelView({ data }: { data: Dashboard }) {
   const highest = panel.cmvRanking[0];
   const lowest = panel.cmvRanking[panel.cmvRanking.length - 1];
   const parts: Part[] = [
-    { key: "cmv", label: "Ingredientes e embalagem (CMV)", pct: c.cmv, swatch: "bg-primary", hint: "O que você gasta em insumos e embalagem para fazer a marmita." },
+    { key: "cmv", label: "Gasto com insumos (CMV)", pct: c.cmv, swatch: "bg-primary", hint: "O que você gasta em insumos e embalagem para fazer o produto." },
     { key: "cmo", label: "Equipe (CMO)", pct: c.cmo, swatch: "bg-[#4d7c6f]", hint: "Salários e encargos da equipe." },
     { key: "fixed", label: "Despesas fixas", pct: c.fixed, swatch: "bg-[#a3a8a6]", hint: "Aluguel, energia, gás e outras contas que não mudam com a venda." },
     { key: "commercial", label: "Impostos e taxas de venda", pct: c.commercial, swatch: "bg-warning", hint: "Imposto sobre a venda e taxa do canal (cartão, aplicativo)." },
@@ -75,7 +75,7 @@ export function PainelView({ data }: { data: Dashboard }) {
           {" · "}meta mínima {formatPct(ctx.settings.minMarginPct, 0)}
           {estimate ? " · estimativa" : ""}
         </p>
-        <p className="text-xs opacity-80">Média de {panel.count} {panel.count === 1 ? "marmita com preço" : "marmitas com preço"}, vendendo por {data.channelName}.</p>
+        <p className="text-xs opacity-80">Média de {panel.count} {panel.count === 1 ? "produto com preço" : "produtos com preço"}, vendendo por {data.channelName}.</p>
       </section>
 
       <section aria-label="Para onde vai cada real" className="flex flex-col gap-3">
@@ -104,22 +104,22 @@ export function PainelView({ data }: { data: Dashboard }) {
 
       <section aria-label="Indicadores" className="grid grid-cols-2 gap-3">
         <Tile
-          label="CMV médio"
+          label="Gasto com insumos"
           value={formatPct(c.cmv)}
           hint={month.cmvRealPct !== null ? `No mês, pelas compras: ${formatPct(month.cmvRealPct)}` : "do preço, em ingredientes e embalagem"}
-          help="CMV é quanto do preço de venda vai para ingredientes e embalagem. Quanto menor, mais sobra para o resto."
+          help="Também chamado de CMV: quanto do preço de venda vai para ingredientes e embalagem. Quanto menor, mais sobra para o resto."
         />
         <Tile
-          label="CMO"
+          label="Gasto com equipe"
           value={formatPct(c.cmo)}
           hint={month.cmoPct !== null ? `No mês, com o faturamento real: ${formatPct(month.cmoPct)}` : ctx.staffTotal > 0 ? `${formatBRL(ctx.staffTotal)} por mês de equipe` : "cadastre a equipe em Custos"}
-          help="CMO é quanto do preço de venda paga a equipe (salário mais encargos)."
+          help="Também chamado de CMO: quanto do preço de venda paga a equipe (salário mais encargos)."
         />
         {highest ? (
-          <Tile label="CMV mais alto" value={formatPct(highest.pct)} hint={highest.name} tone={panel.cmvRanking.length > 1 ? "bad" : "default"} help="A marmita que gasta mais em ingredientes em relação ao preço. Candidata a rever receita ou preço." />
+          <Tile label="Maior gasto com insumos" value={formatPct(highest.pct)} hint={highest.name} tone={panel.cmvRanking.length > 1 ? "bad" : "default"} help="O produto que gasta mais em ingredientes em relação ao preço. Candidata a rever receita ou preço." />
         ) : null}
         {lowest ? (
-          <Tile label="CMV mais baixo" value={formatPct(lowest.pct)} hint={lowest.name} tone={panel.cmvRanking.length > 1 ? "good" : "default"} help="A marmita que gasta menos em ingredientes em relação ao preço. A que mais deixa sobrar." />
+          <Tile label="Menor gasto com insumos" value={formatPct(lowest.pct)} hint={lowest.name} tone={panel.cmvRanking.length > 1 ? "good" : "default"} help="O produto que gasta menos em ingredientes em relação ao preço. A que mais deixa sobrar." />
         ) : null}
         <Tile
           label="Despesas fixas"
@@ -135,9 +135,9 @@ export function PainelView({ data }: { data: Dashboard }) {
         />
       </section>
 
-      <section aria-label="Marmitas por CMV" className="flex flex-col gap-3">
+      <section aria-label="Produtos por gasto com insumos" className="flex flex-col gap-3">
         <h2 className="flex items-center text-sm font-semibold uppercase tracking-wider text-muted">
-          CMV de cada marmita
+          Gasto com insumos de cada produto
           <Hint label="Como ler?">Quanto de cada R$ 100 do preço vai para ingredientes e embalagem. Barras maiores pedem atenção.</Hint>
         </h2>
         <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">
@@ -165,7 +165,7 @@ export function PainelView({ data }: { data: Dashboard }) {
         </p>
         {breakEven ? (
           <>
-            <p className="tabular text-2xl font-extrabold tracking-tight">{formatNumber(breakEven.units, 0)} marmitas</p>
+            <p className="tabular text-2xl font-extrabold tracking-tight">{formatNumber(breakEven.units, 0)} unidades</p>
             <p className="text-sm text-muted">
               Cerca de {formatNumber(breakEven.perDay, 0)} por dia · {formatBRL(breakEven.revenue)} de faturamento
             </p>

@@ -8,9 +8,9 @@ export type DishCmv = { id: string; name: string; pct: number };
 export type PanelSummary = {
   /** Marmitas com custo e preço de venda: só elas entram nas médias. */
   count: number;
-  /** CMV de cada marmita (custo ÷ preço), da mais alta para a mais baixa. */
+  /** Gasto com insumos de cada produto (custo ÷ preço), da mais alta para a mais baixa. */
   cmvRanking: DishCmv[];
-  /** Médias por marmita, em fração do preço. Somam 100%. */
+  /** Médias por unidade, em fração do preço. Somam 100%. */
   composition: { cmv: number; cmo: number; fixed: number; commercial: number; profit: number };
 };
 

@@ -68,7 +68,7 @@ function Row({ row, settings, feePct, canWrite, configured }: { row: PricingRowD
                 <div className="flex flex-col items-start gap-1">
                   <MarginBadge status={analysis.at.status} pct={analysis.at.netPct} estimate={!configured} />
                   <span className="tabular text-xs text-muted">
-                    {analysis.at.net >= 0 ? "sobra" : "falta"} {formatBRL(Math.abs(analysis.at.net))} por marmita
+                    {analysis.at.net >= 0 ? "sobra" : "falta"} {formatBRL(Math.abs(analysis.at.net))} por unidade
                   </span>
                 </div>
               ) : (
@@ -184,7 +184,7 @@ export function PricingList({
 
       {configured && below > 0 ? (
         <p role="status" className="rounded-xl bg-danger/10 px-4 py-3 text-sm font-medium text-danger">
-          {below} {below === 1 ? "marmita está" : "marmitas estão"} abaixo da sua meta de margem{channel ? ` vendendo por ${channel.name}` : ""}.
+          {below} {below === 1 ? "produto está" : "produtos estão"} abaixo da sua meta de margem{channel ? ` vendendo por ${channel.name}` : ""}.
         </p>
       ) : null}
 

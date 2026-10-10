@@ -41,7 +41,7 @@ export default async function PricingPage() {
     <>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Preços</h1>
-        <p className="text-muted">Quanto cobrar em cada marmita e quanto sobra de verdade.</p>
+        <p className="text-muted">Quanto cobrar em cada produto e quanto sobra de verdade.</p>
       </section>
 
       <Link href="/precificacao/ajustes" className="flex h-11 items-center justify-between rounded-xl border border-border bg-surface px-4 text-sm font-semibold">

@@ -55,7 +55,7 @@ export function CatalogPicker({ items, recipes }: { items: CatalogItem[]; recipe
           <div className="border-b border-border py-3">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Fichas prontas</h2>
             <p className="pt-1 text-sm text-muted">
-              Marmitas já montadas, em gramas prontos. Os insumos delas vêm junto; depois você ajusta as gramas e preenche os preços.
+              Fichas já montadas, em gramas prontos. Os insumos delas vêm junto; depois você ajusta as gramas e preenche os preços.
             </p>
           </div>
           <ul className="divide-y divide-border">

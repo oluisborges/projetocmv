@@ -24,7 +24,7 @@ export default async function RecipesPage() {
     <>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Fichas técnicas</h1>
-        <p className="text-muted">A receita de cada marmita, com o custo por porção sempre atualizado.</p>
+        <p className="text-muted">A receita de cada produto, com o custo por porção sempre atualizado.</p>
       </section>
 
       {canWrite ? (
@@ -46,7 +46,7 @@ export default async function RecipesPage() {
                   <p className="truncate font-semibold">{recipe.name}</p>
                   <p className="truncate text-xs text-muted">
                     {recipe.category ? `${recipe.category} · ` : ""}
-                    {view.ok ? (recipe.mode === "serving" ? "por marmita" : `lote de ${formatNumber(view.cost.portions.toNumber(), 0)} porções`) : "ficha incompleta"}
+                    {view.ok ? (recipe.mode === "serving" ? "por unidade" : `lote de ${formatNumber(view.cost.portions.toNumber(), 0)} porções`) : "ficha incompleta"}
                   </p>
                   {view.ok && view.missingPrices > 0 ? (
                     <p className="text-xs text-warning">

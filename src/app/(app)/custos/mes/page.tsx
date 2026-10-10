@@ -109,7 +109,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          2. Marmitas vendidas ({formatNumber(summary.soldUnits, 0)})
+          2. Unidades vendidas ({formatNumber(summary.soldUnits, 0)})
         </h2>
         {dishes.length === 0 ? (
           <p className="text-sm text-muted">
@@ -139,7 +139,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
             <div>
               <dt className="text-muted">
                 As fichas dizem que deveria ser
-                <Hint>Custo de cada marmita (pela ficha) × quantas você vendeu, dividido pelo faturamento. É o gasto ideal, sem desperdício.</Hint>
+                <Hint>Custo de cada produto (pela ficha) × quantas você vendeu, dividido pelo faturamento. É o gasto ideal, sem desperdício.</Hint>
               </dt>
               <dd className="tabular text-xl font-extrabold">{summary.cmvTheoreticalPct !== null ? formatPct(summary.cmvTheoreticalPct) : "—"}</dd>
               <dd className="tabular text-xs text-muted">{summary.theoreticalCost !== null ? formatBRL(summary.theoreticalCost) : "informe as vendas abaixo"}</dd>
@@ -192,13 +192,13 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
           {summary.salesWithoutCost > 0 ? (
             <p className="text-xs text-warning">
-              {summary.salesWithoutCost} {summary.salesWithoutCost === 1 ? "marmita vendida está" : "marmitas vendidas estão"} com a ficha incompleta: o custo esperado está subestimado.
+              {summary.salesWithoutCost} {summary.salesWithoutCost === 1 ? "produto vendido está" : "produtos vendidos estão"} com a ficha incompleta: o custo esperado está subestimado.
             </p>
           ) : null}
         </section>
       ) : (
         <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
-          Informe o faturamento, as compras e quantas marmitas vendeu de cada tipo. O app mostra se o que você gastou bate com o que deveria.
+          Informe o faturamento, as compras e quantas unidades vendeu de cada produto. O app mostra se o que você gastou bate com o que deveria.
         </p>
       )}
 

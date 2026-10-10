@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "Shogun Precificação",
     short_name: "Shogun",
-    description: "Custo, margem e preço certo da sua marmita",
+    description: "Custo, margem e preço certo do que você vende",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

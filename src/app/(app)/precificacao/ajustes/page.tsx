@@ -17,14 +17,14 @@ export default async function PricingSettingsPage() {
       </Link>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Ajustes de preço</h1>
-        <p className="text-muted">Esses números entram na conta do preço sugerido de todas as marmitas.</p>
+        <p className="text-muted">Esses números entram na conta do preço sugerido de todos os produtos.</p>
       </section>
 
       {!ctx ? (
         <p className="rounded-xl border border-border bg-surface p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
       ) : canWrite ? (
         <>
-          <SettingsForm settings={ctx.settings} fixedAuto={ctx.fixedAuto} />
+          <SettingsForm settings={ctx.settings} fixedAuto={ctx.fixedAuto} configured={ctx.configured} />
 
           <section className="flex flex-col gap-3 pt-2">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">

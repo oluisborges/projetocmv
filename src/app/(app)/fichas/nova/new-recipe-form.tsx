@@ -17,19 +17,19 @@ export function NewRecipeForm() {
     <ActionForm action={createRecipe} submitLabel="Criar e adicionar ingredientes">
       <input type="hidden" name="mode" value={mode} />
 
-      <TextField label="Nome da marmita" name="name" placeholder="Ex.: Frango grelhado com arroz e feijão" />
+      <TextField label="Nome do produto" name="name" placeholder="Ex.: Frango grelhado com arroz e feijão" />
       <TextField label="Categoria (opcional)" name="category" required={false} placeholder="Ex.: Tradicional" />
 
       <fieldset className="flex flex-col gap-2">
         <legend className="pb-1 text-sm font-medium">Como você monta essa receita?</legend>
         <div className="flex flex-col gap-2 sm:flex-row">
           <button type="button" onClick={() => setMode("serving")} aria-pressed={mode === "serving"} className={choice(mode === "serving")}>
-            <span className="font-semibold">Por marmita</span>
-            <span className="text-xs text-muted">Quanto vai em UMA marmita: 120 g de frango, 150 g de arroz… (recomendado)</span>
+            <span className="font-semibold">Por unidade</span>
+            <span className="text-xs text-muted">Quanto vai em CADA unidade vendida: 120 g de frango, 150 g de arroz… (recomendado)</span>
           </button>
           <button type="button" onClick={() => setMode("batch")} aria-pressed={mode === "batch"} className={choice(mode === "batch")}>
             <span className="font-semibold">Em lote</span>
-            <span className="text-xs text-muted">Uma panela ou receita grande que rende várias marmitas</span>
+            <span className="text-xs text-muted">Uma panela ou receita grande que rende várias unidades</span>
           </button>
         </div>
       </fieldset>
@@ -42,7 +42,7 @@ export function NewRecipeForm() {
             inputMode="decimal"
             required={false}
             placeholder="Ex.: 25"
-            hint={<Hint>Quantas marmitas saem dessa receita. Preencha este campo OU o peso de cada porção; o outro a gente calcula.</Hint>}
+            hint={<Hint>Quantas unidades saem dessa receita. Preencha este campo OU o peso de cada porção; o outro a gente calcula.</Hint>}
           />
           <TextField
             label="Peso da porção (g)"
@@ -50,7 +50,7 @@ export function NewRecipeForm() {
             inputMode="decimal"
             required={false}
             placeholder="Ex.: 300"
-            hint={<Hint>Quanto pesa cada marmita pronta, em gramas. Se você preencher só este, as porções saem do peso total depois de cozinhar.</Hint>}
+            hint={<Hint>Quanto pesa cada unidade pronta, em gramas. Se você preencher só este, as porções saem do peso total depois de cozinhar.</Hint>}
           />
           <TextField
             label="Perda de cocção (%)"

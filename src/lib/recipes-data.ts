@@ -28,7 +28,7 @@ export type RecipeRecord = {
   portion_weight: number | null;
   portion_weight_unit: "g" | "kg";
   cooking_loss_pct: number;
-  /** serving = quantidades de UMA marmita; batch = receita em lote que rende N porções. */
+  /** serving = quantidades de UMA unidade; batch = receita em lote que rende N porções. */
   mode: "serving" | "batch";
 };
 

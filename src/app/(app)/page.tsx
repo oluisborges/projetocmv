@@ -32,8 +32,8 @@ export default async function HomePage() {
       {
         key: "recipes",
         minutes: 5,
-        title: "Monte a ficha de cada marmita",
-        detail: data.recipeCount === 0 ? "A receita de uma marmita, com o custo calculado na hora." : `${data.recipeCount} ${data.recipeCount === 1 ? "ficha criada" : "fichas criadas"}`,
+        title: "Monte a ficha de cada produto",
+        detail: data.recipeCount === 0 ? "A receita de um produto, com o custo calculado na hora." : `${data.recipeCount} ${data.recipeCount === 1 ? "ficha criada" : "fichas criadas"}`,
         href: data.recipeCount === 0 ? "/fichas/nova" : "/fichas",
         cta: data.recipeCount === 0 ? "Criar a primeira ficha" : "Ver fichas",
         done: data.recipeCount > 0,
@@ -69,7 +69,7 @@ export default async function HomePage() {
         key: "prices",
         minutes: 3,
         title: "Defina o preço de venda",
-        detail: data.recipeCount === 0 ? "Depois de criar as fichas." : `${data.withPriceCount} de ${data.recipeCount} marmitas com preço`,
+        detail: data.recipeCount === 0 ? "Depois de criar as fichas." : `${data.withPriceCount} de ${data.recipeCount} produtos com preço`,
         href: "/precificacao",
         cta: "Definir preços",
         done: data.recipeCount > 0 && data.withPriceCount === data.recipeCount,
@@ -151,9 +151,9 @@ export default async function HomePage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Olá{firstName ? `, ${firstName}` : ""}!</h1>
         <p className="text-muted">
           {steps.length === 0
-            ? "Aqui você acompanha o custo e o lucro de cada marmita."
+            ? "Aqui você acompanha o custo e o lucro de cada produto."
             : next
-              ? "Falta pouco para você saber quanto ganha em cada marmita."
+              ? "Falta pouco para você saber quanto ganha em cada produto."
               : "Tudo pronto! Agora é só manter os preços dos insumos em dia."}
         </p>
       </section>

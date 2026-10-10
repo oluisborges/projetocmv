@@ -9,13 +9,13 @@ export type FixedCostSummary = {
   perUnit: number | null;
   /** Fração do faturamento que vai para custo fixo (precisa do faturamento mensal). Alimenta o preço sugerido. */
   pctOfRevenue: number | null;
-  /** Quanto vender por mês para empatar (precisa de ao menos uma marmita com preço). */
+  /** Quanto vender por mês para empatar (precisa de ao menos um produto com preço). */
   breakEven: null | { units: number; revenue: number; perDay: number; avgPrice: number; avgContribution: number };
 };
 
 /**
  * Resumo dos custos fixos do mês. A equipe entra como custo fixo (salário + encargos): em marmitaria pequena
- * a mão de obra não varia com a venda do dia. O ponto de equilíbrio usa a contribuição média das marmitas com preço,
+ * a mão de obra não varia com a venda do dia. O ponto de equilíbrio usa a contribuição média dos produtos com preço,
  * todas com o mesmo peso (não há vendas por prato nesta etapa).
  */
 export function summarizeFixedCosts(input: {

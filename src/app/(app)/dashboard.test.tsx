@@ -63,7 +63,7 @@ function build(over: Partial<Dashboard> = {}): Dashboard {
 }
 
 describe("DashboardView", () => {
-  it("mostra indicadores, alertas e a marmita de pior lucro primeiro", () => {
+  it("mostra indicadores, alertas e o produto de pior lucro primeiro", () => {
     const html = renderToStaticMarkup(<DashboardView data={build()} />);
     expect(html).toContain("Lucro médio");
     expect(html).toContain("Abaixo da meta");
@@ -71,7 +71,7 @@ describe("DashboardView", () => {
     expect(html).toContain("30%"); // CMV real
     expect(html).toContain("7,3%"); // CMO
     expect(html).toContain("Peito de frango subiu 12%");
-    expect(html).toContain("afeta 3 marmitas");
+    expect(html).toContain("afeta 3 produtos");
     expect(html).toContain("1 insumo sem preço");
     expect(html).toContain("2 preços de insumos sem atualizar");
     expect(html).toContain("Você gastou R$");

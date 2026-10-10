@@ -8,7 +8,7 @@ export default function LoginPage() {
       <header className="flex flex-col items-center gap-6 text-center">
         <Image src="/brand/logo-stacked.png" alt="Grupo Shogun" width={560} height={358} priority className="h-auto w-44" />
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-extrabold tracking-tight">Quanto você ganha em cada marmita?</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">Quanto você ganha em cada produto?</h1>
           <p className="text-muted">Entre com o e-mail e a senha que a Shogun passou para você.</p>
         </div>
       </header>

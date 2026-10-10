@@ -74,7 +74,7 @@ export function analyzePrice(input: { cost: number; settings: PricingSettings; f
 export function priceBreakdown(input: { price: number; cost: number; settings: PricingSettings; feePct: number }) {
   const { price, cost, settings, feePct } = input;
   const parts = [
-    { key: "cost", label: "Custo da marmita", value: D(cost) },
+    { key: "cost", label: "Custo do produto", value: D(cost) },
     { key: "tax", label: "Impostos", value: D(price).mul(settings.taxPct) },
     { key: "fee", label: "Taxa do canal de venda", value: D(price).mul(feePct) },
     { key: "fixed", label: "Despesas fixas", value: D(price).mul(settings.fixedExpensePct) },

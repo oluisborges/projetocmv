@@ -92,7 +92,7 @@ export async function createRecipe(_prev: FormState, formData: FormData): Promis
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { error: NO_PERMISSION };
 
-  // Por marmita (padrão): uma porção, sem perda de cocção. Em lote: o dono informa porções/peso.
+  // Por unidade (padrão): uma porção, sem perda de cocção. Em lote: o dono informa porções/peso.
   if (formData.get("mode") !== "batch") {
     const name = String(formData.get("name") ?? "").trim();
     const category = String(formData.get("category") ?? "").trim() || null;
@@ -148,7 +148,7 @@ export async function updateRecipeSettings(input: {
   if (!current) return { ok: false, error: "Ficha não encontrada." };
 
   if (current.mode === "serving") {
-    // Ficha por marmita: porções e perda de cocção não existem; só o nome muda.
+    // Ficha por unidade: porções e perda de cocção não existem; só o nome muda.
     const name = input.name.trim();
     if (!name || name.length > 80) return { ok: false, error: "Dê um nome à ficha (até 80 letras)." };
     const { data, error } = await supabase.from("recipes").update({ name }).eq("id", id.data).select("id").maybeSingle();

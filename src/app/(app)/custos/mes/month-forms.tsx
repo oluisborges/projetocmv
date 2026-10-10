@@ -19,7 +19,7 @@ export function PeriodForm({ month, revenue, purchases }: { month: string; reven
         required={false}
         defaultValue={revenue > 0 ? money.format(revenue) : ""}
         placeholder="Ex.: 60.000"
-        hint={<Hint>Tudo que entrou com as vendas das marmitas no mês.</Hint>}
+        hint={<Hint>Tudo que entrou com as vendas dos produtos no mês.</Hint>}
       />
       <TextField
         label="Quanto você comprou de insumos (R$)"
@@ -85,7 +85,7 @@ export function SalesRow({
           </p>
         </div>
         <label className="flex shrink-0 items-center gap-1.5">
-          <span className="sr-only">Marmitas vendidas de {recipe.name}</span>
+          <span className="sr-only">Unidades vendidas de {recipe.name}</span>
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}

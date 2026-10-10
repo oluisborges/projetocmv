@@ -51,7 +51,7 @@ function YieldField({ defaultValue }: { defaultValue: number }) {
       </div>
       <p className="text-xs leading-relaxed text-muted">
         Arroz 2,5 · Feijão 2,2 · Macarrão 2,3 · Frango grelhado 0,75 · Carne moída 0,7 · Salada, molho, queijo 1. É assim que o app converte os gramas
-        PRONTOS da marmita para o que você compra cru.
+        PRONTOS do produto para o que você compra cru.
       </p>
     </div>
   );
@@ -128,8 +128,20 @@ export function IngredientForm({
       />
 
       {kind === "insumo" ? (
+        <details open={!defaults.id} className="rounded-xl border border-border bg-surface">
+          <summary className="flex min-h-14 cursor-pointer flex-col justify-center px-4 py-2 text-sm">
+            <span className="font-semibold text-primary">Perdas e rendimento (avançado)</span>
+            {defaults.id ? (
+              <span className="text-xs text-muted">
+                Compra {decimal(defaults.correction_factor) ?? "1"}× para aproveitar 1 · cru vira {decimal(defaults.cooking_yield) ?? "1"}× depois de pronto
+              </span>
+            ) : (
+              <span className="text-xs text-muted">Se não tem perda nem muda de peso ao cozinhar, deixe 1.</span>
+            )}
+          </summary>
+          <div className="flex flex-col gap-4 border-t border-border p-4">
         <TextField
-          label="Fator de correção"
+          label="Perda na limpeza (fator de correção)"
           name="correction_factor"
           inputMode="decimal"
           defaultValue={decimal(defaults.correction_factor) ?? "1"}
@@ -140,9 +152,10 @@ export function IngredientForm({
             </Hint>
           }
         />
+            <YieldField defaultValue={defaults.cooking_yield ?? 1} />
+          </div>
+        </details>
       ) : null}
-
-      {kind === "insumo" ? <YieldField defaultValue={defaults.cooking_yield ?? 1} /> : null}
     </ActionForm>
   );
 }

@@ -8,7 +8,7 @@ import { computeRecipe } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipe } from "@/lib/recipes-data";
 import { Simulator } from "./simulator";
 
-export const metadata = { title: "Preço da marmita" };
+export const metadata = { title: "Preço do produto" };
 
 export default async function RecipePricingPage(props: PageProps<"/precificacao/[id]">) {
   const { orgId, canWrite } = await requireMember();

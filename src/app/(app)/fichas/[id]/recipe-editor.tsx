@@ -16,7 +16,7 @@ export type EditorIngredient = {
   purchase_unit: string;
   unit_cost: number;
   correction_factor: number;
-  /** Peso pronto ÷ peso cru. 1 = não muda. Só vale em ficha por marmita. */
+  /** Peso pronto ÷ peso cru. 1 = não muda. Só vale em ficha por unidade. */
   cooking_yield: number;
   category: string | null;
   archived: boolean;
@@ -27,7 +27,7 @@ const CHANGES_WEIGHT = /prote|gr[ãa]o|massa/i;
 /** `netQty` fica SEMPRE na unidade-base (g/ml/un); `unit` é só como o dono vê e digita. */
 export type EditorItem = { id: string; ingredientId: string; netQty: number; unit: PurchaseUnit; scope: "batch" | "portion" };
 export type EditorRecipe = {
-  /** serving = UMA marmita (só gramas); batch = lote (aceita kg/l) */
+  /** serving = UMA unidade (só gramas); batch = lote (aceita kg/l) */
   mode: "serving" | "batch";
   id: string;
   name: string;
@@ -353,11 +353,11 @@ export function RecipeEditor({
         {view.ok ? (
           <div className="flex flex-col gap-1">
             <p className="flex items-center text-xs font-semibold uppercase tracking-wider text-muted">
-              {isServing ? "Custo da marmita" : "Custo por porção"}
+              {isServing ? "Custo do produto" : "Custo por porção"}
               <Hint>
                 {isServing
-                  ? "Quanto custa fazer UMA marmita: a soma dos ingredientes que vão nela mais a embalagem."
-                  : "Quanto custa fazer UMA marmita: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem."}
+                  ? "Quanto custa fazer UMA unidade: a soma dos ingredientes que vão nela mais a embalagem."
+                  : "Quanto custa fazer UMA unidade: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem."}
               </Hint>
             </p>
             <div className="flex items-baseline justify-between gap-3">
@@ -389,20 +389,20 @@ export function RecipeEditor({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Ingredientes de UMA marmita" : "Ingredientes do lote"}</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Ingredientes de UMA unidade" : "Ingredientes do lote"}</h2>
         {renderItems("batch")}
         {canWrite ? (
           <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
         <p className="text-xs text-muted">
           {isServing
-            ? "Digite quantos gramas PRONTOS vão em UMA marmita (o arroz já cozido, o frango já grelhado, do jeito que vai na bandeja). O app converte para o peso cru e já considera a limpeza."
+            ? "Digite quantos gramas PRONTOS vão em UMA unidade (o arroz já cozido, o frango já grelhado, do jeito que vai na bandeja). O app converte para o peso cru e já considera a limpeza."
             : "Digite a quantidade do LOTE INTEIRO (a receita toda), já limpa. Dá para usar kg ou g. O custo considera a perda de limpeza sozinho."}
         </p>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Embalagem da marmita" : "Embalagem (por porção)"}</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Embalagem do produto" : "Embalagem (por porção)"}</h2>
         {renderItems("portion")}
         {canWrite ? (
           <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Bandeja, filme, etiqueta…" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
@@ -412,7 +412,7 @@ export function RecipeEditor({
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Nome" : "Rendimento"}</h2>
         <label className="flex flex-col gap-1.5 text-sm font-medium">
-          {isServing ? "Nome da marmita" : "Nome"}
+          {isServing ? "Nome do produto" : "Nome"}
           <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => saveSettings()} disabled={!canWrite} className={inputClass} />
         </label>
         {isServing ? null : (

@@ -39,7 +39,7 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
         initialItems={items.map((i) => {
           const base = ingredients.find((x) => x.id === i.ingredient_id)?.purchase_unit;
           const baseUnit = base && isPurchaseUnit(base) ? baseUnitOf(base) : "g";
-          // Por marmita: tudo em g/ml/un (não existe marmita de 1 kg). Em lote: a unidade em que o dono digitou.
+          // Por unidade: tudo em g/ml/un (não existe produto de 1 kg). Em lote: a unidade em que o dono digitou.
           const typed = i.qty_unit && isPurchaseUnit(i.qty_unit) && i.scope === "batch" && recipe.mode === "batch" ? i.qty_unit : baseUnit;
           return { id: i.id, ingredientId: i.ingredient_id, netQty: i.net_qty, unit: typed, scope: i.scope };
         })}

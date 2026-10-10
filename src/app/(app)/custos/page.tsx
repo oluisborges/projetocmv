@@ -33,7 +33,7 @@ export default async function CostsPage() {
     loadCurrentPrices(ctx.unit.id),
   ]);
 
-  // Marmitas com custo calculado e preço definido entram no ponto de equilíbrio (mesmo peso para todas).
+  // Produtos com custo calculado e preço definido entram no ponto de equilíbrio (mesmo peso para todas).
   const byId = new Map(ingredients.map((i) => [i.id, i]));
   const dishes = recipes.flatMap((r) => {
     const price = prices.get(r.id) ?? 0;
@@ -68,7 +68,7 @@ export default async function CostsPage() {
       key: "sales",
       title: "Quanto você vende por mês",
       done: salesDone,
-      status: salesDone ? `${formatBRL(ctx.monthlyRevenue!)} · ${formatNumber(ctx.monthlyUnits!, 0)} marmitas` : "falta preencher",
+      status: salesDone ? `${formatBRL(ctx.monthlyRevenue!)} · ${formatNumber(ctx.monthlyUnits!, 0)} unidades` : "falta preencher",
       body: canWrite ? (
         <MonthlyNumbersForm revenue={ctx.monthlyRevenue} units={ctx.monthlyUnits} />
       ) : (
@@ -127,7 +127,7 @@ export default async function CostsPage() {
         <p className="text-xs font-semibold uppercase tracking-wider opacity-90">Para não ter prejuízo, você precisa vender</p>
         {summary.breakEven ? (
           <>
-            <p className="tabular text-3xl font-extrabold tracking-tight">{formatNumber(summary.breakEven.units, 0)} marmitas por mês</p>
+            <p className="tabular text-3xl font-extrabold tracking-tight">{formatNumber(summary.breakEven.units, 0)} unidades por mês</p>
             <p className="text-sm opacity-90">
               Uns {formatNumber(summary.breakEven.perDay, 0)} por dia · {formatBRL(summary.breakEven.revenue)} de faturamento
             </p>
@@ -136,7 +136,7 @@ export default async function CostsPage() {
           <p className="text-base font-semibold">Com os preços de hoje, cada venda perde dinheiro. Revise em Preços.</p>
         ) : summary.total > 0 ? (
           <p className="text-base">
-            Falta o preço de venda das marmitas.{" "}
+            Falta o preço de venda dos produtos.{" "}
             <Link href="/precificacao" className="font-bold underline">
               Definir preços
             </Link>
