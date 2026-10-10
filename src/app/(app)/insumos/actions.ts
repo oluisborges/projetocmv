@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { recordSnapshot } from "@/lib/snapshot-record";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireMember } from "@/lib/auth";
@@ -43,6 +44,7 @@ export async function updateIngredientPrice(id: string, rawPrice: string): Promi
     .maybeSingle();
 
   if (error || !data) return { ok: false, error: "Não foi possível salvar. Tente de novo." };
+  recordSnapshot();
   revalidatePath("/insumos");
   return { ok: true, price: Number(data.purchase_price) };
 }
@@ -107,6 +109,7 @@ export async function createIngredient(_prev: FormState, formData: FormData): Pr
   const { error } = await supabase.from("ingredients").insert({ ...read.value, org_id: orgId });
   if (error) return fail("Não foi possível salvar o insumo.");
 
+  recordSnapshot();
   revalidatePath("/insumos");
   redirect("/insumos");
 }
@@ -142,6 +145,7 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
   if (error?.code === "23514") return fail("Esse item está em fichas: não dá para mudar o tipo ou a medida dele.");
   if (error || !data) return fail("Não foi possível salvar as alterações.");
 
+  recordSnapshot();
   revalidatePath("/insumos");
   redirect("/insumos");
 }
@@ -154,6 +158,7 @@ export async function archiveIngredient(formData: FormData): Promise<void> {
   const supabase = await createClient();
   // Arquiva (não apaga): fichas técnicas antigas continuam funcionando.
   await supabase.from("ingredients").update({ archived_at: new Date().toISOString() }).eq("id", id.data);
+  recordSnapshot();
   revalidatePath("/insumos");
   redirect("/insumos");
 }
@@ -178,6 +183,7 @@ export async function adjustPrices(_prev: FormState, formData: FormData): Promis
   });
   if (error) return fail("Não foi possível reajustar os preços.");
 
+  recordSnapshot();
   revalidatePath("/insumos");
   const n = Number(data ?? 0);
   if (n === 0) return { ok: "Nenhum insumo com preço foi encontrado para reajustar." };
@@ -197,6 +203,7 @@ export async function importFromCatalog(_prev: FormState, formData: FormData): P
   const { error } = await supabase.rpc("import_template", { p_org: orgId, p_ingredient_ids: ids.data, p_recipe_ids: recipeIds.data });
   if (error) return fail("Não foi possível importar.");
 
+  recordSnapshot();
   revalidatePath("/insumos");
   redirect(recipeIds.data.length > 0 ? `/insumos?importado=fichas&n=${recipeIds.data.length}` : "/insumos?importado=1");
 }

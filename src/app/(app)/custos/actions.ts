@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { recordSnapshot } from "@/lib/snapshot-record";
 import { z } from "zod";
 import { requireMember } from "@/lib/auth";
 import { parseDecimal } from "@/lib/format";
@@ -59,6 +60,7 @@ export async function saveMonthlyNumbers(_prev: FormState, formData: FormData): 
   );
   if (error) return { error: "Não foi possível salvar." };
 
+  recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");
   return { ok: "Salvo." };
@@ -80,6 +82,7 @@ export async function addFixedCost(_prev: FormState, formData: FormData): Promis
   const { error } = await supabase.from("fixed_costs").insert({ org_id: orgId, unit_id: unit.id, name, monthly_amount: amount.value });
   if (error) return { error: "Não foi possível adicionar." };
 
+  recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");
   return { ok: `${name} adicionado.` };
@@ -98,6 +101,7 @@ export async function updateFixedCostAmount(id: string, raw: string): Promise<Re
   const { data, error } = await supabase.from("fixed_costs").update({ monthly_amount: amount.value }).eq("id", uuid.data).select("monthly_amount").maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
+  recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");
   return { ok: true, amount: Number(data.monthly_amount) };
@@ -110,6 +114,7 @@ export async function deleteFixedCost(formData: FormData): Promise<void> {
 
   const supabase = await createClient();
   await supabase.from("fixed_costs").delete().eq("id", id.data);
+  recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");
 }
@@ -136,6 +141,7 @@ export async function addStaff(_prev: FormState, formData: FormData): Promise<Fo
     .insert({ org_id: orgId, unit_id: unit.id, name, area, monthly_salary: salary.value, charges_pct: enc.value });
   if (error) return { error: "Não foi possível adicionar." };
 
+  recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");
   return { ok: `${name} adicionado(a).` };
@@ -161,6 +167,7 @@ export async function updateStaffPay(id: string, rawSalary: string, rawCharges: 
     .maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
+  recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");
   return { ok: true, salary: Number(data.monthly_salary), charges: Number(data.charges_pct) };
@@ -173,6 +180,7 @@ export async function deleteStaff(formData: FormData): Promise<void> {
 
   const supabase = await createClient();
   await supabase.from("staff").delete().eq("id", id.data);
+  recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");
 }

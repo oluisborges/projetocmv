@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { monthPriceMoves, summarizeHistoryMonth, type MonthSnapshot } from "./history-view";
+import { appendSample, monthPriceMoves, normalizeSnapshot, summarizeHistoryMonth, summarizeSamples, type SnapshotState } from "./history-view";
 
-const snapshot: MonthSnapshot = { v: 1, fixedTotal: 3000, staffTotal: 4000, taxPct: 0.06, feePct: 0, products: [] };
+const snapshot: SnapshotState = { fixedTotal: 3000, staffTotal: 4000, taxPct: 0.06, feePct: 0, products: [] };
 
 describe("summarizeHistoryMonth", () => {
   it("calcula o que sobrou no mês", () => {
@@ -58,5 +58,45 @@ describe("monthPriceMoves", () => {
 
   it("ignora insumo criado dentro do mês (não há preço anterior)", () => {
     expect(monthPriceMoves([h("a", 10, "2026-09-02T12:00:00Z"), h("a", 20, "2026-09-20T12:00:00Z")], names, "2026-09-01")).toEqual([]);
+  });
+});
+
+describe("variação durante o mês", () => {
+  const state = (price: number, staff = 4000): SnapshotState => ({
+    fixedTotal: 3000,
+    staffTotal: staff,
+    taxPct: 0.06,
+    feePct: 0,
+    products: [{ id: "p1", name: "Frango", cost: 7.5, price }],
+  });
+
+  it("só grava amostra nova quando algo mudou", () => {
+    const first = appendSample(null, state(15), new Date("2026-09-02T12:00:00Z"))!;
+    expect(first.samples).toHaveLength(1);
+    expect(appendSample(first, state(15), new Date("2026-09-03T12:00:00Z"))).toBeNull();
+    const second = appendSample(first, state(16), new Date("2026-09-16T12:00:00Z"))!;
+    expect(second.samples).toHaveLength(2);
+  });
+
+  it("média ponderada pelo tempo: preço 15 até o dia 16 e 16 depois", () => {
+    let snap = appendSample(null, state(15), new Date("2026-09-05T12:00:00Z"))!;
+    snap = appendSample(snap, state(16), new Date("2026-09-16T00:00:00Z"))!;
+    const r = summarizeSamples(snap, "2026-09-01", new Date("2026-10-01T00:00:00Z"));
+    // 15 dias a R$ 15 (1 a 16) e 15 dias a R$ 16 (16 a 1/10)
+    expect(r.products[0].avgPrice).toBeCloseTo(15.5, 6);
+    expect(r.products[0].minPrice).toBe(15);
+    expect(r.products[0].maxPrice).toBe(16);
+    expect(r.events).toHaveLength(1);
+    expect(r.events[0]).toMatchObject({ kind: "price", label: "Frango", from: 15, to: 16 });
+  });
+
+  it("registra mudança da equipe e lê a foto antiga de um estado só", () => {
+    let snap = appendSample(null, state(15, 4000), new Date("2026-09-02T00:00:00Z"))!;
+    snap = appendSample(snap, state(15, 5000), new Date("2026-09-16T00:00:00Z"))!;
+    expect(summarizeSamples(snap, "2026-09-01", new Date("2026-10-01T00:00:00Z")).events.map((e) => e.kind)).toEqual(["staff"]);
+
+    const old = normalizeSnapshot({ v: 1, ...state(15) }, "2026-09-01")!;
+    expect(old.samples).toHaveLength(1);
+    expect(summarizeSamples(old, "2026-09-01", new Date("2026-10-01T00:00:00Z")).average.staffTotal).toBe(4000);
   });
 });

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Hint } from "@/components/hint";
+import { ShareButton } from "@/components/share-button";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import type { Dashboard } from "@/lib/dashboard-data";
 
@@ -59,7 +60,8 @@ export function PainelView({ data }: { data: Dashboard }) {
         </p>
       ) : null}
 
-      <section aria-label="Lucro líquido" className="flex flex-col gap-3 rounded-2xl bg-primary p-5 text-primary-foreground">
+      <section aria-label="Lucro líquido" className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-[#2f5d4f] p-5 text-primary-foreground shadow-lg">
+        <span aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-accent" />
         <p className="flex items-center text-sm font-semibold uppercase tracking-wider opacity-90">
           Lucro líquido médio
           <Hint label="O que é lucro líquido?">Em média, quanto sobra de cada R$ 100 vendidos depois de pagar ingredientes, equipe, despesas, impostos e taxas.</Hint>
@@ -75,6 +77,7 @@ export function PainelView({ data }: { data: Dashboard }) {
           {" · "}meta mínima {formatPct(ctx.settings.minMarginPct, 0)}
           {estimate ? " · estimativa" : ""}
         </p>
+        <ShareButton className="mt-1 h-12 rounded-xl bg-accent px-5 text-base font-bold text-primary active:scale-[0.99]">Compartilhar meu resultado</ShareButton>
         <p className="text-xs opacity-80">Média de {panel.count} {panel.count === 1 ? "produto com preço" : "produtos com preço"}, vendendo por {data.channelName}.</p>
       </section>
 

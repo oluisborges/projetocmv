@@ -3,11 +3,26 @@ import { PainelTabs } from "@/components/painel-tabs";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { loadHistory, type HistoryEntry } from "@/lib/history-data";
+import type { ChangeEvent } from "@/lib/history-view";
 import { lastMonths, monthLabel } from "@/lib/month-view";
 
 export const metadata = { title: "Histórico" };
 
 const SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+const dayLabel = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+
+function eventText(e: ChangeEvent) {
+  const arrow = (from: string, to: string, up: boolean) => (
+    <span className="tabular">
+      {from} → <strong className={up ? "text-danger" : "text-success"}>{to}</strong>
+    </span>
+  );
+  if (e.kind === "price") return <>{e.label}: preço {arrow(formatBRL(e.from), formatBRL(e.to), false)}</>;
+  if (e.kind === "cost") return <>{e.label}: custo {arrow(formatBRL(e.from), formatBRL(e.to), e.to > e.from)}</>;
+  if (e.kind === "tax") return <>{e.label}: {arrow(formatPct(e.from), formatPct(e.to), e.to > e.from)}</>;
+  return <>{e.label} por mês: {arrow(formatBRL(e.from), formatBRL(e.to), e.to > e.from)}</>;
+}
 
 function Delta({ now, before }: { now: number; before: number | undefined }) {
   if (!before || before <= 0 || now <= 0) return null;
@@ -98,6 +113,20 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
           </div>
         ) : null}
 
+        {entry.events.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted">O que mudou durante o mês</p>
+            <ul className="divide-y divide-border rounded-lg border border-border">
+              {entry.events.map((e, i) => (
+                <li key={`${e.at}-${i}`} className="flex items-start gap-3 px-3 py-2.5 text-sm">
+                  <span className="tabular w-11 shrink-0 text-xs font-semibold text-muted">{dayLabel(e.at)}</span>
+                  <span className="min-w-0 flex-1">{eventText(e)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         {entry.hasSnapshot && entry.products.length > 0 ? (
           <div className="flex flex-col gap-1.5">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted">Produtos neste mês</p>
@@ -107,12 +136,12 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{p.name}</span>
                     <span className="tabular text-xs text-muted">
-                      {p.cost !== null ? `custo ${formatBRL(p.cost)}` : "ficha incompleta"}
-                      {p.price ? ` · preço ${formatBRL(p.price)}` : ""}
+                      {p.avgCost !== null ? `custo médio ${formatBRL(p.avgCost)}` : "ficha incompleta"}
+                      {p.avgPrice ? (p.minPrice !== p.maxPrice ? ` · preço de ${formatBRL(p.minPrice ?? 0)} a ${formatBRL(p.maxPrice ?? 0)}` : ` · preço ${formatBRL(p.avgPrice)}`) : ""}
                       {p.sold > 0 ? ` · ${formatNumber(p.sold, 0)} vendidos` : ""}
                     </span>
                   </span>
-                  {p.cost !== null && p.price ? <span className="tabular shrink-0 text-xs font-semibold">{formatPct(p.cost / p.price, 0)} em insumos</span> : null}
+                  {p.avgCost !== null && p.avgPrice ? <span className="tabular shrink-0 text-xs font-semibold">{formatPct(p.avgCost / p.avgPrice, 0)} em insumos</span> : null}
                 </li>
               ))}
             </ul>
@@ -121,7 +150,7 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
 
         <p className="text-xs text-muted">
           {entry.hasSnapshot
-            ? "Custos, preços, equipe e impostos são os que valiam no último dia em que o app foi usado neste mês."
+            ? "Os números são médias do mês: cada custo ou preço conta pelo tempo em que valeu. O app registra uma mudança sempre que alguém altera algo; o que foi feito antes do primeiro registro do mês é tratado como valendo desde o dia 1."
             : "O app ainda não tinha guardado os custos e os preços deste mês: aqui só aparece o que foi informado em Resultado do mês."}
         </p>
       </div>

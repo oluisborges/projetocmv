@@ -1,16 +1,19 @@
 import "server-only";
 import { loadDashboard } from "@/lib/dashboard-data";
-import { monthPriceMoves, summarizeHistoryMonth, type HistoryMonth, type MonthSnapshot, type PriceMove } from "@/lib/history-view";
+import { monthPriceMoves, normalizeSnapshot, summarizeHistoryMonth, summarizeSamples, type ChangeEvent, type HistoryMonth, type PriceMove, type ProductSeries } from "@/lib/history-view";
 import { currentMonthStart, lastMonths } from "@/lib/month-view";
 import { createClient } from "@/lib/supabase/server";
 
 export type HistoryEntry = {
   month: string;
   summary: HistoryMonth;
-  /** Tem a fotografia do mês (custos e preços como eram naquele mês)? */
+  /** Tem o registro do mês (custos e preços como eram durante o mês)? */
   hasSnapshot: boolean;
+  /** Quantas vezes o app viu algo mudar no mês (preços, contas, equipe). */
+  changeCount: number;
   moves: PriceMove[];
-  products: { id: string; name: string; cost: number | null; price: number | null; sold: number }[];
+  events: ChangeEvent[];
+  products: (ProductSeries & { sold: number })[];
 };
 
 /** Meses com alguma informação, do mais recente para o mais antigo. */
@@ -32,7 +35,7 @@ export async function loadHistory(orgId: string, canWrite: boolean): Promise<{ e
   const periodIds = (periods ?? []).map((p) => p.id as string);
   const { data: sales } = periodIds.length ? await supabase.from("period_sales").select("period_id, recipe_id, qty_sold").in("period_id", periodIds) : { data: [] };
 
-  const snapByMonth = new Map((snaps ?? []).map((s) => [String(s.month), s.data as MonthSnapshot]));
+  const snapByMonth = new Map((snaps ?? []).map((s) => [String(s.month), normalizeSnapshot(s.data, String(s.month))]));
   const periodByMonth = new Map((periods ?? []).map((p) => [String(p.month), p]));
   const names = new Map((ingredients ?? []).map((i) => [i.id as string, i.name as string]));
   const priceHistory = (history ?? []).map((h) => ({ ingredient_id: h.ingredient_id as string, unit_cost: Number(h.unit_cost), changed_at: h.changed_at as string }));
@@ -45,8 +48,11 @@ export async function loadHistory(orgId: string, canWrite: boolean): Promise<{ e
     if (!period && !snapshot) continue;
 
     const qty = new Map((sales ?? []).filter((s) => s.period_id === period?.id).map((s) => [s.recipe_id as string, Number(s.qty_sold)]));
-    const snapProducts = new Map((snapshot?.products ?? []).map((p) => [p.id, p]));
-    const costOf = (id: string) => (snapshot ? (snapProducts.get(id)?.cost ?? null) : (todayCost.get(id) ?? null));
+    const [yy, mm] = month.split("-").map(Number);
+    const monthEnd = new Date(Date.UTC(yy, mm, 1));
+    const series = snapshot ? summarizeSamples(snapshot, month, monthEnd.getTime() > Date.now() ? new Date() : monthEnd) : null;
+    const avgCost = new Map((series?.products ?? []).map((p) => [p.id, p.avgCost]));
+    const costOf = (id: string) => (series ? (avgCost.get(id) ?? null) : (todayCost.get(id) ?? null));
 
     let theoretical = 0;
     let counted = false;
@@ -66,11 +72,13 @@ export async function loadHistory(orgId: string, canWrite: boolean): Promise<{ e
         purchases: Number(period?.purchases ?? 0),
         soldUnits,
         theoreticalCost: counted ? theoretical : null,
-        snapshot,
+        snapshot: series?.average ?? null,
       }),
-      hasSnapshot: Boolean(snapshot),
+      hasSnapshot: Boolean(series),
+      changeCount: series?.events.length ?? 0,
       moves: monthPriceMoves(priceHistory, names, month),
-      products: (snapshot?.products ?? []).map((p) => ({ ...p, sold: qty.get(p.id) ?? 0 })),
+      events: series?.events ?? [],
+      products: (series?.products ?? []).map((p) => ({ ...p, sold: qty.get(p.id) ?? 0 })),
     });
   }
   return { entries, unitName: dash.ctx.unit.name };

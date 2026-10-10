@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { recordSnapshot } from "@/lib/snapshot-record";
 import { z } from "zod";
 import { requireMember } from "@/lib/auth";
 import { parseDecimal } from "@/lib/format";
@@ -42,6 +43,7 @@ export async function setRecipePrice(
     .maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar o preço." };
 
+  recordSnapshot();
   revalidatePath("/precificacao");
   return { ok: true, price: Number(data.current_price) };
 }
@@ -79,6 +81,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
   );
   if (error) return { error: "Não foi possível salvar os ajustes." };
 
+  recordSnapshot();
   revalidatePath("/precificacao");
   return { ok: "Ajustes salvos." };
 }
@@ -104,6 +107,7 @@ export async function addChannel(_prev: FormState, formData: FormData): Promise<
   const { error } = await supabase.from("sales_channels").insert({ org_id: orgId, unit_id: unit.id, name: input.name, fee_pct: input.fee });
   if (error) return { error: error.code === "23505" ? "Já existe um canal com esse nome." : "Não foi possível adicionar o canal." };
 
+  recordSnapshot();
   revalidatePath("/precificacao");
   return { ok: `${input.name} adicionado.` };
 }
@@ -120,6 +124,7 @@ export async function updateChannel(_prev: FormState, formData: FormData): Promi
   const { data, error } = await supabase.from("sales_channels").update({ name: input.name, fee_pct: input.fee }).eq("id", id.data).select("id").maybeSingle();
   if (error || !data) return { error: error?.code === "23505" ? "Já existe um canal com esse nome." : "Não foi possível salvar." };
 
+  recordSnapshot();
   revalidatePath("/precificacao");
   return { ok: "Salvo." };
 }
@@ -131,5 +136,6 @@ export async function deleteChannel(formData: FormData): Promise<void> {
 
   const supabase = await createClient();
   await supabase.from("sales_channels").delete().eq("id", id.data);
+  recordSnapshot();
   revalidatePath("/precificacao");
 }

@@ -171,6 +171,7 @@ function AddItem({
   options,
   defaultQty,
   label,
+  field,
   title,
   lockUnit,
   onAdded,
@@ -178,7 +179,10 @@ function AddItem({
   recipeId: string;
   options: EditorIngredient[];
   defaultQty: string;
+  /** Texto de orientação dentro da lista ("Escolha o ingrediente"): não é uma opção, some ao escolher. */
   label: string;
+  /** Nome do campo, escrito acima da lista ("Ingrediente", "Embalagem"). */
+  field: string;
   /** Texto do botão que abre o formulário. */
   title: string;
   lockUnit: boolean;
@@ -227,15 +231,25 @@ function AddItem({
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3">
-      <select value={ingredientId} onChange={(e) => choose(e.target.value)} aria-label={label} className={inputClass}>
-        <option value="">{label}</option>
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.name}
-            {o.unit_cost <= 0 ? " (sem preço)" : ""}
-          </option>
-        ))}
-      </select>
+      <label className="flex flex-col gap-1.5 text-sm font-medium">
+        {field}
+        <span className="relative">
+          <select value={ingredientId} onChange={(e) => choose(e.target.value)} className={`${inputClass} w-full appearance-none pr-10 ${ingredientId ? "" : "text-muted"}`}>
+            <option value="" disabled hidden>
+              {label}
+            </option>
+            {options.map((o) => (
+              <option key={o.id} value={o.id} className="text-foreground">
+                {o.name}
+                {o.unit_cost <= 0 ? " (sem preço)" : ""}
+              </option>
+            ))}
+          </select>
+          <span aria-hidden className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted">
+            ▾
+          </span>
+        </span>
+      </label>
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <input value={qty} onChange={(e) => setQty(e.target.value)} inputMode="decimal" aria-label="Quantidade" placeholder="Quantidade" className={`${inputClass} text-right`} />
         <UnitSelect value={unit} options={unitOptions} onChange={setUnit} label="Unidade da quantidade" />
@@ -422,7 +436,7 @@ export function RecipeEditor({
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Ingredientes de UMA unidade" : "Ingredientes do lote"}</h2>
         {renderItems("batch")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" title="Adicionar ingrediente" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" field="Ingrediente" title="Adicionar ingrediente" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
         <p className="text-xs text-muted">
           {isServing ? "Digite as gramas PRONTAS, do jeito que vai na embalagem (arroz já cozido, frango já grelhado)." : "Digite a quantidade do lote inteiro, já limpa. Dá para usar kg ou g."}
@@ -433,7 +447,7 @@ export function RecipeEditor({
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Embalagem</h2>
         {renderItems("portion")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Bandeja, filme, etiqueta…" title="Adicionar embalagem" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Escolha a embalagem" field="Embalagem" title="Adicionar embalagem" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
       </section>
 

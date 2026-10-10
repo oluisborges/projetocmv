@@ -127,7 +127,6 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   // Fotografia do mês para o Histórico (só quem edita grava).
   if (canWrite) {
     await saveMonthSnapshot(orgId, ctx.unit.id, {
-      v: 1,
       fixedTotal: ctx.fixedTotal - ctx.staffTotal,
       staffTotal: ctx.staffTotal,
       taxPct: ctx.settings.taxPct,

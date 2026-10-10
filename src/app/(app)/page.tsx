@@ -162,6 +162,17 @@ export default async function HomePage() {
         <p className="rounded-xl border border-border bg-surface p-4 text-sm">Sua conta ainda não está ligada a nenhuma marmitaria. Fale com a Shogun.</p>
       ) : null}
 
+      {allDone ? (
+        <section className="flex items-center gap-4 rounded-2xl border border-success/30 bg-success/10 p-4">
+          <span aria-hidden className="flex size-12 shrink-0 items-center justify-center rounded-full bg-success text-2xl font-bold text-primary-foreground">
+            ✓
+          </span>
+          <p className="text-sm">
+            <strong className="block text-base">Tudo organizado!</strong>
+            Seus custos, preços e contas estão em dia. Compartilhe o resultado no Painel.
+          </p>
+        </section>
+      ) : null}
       {checklist}
       {summary}
       {showDashboard && data ? <DashboardView data={data} variant="alerts" /> : null}
