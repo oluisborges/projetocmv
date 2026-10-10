@@ -4,6 +4,8 @@ import { NoPortionsError, baseUnitOf, isPurchaseUnit, recipeCost, type RecipeCos
 export type CostIngredient = {
   unit_cost: number;
   correction_factor: number;
+  /** Peso pronto ÷ peso cru (arroz 2,5; frango 0,75). Só vale em ficha "por marmita" (`useCookingYield`). */
+  cooking_yield?: number;
   /** Unidade de compra (kg, g, l, ml, un). Itens em "un" (ovo, bandeja) não têm peso e não entram no rendimento. */
   purchase_unit?: string;
 };
@@ -15,6 +17,8 @@ export type CostSettings = {
   portionWeight: number | null;
   /** fração: 0.25 = 25% */
   cookingLossPct: number;
+  /** Ficha "por marmita": as quantidades são gramas PRONTOS, então cada insumo converte pelo seu rendimento. */
+  useCookingYield?: boolean;
 };
 
 const isCountedInUnits = (unit?: string) => Boolean(unit && isPurchaseUnit(unit) && baseUnitOf(unit) === "un");
@@ -35,6 +39,8 @@ export function computeRecipe(settings: CostSettings, items: CostItem[]): Recipe
       items: items.map((i) => ({
         unitCost: i.ingredient.unit_cost,
         correctionFactor: i.ingredient.correction_factor,
+        // Embalagem e itens por porção não "rendem": só entra o rendimento dos insumos do lote.
+        cookingYield: settings.useCookingYield && i.scope === "batch" ? (i.ingredient.cooking_yield ?? 1) : 1,
         netQty: i.netQty,
         scope: i.scope,
         countsForYield: i.scope === "batch" && !isCountedInUnits(i.ingredient.purchase_unit),

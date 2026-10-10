@@ -37,7 +37,7 @@ export default async function CostsPage() {
   const dishes = recipes.flatMap((r) => {
     const price = prices.get(r.id) ?? 0;
     const view = computeRecipe(
-      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct },
+      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving" },
       items.filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id)).map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
     );
     return view.ok && price > 0 ? [{ price, cost: view.cost.costPerPortion.toNumber() }] : [];

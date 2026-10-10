@@ -1,15 +1,19 @@
 @import "tailwindcss";
 
-/* Paleta provisória (marca Grupo Shogun a confirmar). Interface só em tema claro, de propósito:
-   o uso é no celular, em cozinha, com muita luz. */
+/* Marca Grupo Shogun: verde escuro #1C3B33 (lado esquerdo do capacete), verde limão #9ACD3A (lado direito),
+   cinza #797D7D (as letras SG). Interface só em tema claro, de propósito: o uso é no celular, em cozinha, com muita luz. */
 :root {
-  --background: #faf7f2;
-  --foreground: #1f2328;
+  --background: #f5f7f3;
+  --foreground: #17231f;
   --surface: #ffffff;
-  --border: #e6e0d6;
-  --muted: #6b7280;
-  --primary: #c8102e;
+  --border: #dfe5df;
+  /* O cinza da marca (#797D7D) não tem contraste suficiente para texto pequeno; este é um tom mais escuro da mesma família. */
+  --muted: #5b6360;
+  --brand-gray: #797d7d;
+  --primary: #1c3b33;
   --primary-foreground: #ffffff;
+  --accent: #9acd3a;
+  --accent-foreground: #1c3b33;
   --success: #15803d;
   --warning: #b45309;
   --danger: #b91c1c;
@@ -23,6 +27,9 @@
   --color-muted: var(--muted);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-brand-gray: var(--brand-gray);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);

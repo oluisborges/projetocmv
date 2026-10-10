@@ -67,7 +67,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   const byIngredient = new Map(ingredients.map((i) => [i.id, i]));
   const dishes: DashboardDish[] = recipes.map((r) => {
     const view = computeRecipe(
-      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct },
+      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving" },
       items.filter((i) => i.recipe_id === r.id && byIngredient.has(i.ingredient_id)).map((i) => ({ ingredient: byIngredient.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
     );
     const cost = view.ok ? view.cost.costPerPortion.toNumber() : null;

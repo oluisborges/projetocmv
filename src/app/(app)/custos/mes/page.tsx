@@ -48,7 +48,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
   const dishes = recipes.map((r) => {
     const view = computeRecipe(
-      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct },
+      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving" },
       items.filter((i) => i.recipe_id === r.id && byIngredient.has(i.ingredient_id)).map((i) => ({ ingredient: byIngredient.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
     );
     return { id: r.id, name: r.name, cost: view.ok ? view.cost.costPerPortion.toNumber() : null, qty: qtyByRecipe.get(r.id) ?? 0 };

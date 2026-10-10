@@ -85,7 +85,7 @@ export default async function HomePage() {
           </span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-border" aria-hidden>
-          <div className="h-full rounded-full bg-success transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+          <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
         </div>
 
         <ol className="flex flex-col gap-3">

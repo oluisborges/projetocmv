@@ -24,7 +24,7 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
   const { recipe, items } = loaded;
 
   const view = computeRecipe(
-    { portions: recipe.portions, portionWeight: recipe.portion_weight, cookingLossPct: recipe.cooking_loss_pct },
+    { portions: recipe.portions, portionWeight: recipe.portion_weight, cookingLossPct: recipe.cooking_loss_pct, useCookingYield: recipe.mode === "serving" },
     items.filter((i) => byId.has(i.ingredient_id)).map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
   );
 

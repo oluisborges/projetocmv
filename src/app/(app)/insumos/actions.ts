@@ -48,6 +48,7 @@ export async function updateIngredientPrice(id: string, rawPrice: string): Promi
 }
 
 type IngredientInput = {
+  cooking_yield: number;
   name: string;
   kind: string;
   category: string | null;
@@ -65,6 +66,9 @@ function readIngredientForm(formData: FormData): { ok: true; value: IngredientIn
   const qty = num(formData.get("purchase_qty"));
   const price = num(formData.get("purchase_price"), { allowZero: true });
   const fc = kind === "embalagem" ? 1 : num(formData.get("correction_factor"));
+  // Rendimento digitado em %, guardado como fator (250% -> 2,5). Vazio = 100%. Embalagem não rende.
+  const yieldText = String(formData.get("cooking_yield_pct") ?? "").trim();
+  const yieldPct = kind === "embalagem" || yieldText === "" ? 100 : Number(parseDecimal(yieldText) ?? NaN);
 
   if (!name || name.length > 80) return { ok: false, error: "Dê um nome ao insumo (até 80 letras)." };
   if (!(UNITS as readonly string[]).includes(unit)) return { ok: false, error: "Escolha a unidade de compra." };
@@ -73,8 +77,23 @@ function readIngredientForm(formData: FormData): { ok: true; value: IngredientIn
   if (price === null) return { ok: false, error: "Informe o preço pago, como 14,50." };
   if (fc === null || fc < 1 || fc > 10) return { ok: false, error: "O fator de correção precisa ser 1 ou mais (ex.: 1,15)." };
   if (category && category.length > 40) return { ok: false, error: "Categoria muito longa." };
+  if (!Number.isFinite(yieldPct) || yieldPct < 10 || yieldPct > 1000) {
+    return { ok: false, error: "Rendimento depois de pronto: digite entre 10 e 1000 (%). Ex.: 250 para arroz, 75 para frango." };
+  }
 
-  return { ok: true, value: { name, kind, category, purchase_unit: unit, purchase_qty: qty, purchase_price: price, correction_factor: fc } };
+  return {
+    ok: true,
+    value: {
+      name,
+      kind,
+      category,
+      purchase_unit: unit,
+      purchase_qty: qty,
+      purchase_price: price,
+      correction_factor: fc,
+      cooking_yield: Number((yieldPct / 100).toFixed(3)),
+    },
+  };
 }
 
 export async function createIngredient(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -169,11 +188,13 @@ export async function importFromCatalog(_prev: FormState, formData: FormData): P
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return fail(NO_PERMISSION);
 
-  const ids = z.array(z.uuid()).min(1).max(200).safeParse(formData.getAll("ids"));
-  if (!ids.success) return fail("Marque pelo menos um item.");
+  const ids = z.array(z.uuid()).max(200).safeParse(formData.getAll("ids"));
+  const recipeIds = z.array(z.uuid()).max(50).safeParse(formData.getAll("recipes"));
+  if (!ids.success || !recipeIds.success || ids.data.length + recipeIds.data.length === 0) return fail("Marque pelo menos um item.");
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("import_template", { p_org: orgId, p_ingredient_ids: ids.data, p_recipe_ids: [] });
+  // As fichas prontas trazem junto os insumos e as embalagens que usam.
+  const { error } = await supabase.rpc("import_template", { p_org: orgId, p_ingredient_ids: ids.data, p_recipe_ids: recipeIds.data });
   if (error) return fail("Não foi possível importar.");
 
   revalidatePath("/insumos");

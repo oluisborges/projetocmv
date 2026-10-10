@@ -15,6 +15,8 @@ export type EditorIngredient = {
   purchase_unit: string;
   unit_cost: number;
   correction_factor: number;
+  /** Peso pronto ÷ peso cru. 1 = não muda. Só vale em ficha por marmita. */
+  cooking_yield: number;
   archived: boolean;
 };
 /** `netQty` fica SEMPRE na unidade-base (g/ml/un); `unit` é só como o dono vê e digita. */
@@ -70,6 +72,7 @@ function ItemRow({
   canWrite,
   perPortion,
   lockUnit,
+  yieldFactor,
   onChange,
   onRemove,
 }: {
@@ -78,13 +81,15 @@ function ItemRow({
   canWrite: boolean;
   perPortion: boolean;
   lockUnit: boolean;
+  /** Rendimento aplicado a este item (1 quando a ficha é em lote ou o item é embalagem). */
+  yieldFactor: number;
   onChange: (qty: number, unit: PurchaseUnit) => void;
   onRemove: () => void;
 }) {
   const shown = (qty: number, unit: PurchaseUnit) => fmt(fromBaseQty(qty, unit).toNumber());
   const [text, setText] = useState(shown(item.netQty, item.unit));
   const [error, setError] = useState<string>();
-  const cost = D(ingredient.unit_cost).mul(grossQty(item.netQty, ingredient.correction_factor)).toNumber();
+  const cost = D(ingredient.unit_cost).mul(grossQty(D(item.netQty).div(yieldFactor), ingredient.correction_factor)).toNumber();
 
   async function save(nextText: string, unit: PurchaseUnit) {
     const result = await updateRecipeItemQty(item.id, nextText, unit);
@@ -112,6 +117,7 @@ function ItemRow({
           <p className="text-xs text-muted">
             {ingredient.unit_cost <= 0 ? <span className="text-warning">sem preço</span> : formatBRL(cost)}
             {ingredient.correction_factor > 1 ? ` · FC ${formatNumber(ingredient.correction_factor, 2)}` : ""}
+            {yieldFactor !== 1 ? ` · pronto ${formatNumber(yieldFactor * 100, 0)}% do cru` : ""}
             {ingredient.archived ? " · arquivado" : ""}
           </p>
         </div>
@@ -258,6 +264,7 @@ export function RecipeEditor({
         portions: isServing ? 1 : num(portions),
         portionWeight: typedWeight === null ? null : toBaseQty(typedWeight, weightUnit).toNumber(),
         cookingLossPct: isServing ? 0 : (num(cookingLoss) ?? 0) / 100,
+        useCookingYield: isServing,
       },
       items.flatMap((i) => (byId.has(i.ingredientId) ? [{ ingredient: byId.get(i.ingredientId)!, netQty: i.netQty, scope: i.scope }] : [])),
     );
@@ -319,6 +326,7 @@ export function RecipeEditor({
             canWrite={canWrite}
             perPortion={scope === "portion"}
             lockUnit={isServing || scope === "portion"}
+            yieldFactor={isServing && scope === "batch" ? byId.get(item.ingredientId)!.cooking_yield : 1}
             onChange={(qty, unit) => setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, netQty: qty, unit } : i)))}
             onRemove={() => removeItem(item)}
           />
@@ -375,7 +383,7 @@ export function RecipeEditor({
         ) : null}
         <p className="text-xs text-muted">
           {isServing
-            ? "Digite quantos gramas vão em UMA marmita, já limpo e pronto para usar. O custo considera a perda de limpeza (fator de correção) sozinho."
+            ? "Digite quantos gramas PRONTOS vão em UMA marmita (o arroz já cozido, o frango já grelhado, do jeito que vai na bandeja). O app converte para o peso cru e já considera a limpeza."
             : "Digite a quantidade do LOTE INTEIRO (a receita toda), já limpa. Dá para usar kg ou g. O custo considera a perda de limpeza sozinho."}
         </p>
       </section>

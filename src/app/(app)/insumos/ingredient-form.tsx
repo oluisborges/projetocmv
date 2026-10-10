@@ -14,6 +14,8 @@ export type IngredientDefaults = {
   purchase_qty?: number;
   purchase_price?: number;
   correction_factor?: number;
+  /** fator: 2.5 = 250% */
+  cooking_yield?: number;
 };
 
 const decimal = (n: number | undefined) => (n === undefined ? undefined : String(n).replace(".", ","));
@@ -87,6 +89,22 @@ export function IngredientForm({
         placeholder="Ex.: 14,50"
         hint={<Hint>O preço total dessa compra, o mesmo da nota. Se o saco de 5 kg custou R$ 30, digite 30.</Hint>}
       />
+
+      {kind === "insumo" ? (
+        <TextField
+          label="Rendimento depois de pronto (%)"
+          name="cooking_yield_pct"
+          inputMode="decimal"
+          required={false}
+          defaultValue={defaults.cooking_yield ? String(Number((defaults.cooking_yield * 100).toFixed(1))).replace(".", ",") : "100"}
+          hint={
+            <Hint>
+              Quanto o item pesa depois de pronto, comparado ao que você pesou cru e limpo. Arroz: 250% (1 kg cru vira 2,5 kg cozido). Frango grelhado: 75%. Salada ou item
+              que você já pesa cru na marmita: 100%.
+            </Hint>
+          }
+        />
+      ) : null}
 
       {kind === "insumo" ? (
         <TextField

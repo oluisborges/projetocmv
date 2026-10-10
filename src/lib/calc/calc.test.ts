@@ -223,3 +223,38 @@ describe("unidades de medida escolhidas pelo dono", () => {
     expect(cost(0.5, "kg")).toBe(cost(500, "g"));
   });
 });
+
+describe("rendimento depois de pronto (ficha por marmita)", () => {
+  const arroz = { unitCost: 0.006, correctionFactor: 1 }; // R$ 6,00 o kg, cru
+
+  it("150 g de arroz COZIDO custam o preço de 60 g crus (rende 250%), não de 150 g", () => {
+    const r = recipeCost({
+      items: [{ ...arroz, netQty: 150, scope: "batch", cookingYield: 2.5 }],
+      portions: 1,
+    });
+    expect(r.costPerPortion.toFixed(2)).toBe("0.36"); // 60 g × R$ 0,006
+    const semRendimento = recipeCost({ items: [{ ...arroz, netQty: 150, scope: "batch" }], portions: 1 });
+    expect(semRendimento.costPerPortion.toFixed(2)).toBe("0.90"); // o erro que o rendimento evita: 2,5× mais caro
+  });
+
+  it("frango grelhado rende 75%: 120 g prontos pedem 160 g crus limpos, e o fator de correção entra por cima", () => {
+    // 120 / 0,75 = 160 g cru limpo; × FC 1,15 = 184 g comprados; × R$ 0,014 = R$ 2,576
+    const r = recipeCost({
+      items: [{ unitCost: 0.014, correctionFactor: 1.15, netQty: 120, scope: "batch", cookingYield: 0.75 }],
+      portions: 1,
+    });
+    expect(r.costPerPortion.toFixed(3)).toBe("2.576");
+  });
+
+  it("embalagem por porção não passa pelo rendimento", () => {
+    const r = recipeCost({
+      items: [{ unitCost: 0.9, correctionFactor: 1, netQty: 1, scope: "portion", countsForYield: false, cookingYield: 1 }],
+      portions: 1,
+    });
+    expect(r.costPerPortion.toFixed(2)).toBe("0.90");
+  });
+
+  it("rendimento zero ou negativo é recusado", () => {
+    expect(() => recipeCost({ items: [{ ...arroz, netQty: 100, scope: "batch", cookingYield: 0 }], portions: 1 })).toThrow(RangeError);
+  });
+});

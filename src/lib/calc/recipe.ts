@@ -18,6 +18,11 @@ export type RecipeItem = {
   netQty: Num;
   /** `batch` entra no lote; `portion` (embalagem, etiqueta, lacre) é por porção. */
   scope: "batch" | "portion";
+  /**
+   * Rendimento depois de pronto = peso pronto ÷ peso cru e limpo (arroz 2,5; frango grelhado 0,75). Padrão 1.
+   * Quando informado, `netQty` é o peso PRONTO (o que vai na marmita) e o cru comprado é `netQty ÷ rendimento`.
+   */
+  cookingYield?: Num;
   /** O peso do item entra no rendimento? Padrão: true. */
   countsForYield?: boolean;
 };
@@ -44,8 +49,12 @@ export type RecipeCost = {
   costPerPortion: Decimal;
 };
 
-const itemCost = (i: RecipeItem): Decimal =>
-  D(i.unitCost).mul(grossQty(i.netQty, i.correctionFactor));
+const itemCost = (i: RecipeItem): Decimal => {
+  const y = D(i.cookingYield ?? 1);
+  if (y.lte(0)) throw new RangeError("Rendimento depois de pronto precisa ser maior que zero");
+  // pronto -> cru limpo (÷ rendimento) -> cru comprado (× fator de correção) -> custo
+  return D(i.unitCost).mul(grossQty(D(i.netQty).div(y), i.correctionFactor));
+};
 
 export function recipeCost(r: RecipeInput): RecipeCost {
   const loss = D(r.cookingLossPct ?? 0);

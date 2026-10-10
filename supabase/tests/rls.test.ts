@@ -23,10 +23,11 @@ const SUPABASE_STUB = `
     $$ select nullif(auth.jwt() ->> 'sub', '')::uuid $$;
   create role anon nologin;
   create role authenticated nologin;
-  grant usage on schema public, auth to anon, authenticated;
+  create role service_role nologin bypassrls;
+  grant usage on schema public, auth to anon, authenticated, service_role;
   grant execute on all functions in schema auth to anon, authenticated;
-  alter default privileges in schema public grant all on tables to anon, authenticated;
-  alter default privileges in schema public grant all on functions to anon, authenticated;
+  alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 `;
 
 let db: PGlite;
@@ -216,7 +217,7 @@ describe("catálogo-modelo", () => {
        values ('Bandeja 750ml','embalagem','un',100,90) returning id`,
     );
     const [r] = await q(
-      `insert into public.template_recipes (name, portions, cooking_loss_pct) values ('Frango grelhado', 25, 0.25) returning id`,
+      `insert into public.template_recipes (name, portions, cooking_loss_pct, mode) values ('Frango grelhado', 25, 0.25, 'batch') returning id`,
     );
     tplRecipe = r.id as string;
     await q(
@@ -496,5 +497,93 @@ describe("resultado do mês (periods e period_sales)", () => {
     ).rejects.toThrow(/row-level security/i);
     const other = await as(ids.ownerB, "dono-b@marmita.com", () => q(`select * from public.periods where org_id = $1`, [ids.orgA]));
     expect(other).toHaveLength(0);
+  });
+});
+
+describe("controle de tentativas de login", () => {
+  const asRole = async <T>(role: "service_role" | "authenticated" | "anon", fn: () => Promise<T>): Promise<T> => {
+    await db.exec(`set role ${role}`);
+    try {
+      return await fn();
+    } finally {
+      await db.exec("reset role");
+    }
+  };
+
+  it("só o servidor (service_role) conta, registra e limpa falhas", async () => {
+    const key = "acct:teste-1";
+    await asRole("service_role", async () => {
+      for (let i = 0; i < 5; i++) await q(`select public.record_login_failure($1)`, [key]);
+      const [{ n }] = await q(`select public.login_failure_count($1, interval '15 minutes') as n`, [key]);
+      expect(Number(n)).toBe(5);
+      await q(`select public.clear_login_failures($1)`, [key]);
+      const [{ n: after }] = await q(`select public.login_failure_count($1, interval '15 minutes') as n`, [key]);
+      expect(Number(after)).toBe(0);
+    });
+  });
+
+  it("falhas fora da janela não contam", async () => {
+    await q(`insert into public.login_failures (key, at) values ('acct:velho', now() - interval '20 minutes')`);
+    const [{ n }] = await q(`select public.login_failure_count('acct:velho', interval '15 minutes') as n`);
+    expect(Number(n)).toBe(0);
+  });
+
+  it("usuário logado e anônimo não acessam nada disso", async () => {
+    for (const role of ["authenticated", "anon"] as const) {
+      await expect(asRole(role, () => q(`select public.record_login_failure('x')`))).rejects.toThrow(/permission denied/i);
+      await expect(asRole(role, () => q(`select public.login_failure_count('x', interval '1 hour')`))).rejects.toThrow(/permission denied/i);
+      await expect(asRole(role, () => q(`select * from public.login_failures`))).rejects.toThrow(/permission denied/i);
+    }
+  });
+
+  it("ping é público (mantém o projeto gratuito acordado)", async () => {
+    const [row] = await asRole("anon", () => q(`select public.ping() as r`));
+    expect(row.r).toBe("ok");
+  });
+});
+
+describe("rendimento depois de pronto e fichas-modelo", () => {
+  it("catálogo traz rendimentos típicos e 9 fichas-modelo por marmita", async () => {
+    const [arroz] = await q(`select cooking_yield from public.template_ingredients where name = 'Arroz branco'`);
+    expect(Number(arroz.cooking_yield)).toBe(2.5);
+    const [frango] = await q(`select cooking_yield from public.template_ingredients where name = 'Peito de frango'`);
+    expect(Number(frango.cooking_yield)).toBe(0.75);
+
+    const recs = await q(`select name, mode, portions from public.template_recipes where name in ('Frango grelhado, arroz e feijão','Feijoada completa','Coxa assada com batata')`);
+    expect(recs).toHaveLength(3);
+    for (const r of recs) {
+      expect(r.mode).toBe("serving");
+      expect(Number(r.portions)).toBe(1);
+    }
+    const [{ n }] = await q(`select count(*)::int as n from public.template_recipes where portions = 1 and mode = 'serving' and name in (
+      'Frango grelhado, arroz e feijão','Strogonoff de carne com arroz','Carne moída com legumes e arroz','Tilápia com purê de batata','Macarrão à bolonhesa',
+      'Escondidinho de carne','Frango à parmegiana com arroz','Feijoada completa','Coxa assada com batata')`);
+    expect(Number(n)).toBe(9);
+  });
+
+  it("importar uma ficha-modelo traz ingredientes (com rendimento), embalagem por porção e o modo certo", async () => {
+    const [tpl] = await q(`select id from public.template_recipes where name = 'Frango grelhado, arroz e feijão'`);
+    await as(ids.ownerB, "dono-b@marmita.com", () => q(`select public.import_template($1, '{}', array[$2]::uuid[])`, [ids.orgB, tpl.id]));
+
+    const [rec] = await q(`select id, mode, portions, cooking_loss_pct from public.recipes where org_id = $1 and template_id = $2`, [ids.orgB, tpl.id]);
+    expect(rec.mode).toBe("serving");
+    expect(Number(rec.portions)).toBe(1);
+    expect(Number(rec.cooking_loss_pct)).toBe(0);
+
+    const items = await q(
+      `select i.name, ri.net_qty, ri.scope, i.cooking_yield from public.recipe_items ri join public.ingredients i on i.id = ri.ingredient_id where ri.recipe_id = $1 order by i.name`,
+      [rec.id],
+    );
+    const byName = new Map(items.map((r) => [r.name as string, r]));
+    expect(Number(byName.get("Arroz branco")!.net_qty)).toBe(150);
+    expect(Number(byName.get("Arroz branco")!.cooking_yield)).toBe(2.5);
+    expect(byName.get("Bandeja 750 ml")!.scope).toBe("portion");
+    expect(byName.get("Etiqueta")!.scope).toBe("portion");
+    expect(items.length).toBe(8); // 4 ingredientes + bandeja, filme, etiqueta, lacre
+  });
+
+  it("rendimento precisa estar entre 0 e 10", async () => {
+    await expect(q(`insert into public.ingredients (org_id, name, purchase_unit, purchase_qty, cooking_yield) values ($1,'Zero','kg',1,0)`, [ids.orgA])).rejects.toThrow(/check constraint/i);
+    await expect(q(`insert into public.ingredients (org_id, name, purchase_unit, purchase_qty, cooking_yield) values ($1,'Enorme','kg',1,11)`, [ids.orgA])).rejects.toThrow(/check constraint/i);
   });
 });

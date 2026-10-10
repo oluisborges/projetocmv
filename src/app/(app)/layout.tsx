@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { requireUser } from "@/lib/auth";
@@ -10,11 +11,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col">
       <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur">
-        <Link href="/" className="flex min-w-0 flex-col leading-tight">
-          <span className="truncate font-[family-name:var(--font-heading)] text-base font-extrabold">
-            {orgName ?? "Shogun Precificação"}
+        <Link href="/" className="flex min-w-0 items-center gap-2.5">
+          <Image src="/brand/helmet.png" alt="Grupo Shogun" width={149} height={160} priority className="h-9 w-auto shrink-0" />
+          <span className="flex min-w-0 flex-col leading-tight">
+            <span className="truncate font-[family-name:var(--font-heading)] text-base font-extrabold">{orgName ?? "Shogun Precificação"}</span>
+            {orgName ? <span className="text-xs text-muted">Shogun Precificação</span> : null}
           </span>
-          {orgName ? <span className="text-xs text-muted">Shogun Precificação</span> : null}
         </Link>
         <nav className="flex items-center gap-2">
           {session.isPlatformAdmin ? (

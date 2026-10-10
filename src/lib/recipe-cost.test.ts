@@ -65,3 +65,25 @@ describe("rendimento só conta peso", () => {
     if (withEggs.ok) expect(withEggs.cost.yieldWeight.toString()).toBe("1000"); // sem os 30 ovos
   });
 });
+
+describe("ficha por marmita usa o rendimento de cada insumo", () => {
+  const arroz = { unit_cost: 0.006, correction_factor: 1, purchase_unit: "kg", cooking_yield: 2.5 };
+  const frango = { unit_cost: 0.014, correction_factor: 1.15, purchase_unit: "kg", cooking_yield: 0.75 };
+  const bandeja = { unit_cost: 0.9, correction_factor: 1, purchase_unit: "un", cooking_yield: 1 };
+  const itens: CostItem[] = [
+    { ingredient: arroz, netQty: 150, scope: "batch" },
+    { ingredient: frango, netQty: 120, scope: "batch" },
+    { ingredient: bandeja, netQty: 1, scope: "portion" },
+  ];
+
+  it("com rendimento: arroz 0,36 + frango 2,576 + bandeja 0,90 = R$ 3,84", () => {
+    const r = computeRecipe({ portions: 1, portionWeight: null, cookingLossPct: 0, useCookingYield: true }, itens);
+    expect(r.ok && r.cost.costPerPortion.toFixed(3)).toBe("3.836");
+  });
+
+  it("em lote o rendimento do insumo é ignorado (a perda de cocção da receita já cuida disso)", () => {
+    const r = computeRecipe({ portions: 1, portionWeight: null, cookingLossPct: 0, useCookingYield: false }, itens);
+    // arroz 150 g crus = 0,90 | frango 120 × 1,15 = 138 g = 1,932 | bandeja 0,90
+    expect(r.ok && r.cost.costPerPortion.toFixed(3)).toBe("3.732");
+  });
+});
