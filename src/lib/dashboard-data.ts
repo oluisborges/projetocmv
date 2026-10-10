@@ -1,4 +1,6 @@
 import "server-only";
+import { summarizeFixedCosts, type FixedCostSummary } from "@/lib/fixed-costs-view";
+import { summarizePanel, type PanelSummary } from "@/lib/panel-view";
 import { loadStaff } from "@/lib/costs-data";
 import { currentMonthStart, summarizeMonth, type MonthSummary } from "@/lib/month-view";
 import { priceIncreaseAlerts, type PriceIncreaseAlert } from "@/lib/price-alerts";
@@ -35,6 +37,10 @@ export type Dashboard = {
   staleCount: number;
   noPriceCount: number;
   increases: PriceIncreaseAlert[];
+  /** Médias das marmitas com preço (CMV, CMO, despesas, lucro); `null` se nenhuma tem custo e preço. */
+  panel: PanelSummary | null;
+  /** Equilíbrio do mês (precisa de custos cadastrados e de marmita com preço). */
+  breakEven: FixedCostSummary["breakEven"];
 };
 
 /** Tudo que o painel do Início precisa, numa carga só (cada consulta já filtrada pela organização). */
@@ -101,6 +107,22 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   const staleBefore = Date.now() - STALE_DAYS * 86_400_000;
   const activeIngs = ingPrices ?? [];
 
+  const panel = summarizePanel({
+    dishes: dishes.map((d) => ({ id: d.id, name: d.name, cost: d.cost, price: d.price })),
+    settings: ctx.settings,
+    feePct,
+    staffShareOfFixed: ctx.fixedTotal > 0 ? ctx.staffTotal / ctx.fixedTotal : 0,
+  });
+  const { breakEven } = summarizeFixedCosts({
+    fixedCosts: [ctx.fixedTotal - ctx.staffTotal],
+    staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
+    monthlyRevenue: ctx.monthlyRevenue,
+    monthlyUnits: ctx.monthlyUnits,
+    dishes: dishes.filter((d) => d.cost !== null && (d.price ?? 0) > 0).map((d) => ({ price: d.price as number, cost: d.cost as number })),
+    taxPct: ctx.settings.taxPct,
+    feePct,
+  });
+
   return {
     ctx,
     channelName: cheapest?.name ?? "venda direta",
@@ -119,5 +141,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
       names: new Map(ingredients.map((i) => [i.id, i.name])),
       recipesUsing,
     }),
+    panel,
+    breakEven,
   };
 }

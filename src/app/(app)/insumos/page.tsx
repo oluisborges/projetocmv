@@ -20,6 +20,8 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
     .is("archived_at", null)
     .order("name");
   const items = (data ?? []) as IngredientRow[];
+  const pricedCount = items.filter((i) => Number(i.purchase_price) > 0).length;
+  const missing = items.length - pricedCount;
 
   return (
     <>
@@ -37,6 +39,18 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
         <p role="status" className="rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
           Itens importados! Agora é só preencher o preço que você paga em cada um.
         </p>
+      ) : null}
+
+      {items.length > 0 ? (
+        <div className="flex flex-col gap-1.5" role="status">
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="font-semibold">{missing === 0 ? "Todos os preços preenchidos" : `${pricedCount} de ${items.length} com preço`}</span>
+            {missing > 0 ? <span className="text-muted">faltam {missing}</span> : <span className="text-success">✓</span>}
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-border" aria-hidden>
+            <div className="h-full rounded-full bg-success transition-all" style={{ width: `${(pricedCount / items.length) * 100}%` }} />
+          </div>
+        </div>
       ) : null}
 
       {canWrite ? (

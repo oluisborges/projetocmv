@@ -23,7 +23,7 @@ function Kpi({ label, value, hint, tone = "default", href }: { label: string; va
 }
 
 /** Painel do Início: o que o dono precisa ver em 10 segundos. Só aparece quando já há marmita com preço. */
-export function DashboardView({ data }: { data: Dashboard }) {
+export function DashboardView({ data, variant = "full" }: { data: Dashboard; variant?: "full" | "alerts" }) {
   const { ctx, month } = data;
   const estimate = !ctx.configured;
 
@@ -107,6 +107,7 @@ export function DashboardView({ data }: { data: Dashboard }) {
 
   return (
     <section className="flex flex-col gap-4" aria-label="Painel">
+      {variant === "full" ? (
       <div className="grid grid-cols-2 gap-3">
         <Kpi
           label="Lucro médio"
@@ -134,6 +135,7 @@ export function DashboardView({ data }: { data: Dashboard }) {
           href="/custos"
         />
       </div>
+      ) : null}
 
       {alerts.length > 0 ? (
         <div className="flex flex-col gap-2">
@@ -153,7 +155,7 @@ export function DashboardView({ data }: { data: Dashboard }) {
         <p className="rounded-xl bg-success/10 p-3 text-sm text-success">Nada pedindo atenção agora. Preços em dia e marmitas dentro da meta.</p>
       )}
 
-      {worst.length > 0 ? (
+      {variant === "full" && worst.length > 0 ? (
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Das que dão menos lucro para as que dão mais</h2>
           <ul className="divide-y divide-border rounded-xl border border-border bg-surface px-4">

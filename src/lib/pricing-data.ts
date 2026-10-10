@@ -20,6 +20,8 @@ export type PricingContext = {
   monthlyUnits: number | null;
   /** Custos fixos + equipe por mês (0 se ainda não cadastrou). */
   fixedTotal: number;
+  /** Parte do total acima que é equipe (salário + encargos). */
+  staffTotal: number;
   /** O dono já salvou os ajustes ao menos uma vez? Se não, impostos e despesas ainda são zero e a margem é só estimativa. */
   configured: boolean;
   channels: Channel[];
@@ -90,6 +92,7 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
     monthlyRevenue,
     monthlyUnits,
     fixedTotal: fixed.total,
+    staffTotal: fixed.staffTotal,
     configured: Boolean(settingsRow?.configured_at),
     channels: (channels ?? []).map((c) => ({ id: c.id, name: c.name, fee_pct: Number(c.fee_pct) })),
   };

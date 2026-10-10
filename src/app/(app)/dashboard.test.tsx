@@ -26,6 +26,7 @@ function build(over: Partial<Dashboard> = {}): Dashboard {
       monthlyRevenue: 60000,
       monthlyUnits: 1400,
       fixedTotal: 7200,
+      staffTotal: 4360,
       configured: true,
       channels: [{ id: "c1", name: "Venda direta", fee_pct: 0 }],
     },
@@ -55,6 +56,8 @@ function build(over: Partial<Dashboard> = {}): Dashboard {
     staleCount: 2,
     noPriceCount: 1,
     increases: [{ ingredientId: "i1", name: "Peito de frango", pct: 0.12, recipes: 3 }],
+    panel: null,
+    breakEven: null,
     ...over,
   };
 }
