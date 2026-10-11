@@ -5,11 +5,6 @@ import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
 import { createRecipe } from "../actions";
 
-const choice = (active: boolean) =>
-  `flex min-h-14 flex-1 flex-col justify-center gap-0.5 rounded-xl border px-4 py-2 text-left ${
-    active ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border bg-surface"
-  }`;
-
 export function NewRecipeForm() {
   const [mode, setMode] = useState<"serving" | "batch">("serving");
 
@@ -19,19 +14,14 @@ export function NewRecipeForm() {
 
       <TextField label="Nome do produto" name="name" placeholder="Ex.: Frango grelhado com arroz e feijão" />
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="pb-1 text-sm font-medium">Como você monta essa receita?</legend>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button type="button" onClick={() => setMode("serving")} aria-pressed={mode === "serving"} className={choice(mode === "serving")}>
-            <span className="font-semibold">Por unidade</span>
-            <span className="text-xs text-muted">Quanto vai em CADA unidade vendida: 120 g de frango, 150 g de arroz… (recomendado)</span>
-          </button>
-          <button type="button" onClick={() => setMode("batch")} aria-pressed={mode === "batch"} className={choice(mode === "batch")}>
-            <span className="font-semibold">Em lote</span>
-            <span className="text-xs text-muted">Uma panela ou receita grande que rende várias unidades</span>
-          </button>
-        </div>
-      </fieldset>
+      <p className="text-sm text-muted">
+        {mode === "serving"
+          ? "Você vai informar quanto vai em CADA unidade vendida (120 g de frango, 150 g de arroz…)."
+          : "Receita em lote: você informa a receita toda e quantas unidades ela rende."}{" "}
+        <button type="button" onClick={() => setMode(mode === "serving" ? "batch" : "serving")} className="font-semibold text-primary underline">
+          {mode === "serving" ? "Faço em panela grande (lote)" : "Prefiro informar por unidade"}
+        </button>
+      </p>
 
       {mode === "batch" ? (
         <>

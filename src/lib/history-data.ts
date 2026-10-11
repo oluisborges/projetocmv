@@ -4,6 +4,13 @@ import { monthPriceMoves, normalizeSnapshot, summarizeHistoryMonth, summarizeSam
 import { currentMonthStart, lastMonths } from "@/lib/month-view";
 import { createClient } from "@/lib/supabase/server";
 
+/** Já existe algum mês com faturamento informado? Antes disso o Histórico não tem o que mostrar. */
+export async function hasHistory(unitId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("periods").select("id").eq("unit_id", unitId).gt("revenue", 0).limit(1);
+  return (data?.length ?? 0) > 0;
+}
+
 export type HistoryEntry = {
   month: string;
   summary: HistoryMonth;

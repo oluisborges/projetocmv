@@ -27,6 +27,8 @@ function build(over: Partial<Dashboard> = {}): Dashboard {
       monthlyUnits: 1400,
       revenueSource: "manual",
       revenueMonths: 0,
+      estimate: false,
+      estimateReason: null,
       fixedTotal: 7200,
       staffTotal: 4360,
       configured: true,
@@ -59,6 +61,7 @@ function build(over: Partial<Dashboard> = {}): Dashboard {
     noPriceCount: 1,
     increases: [{ ingredientId: "i1", name: "Peito de frango", pct: 0.12, recipes: 3 }],
     panel: null,
+    weighted: false,
     breakEven: null,
     ...over,
   };
@@ -95,7 +98,7 @@ describe("DashboardView", () => {
 
   it("enquanto os ajustes não foram salvos, o lucro aparece como estimativa", () => {
     const base = build();
-    const html = renderToStaticMarkup(<DashboardView data={build({ ctx: { ...base.ctx, configured: false } })} />);
+    const html = renderToStaticMarkup(<DashboardView data={build({ ctx: { ...base.ctx, configured: false, estimate: true, estimateReason: "tax" } })} />);
     expect(html).toContain("Estimativa");
     expect(html).toContain("estimativa: faltam impostos");
   });

@@ -16,7 +16,7 @@ export function CostsTabs({ active }: { active: "fixed" | "month" }) {
         <Pending>Custos fixos</Pending>
       </Link>
       <Link href="/custos/mes" aria-current={active === "month" ? "page" : undefined} className={item(active === "month")}>
-        <Pending>Resultado do mês</Pending>
+        <Pending>Fechar o mês</Pending>
       </Link>
     </nav>
   );

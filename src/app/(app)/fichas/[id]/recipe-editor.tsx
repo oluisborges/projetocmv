@@ -504,32 +504,37 @@ export function RecipeEditor({
 
       {isServing ? null : (
         <details open className="card">
-          <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Rendimento do lote</summary>
+          <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Quantas unidades saem do lote</summary>
           <div className="flex flex-col gap-4 border-t border-border p-4">
             <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Rende (porções)
+              Quantas unidades essa receita rende?
               <input value={portions} onChange={(e) => setPortions(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
             </label>
-            <div className="flex flex-col gap-1.5 text-sm font-medium">
-              <label htmlFor="portion-weight">Peso da porção</label>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-                <input id="portion-weight" value={portionWeight} onChange={(e) => setPortionWeight(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
-                <UnitSelect value={weightUnit} options={["g"]} onChange={(u) => changeWeightUnit(u as "g" | "kg")} disabled={!canWrite} label="Unidade do peso da porção" />
+            <details>
+              <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-primary">Mais opções (peso e perda no cozimento)</summary>
+              <div className="flex flex-col gap-4 pt-3">
+                <div className="flex flex-col gap-1.5 text-sm font-medium">
+                  <label htmlFor="portion-weight">Peso de cada unidade pronta</label>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                    <input id="portion-weight" value={portionWeight} onChange={(e) => setPortionWeight(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
+                    <UnitSelect value={weightUnit} options={["g"]} onChange={(u) => changeWeightUnit(u as "g" | "kg")} disabled={!canWrite} label="Unidade do peso" />
+                  </div>
+                </div>
+                <label className="flex flex-col gap-1.5 text-sm font-medium">
+                  <span>
+                    Perda no cozimento (%)
+                    <Hint>Quanto a comida perde de peso ao cozinhar. Serve para calcular quantas unidades saem quando você informa o peso de cada uma.</Hint>
+                  </span>
+                  <input value={cookingLoss} onChange={(e) => setCookingLoss(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
+                </label>
               </div>
-            </div>
-            <label className="flex flex-col gap-1.5 text-sm font-medium">
-              <span>
-                Perda de cocção (%)
-                <Hint>Quanto a comida perde de peso ao cozinhar. Serve para calcular quantas porções saem quando você informa o peso da porção.</Hint>
-              </span>
-              <input value={cookingLoss} onChange={(e) => setCookingLoss(e.target.value)} onBlur={() => saveSettings()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
-            </label>
+            </details>
           </div>
         </details>
       )}
 
       <button type="button" onClick={finish} className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground">
-        Concluir
+        Voltar às fichas
       </button>
     </div>
   );

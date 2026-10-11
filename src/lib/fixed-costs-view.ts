@@ -23,7 +23,8 @@ export function summarizeFixedCosts(input: {
   staff: StaffMember[];
   monthlyRevenue: number | null;
   monthlyUnits: number | null;
-  dishes: { price: number; cost: number }[];
+  /** `qty`: unidades vendidas por mês; se nenhum produto tem, todos pesam igual. */
+  dishes: { price: number; cost: number; qty?: number }[];
   taxPct: number;
   feePct: number;
 }): FixedCostSummary {
@@ -38,7 +39,8 @@ export function summarizeFixedCosts(input: {
   const priced = input.dishes.filter((d) => d.price > 0);
   if (total.gt(0) && priced.length > 0) {
     const rates = { taxPct: input.taxPct, salesFeePct: input.feePct };
-    const mix = priced.map((d) => ({ price: d.price, margin: contributionMargin(d.price, d.cost, rates).toNumber(), qtySold: 1 }));
+    const weighted = priced.some((d) => (d.qty ?? 0) > 0);
+    const mix = priced.map((d) => ({ price: d.price, margin: contributionMargin(d.price, d.cost, rates).toNumber(), qtySold: weighted ? Math.max(0, d.qty ?? 0) : 1 }));
     const result = breakEven(total, mix);
     if (result) {
       const units = result.units.toNumber();

@@ -1,7 +1,9 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
+import { currentMonthStart } from "@/lib/month-view";
 import type { PricingSettings } from "@/lib/pricing-view";
 
 export type Channel = { id: string; name: string; fee_pct: number };
@@ -26,6 +28,9 @@ export type PricingContext = {
   fixedTotal: number;
   /** Parte do total acima que é equipe (salário + encargos). */
   staffTotal: number;
+  /** Os lucros mostrados são só estimativa? `tax`: faltam os impostos nos Ajustes; `expenses`: há contas cadastradas, mas falta o faturamento (ou elas passam dele) para ratear nas margens. */
+  estimateReason: "tax" | "expenses" | null;
+  estimate: boolean;
   /** O dono já salvou os ajustes ao menos uma vez? Se não, impostos e despesas ainda são zero e a margem é só estimativa. */
   configured: boolean;
   channels: Channel[];
@@ -37,11 +42,11 @@ export const DEFAULT_SETTINGS: PricingSettings = { taxPct: 0, fixedExpensePct: 0
  * Unidade em uso. Hoje: a primeira da marmitaria (todo cliente começa com uma).
  * Quando houver seletor de unidade, é aqui que ele entra.
  */
-export async function activeUnit(orgId: string): Promise<{ id: string; name: string } | null> {
+export const activeUnit = cache(async (orgId: string): Promise<{ id: string; name: string } | null> => {
   const supabase = await createClient();
   const { data } = await supabase.from("units").select("id, name").eq("org_id", orgId).order("created_at").limit(1).maybeSingle();
   return data ?? null;
-}
+});
 
 const toSettings = (r: {
   tax_pct: unknown;
@@ -69,12 +74,12 @@ export async function loadSafetyMargin(orgId: string): Promise<number> {
 }
 
 /**
- * Faturamento e unidades "de um mês normal": a média dos meses (até 12) em que o dono informou faturamento em
- * Resultado do mês, como na planilha de precificação. Sem nenhum mês informado, vale o número digitado em Custos.
+ * Faturamento e unidades "de um mês normal": a média dos meses FECHADOS (até 12) em que o dono informou faturamento em
+ * Resultado do mês, como na planilha de precificação. O mês em andamento fica de fora: um valor parcial derrubaria a média. Sem nenhum mês informado, vale o número digitado em Custos.
  */
 async function monthlyAverages(unitId: string): Promise<{ revenue: number; units: number | null; months: number } | null> {
   const supabase = await createClient();
-  const { data: periods } = await supabase.from("periods").select("id, revenue").eq("unit_id", unitId).gt("revenue", 0).order("month", { ascending: false }).limit(12);
+  const { data: periods } = await supabase.from("periods").select("id, revenue").eq("unit_id", unitId).gt("revenue", 0).lt("month", currentMonthStart()).order("month", { ascending: false }).limit(12);
   if (!periods || periods.length === 0) return null;
   const { data: sales } = await supabase.from("period_sales").select("period_id, qty_sold").in("period_id", periods.map((p) => p.id as string));
   const unitsByPeriod = new Map<string, number>();
@@ -102,10 +107,10 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
     ({ data: settingsRow } = await supabase.from("unit_settings").select("*").eq("unit_id", unit.id).maybeSingle());
   }
 
-  let { data: channels } = await supabase.from("sales_channels").select("id, name, fee_pct").eq("unit_id", unit.id).order("name");
+  let { data: channels } = await supabase.from("sales_channels").select("id, name, fee_pct").eq("unit_id", unit.id).order("fee_pct").order("name");
   if ((!channels || channels.length === 0) && canWrite) {
     await supabase.from("sales_channels").insert({ org_id: orgId, unit_id: unit.id, name: "Venda direta", fee_pct: 0 });
-    ({ data: channels } = await supabase.from("sales_channels").select("id, name, fee_pct").eq("unit_id", unit.id).order("name"));
+    ({ data: channels } = await supabase.from("sales_channels").select("id, name, fee_pct").eq("unit_id", unit.id).order("fee_pct").order("name"));
   }
 
   const [fixedCosts, staff, history] = await Promise.all([loadFixedCosts(unit.id), loadStaff(unit.id), monthlyAverages(unit.id)]);
@@ -127,8 +132,13 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
   // Com custos cadastrados e faturamento informado, a despesa fixa do preço é calculada, não chutada.
   const fixedAuto = fixed.pctOfRevenue !== null && fixed.pctOfRevenue < 1;
 
+  const configured = Boolean(settingsRow?.configured_at);
+  const estimateReason: PricingContext["estimateReason"] = !configured ? "tax" : fixed.total > 0 && !fixedAuto ? "expenses" : null;
+
   return {
     unit,
+    estimateReason,
+    estimate: estimateReason !== null,
     settings: fixedAuto ? { ...base, fixedExpensePct: fixed.pctOfRevenue as number } : base,
     fixedAuto,
     fixedPctOfRevenue: fixed.pctOfRevenue,
@@ -138,7 +148,7 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
     revenueMonths: history?.months ?? 0,
     fixedTotal: fixed.total,
     staffTotal: fixed.staffTotal,
-    configured: Boolean(settingsRow?.configured_at),
+    configured,
     channels: (channels ?? []).map((c) => ({ id: c.id, name: c.name, fee_pct: Number(c.fee_pct) })),
   };
 }

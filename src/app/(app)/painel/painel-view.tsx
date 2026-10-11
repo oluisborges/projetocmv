@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Hint } from "@/components/hint";
+import { EstimateNotice } from "@/components/estimate-notice";
 import { ShareButton } from "@/components/share-button";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import type { Dashboard } from "@/lib/dashboard-data";
@@ -23,8 +24,8 @@ function Tile({ label, value, hint, help, tone = "default" }: { label: string; v
 
 /** Painel completo: números do dia a dia, sempre em "% do preço de venda", com o jeito de ler ao lado. */
 export function PainelView({ data }: { data: Dashboard }) {
-  const { ctx, panel, month, breakEven } = data;
-  const estimate = !ctx.configured;
+  const { ctx, panel, breakEven } = data;
+  const estimate = ctx.estimate;
 
   if (!panel) {
     return (
@@ -38,8 +39,8 @@ export function PainelView({ data }: { data: Dashboard }) {
   const highest = panel.cmvRanking[0];
   const lowest = panel.cmvRanking[panel.cmvRanking.length - 1];
   const parts: Part[] = [
-    { key: "cmv", label: "Gasto com insumos (CMV)", pct: c.cmv, swatch: "bg-primary", hint: "O que você gasta em insumos e embalagem para fazer o produto." },
-    { key: "cmo", label: "Equipe (CMO)", pct: c.cmo, swatch: "bg-[#4d7c6f]", hint: "Salários e encargos da equipe." },
+    { key: "cmv", label: "Gasto com insumos", pct: c.cmv, swatch: "bg-primary", hint: "O que você gasta em insumos e embalagem para fazer o produto." },
+    { key: "cmo", label: "Equipe", pct: c.cmo, swatch: "bg-[#4d7c6f]", hint: "Salários e encargos da equipe." },
     { key: "fixed", label: "Despesas fixas", pct: c.fixed, swatch: "bg-[#a3a8a6]", hint: "Aluguel, energia, gás e outras contas que não mudam com a venda." },
     { key: "commercial", label: "Impostos e taxas de venda", pct: c.commercial, swatch: "bg-warning", hint: "Imposto sobre a venda e taxa do canal (cartão, aplicativo)." },
     { key: "profit", label: "Lucro líquido", pct: c.profit, swatch: c.profit >= 0 ? "bg-success" : "bg-danger", hint: "O que sobra no seu bolso depois de pagar tudo." },
@@ -51,14 +52,7 @@ export function PainelView({ data }: { data: Dashboard }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {estimate ? (
-        <p className="rounded-xl bg-warning/10 p-3 text-sm">
-          <strong>Números aproximados:</strong> faltam impostos e despesas.{" "}
-          <Link href="/precificacao/ajustes" className="font-semibold text-primary underline">
-            Informar agora
-          </Link>
-        </p>
-      ) : null}
+      <EstimateNotice reason={ctx.estimateReason} />
 
       <section aria-label="Lucro líquido" className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-[#2f5d4f] p-5 text-primary-foreground shadow-lg">
         <span aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-accent" />
@@ -78,7 +72,12 @@ export function PainelView({ data }: { data: Dashboard }) {
           {estimate ? " · estimativa" : ""}
         </p>
         <ShareButton className="mt-1 h-12 rounded-xl bg-accent px-5 text-base font-bold text-primary active:scale-[0.99]">Compartilhar meu resultado</ShareButton>
-        <p className="text-xs opacity-80">Média de {panel.count} {panel.count === 1 ? "produto com preço" : "produtos com preço"}, vendendo por {data.channelName}.</p>
+        <p className="text-xs opacity-80">
+          {panel.weighted
+            ? `Média de ${panel.count} ${panel.count === 1 ? "produto" : "produtos"}, dando mais peso aos que você mais vende.`
+            : `Média simples de ${panel.count} ${panel.count === 1 ? "produto com preço" : "produtos com preço"} (sem vendas informadas para pesar).`}{" "}
+          Vendendo por {data.channelName}.
+        </p>
       </section>
 
       <section aria-label="Para onde vai cada real" className="flex flex-col gap-3">
@@ -105,38 +104,12 @@ export function PainelView({ data }: { data: Dashboard }) {
         </ul>
       </section>
 
-      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3">
-        <Tile
-          label="Gasto com insumos"
-          value={formatPct(c.cmv)}
-          hint={month.cmvRealPct !== null ? `No mês, pelas compras: ${formatPct(month.cmvRealPct)}` : "do preço, em ingredientes e embalagem"}
-          help="Também chamado de CMV: quanto do preço de venda vai para ingredientes e embalagem. Quanto menor, mais sobra para o resto."
-        />
-        <Tile
-          label="Gasto com equipe"
-          value={formatPct(c.cmo)}
-          hint={month.cmoPct !== null ? `No mês, com o faturamento real: ${formatPct(month.cmoPct)}` : ctx.staffTotal > 0 ? `${formatBRL(ctx.staffTotal)} por mês de equipe` : "cadastre a equipe em Custos"}
-          help="Também chamado de CMO: quanto do preço de venda paga a equipe (salário mais encargos)."
-        />
-        {highest ? (
-          <Tile label="Maior gasto com insumos" value={formatPct(highest.pct)} hint={highest.name} tone={panel.cmvRanking.length > 1 ? "bad" : "default"} help="O produto que gasta mais em ingredientes em relação ao preço. Candidata a rever receita ou preço." />
-        ) : null}
-        {lowest ? (
-          <Tile label="Menor gasto com insumos" value={formatPct(lowest.pct)} hint={lowest.name} tone={panel.cmvRanking.length > 1 ? "good" : "default"} help="O produto que gasta menos em ingredientes em relação ao preço. A que mais deixa sobrar." />
-        ) : null}
-        <Tile
-          label="Despesas fixas"
-          value={formatPct(c.fixed)}
-          hint={ctx.fixedTotal - ctx.staffTotal > 0 ? `${formatBRL(ctx.fixedTotal - ctx.staffTotal)} por mês, sem a equipe` : "cadastre em Custos"}
-          help="Contas que você paga todo mês, vendendo muito ou pouco: aluguel, energia, gás, internet."
-        />
-        <Tile
-          label="Impostos e taxas"
-          value={formatPct(c.commercial)}
-          hint={`${formatPct(ctx.settings.taxPct)} de imposto + ${formatPct(c.commercial - ctx.settings.taxPct)} de taxa de venda`}
-          help="Imposto sobre a venda mais a taxa do canal (maquininha, aplicativo de entrega)."
-        />
-      </section>
+      {panel.cmvRanking.length > 1 ? (
+        <section aria-label="Maior e menor gasto com insumos" className="grid grid-cols-2 gap-3">
+          <Tile label="Maior gasto com insumos" value={formatPct(highest.pct)} hint={highest.name} tone="bad" help="O produto que gasta mais em ingredientes em relação ao preço (também chamado de CMV). Candidato a rever receita ou preço." />
+          <Tile label="Menor gasto com insumos" value={formatPct(lowest.pct)} hint={lowest.name} tone="good" help="O produto que gasta menos em ingredientes em relação ao preço. O que mais deixa sobrar." />
+        </section>
+      ) : null}
 
       <section aria-label="Produtos por gasto com insumos" className="flex flex-col gap-3">
         <h2 className="flex items-center text-sm font-semibold uppercase tracking-wider text-muted">
@@ -158,7 +131,7 @@ export function PainelView({ data }: { data: Dashboard }) {
             </li>
           ))}
         </ul>
-        {panel.cmvRanking.length > 8 ? <p className="text-xs text-muted">Mostrando as 8 de maior CMV.</p> : null}
+        {panel.cmvRanking.length > 8 ? <p className="text-xs text-muted">Mostrando os 8 com maior gasto.</p> : null}
       </section>
 
       <section aria-label="Ponto de equilíbrio" className={card}>
@@ -172,13 +145,13 @@ export function PainelView({ data }: { data: Dashboard }) {
             <p className="text-sm text-muted">
               Cerca de {formatNumber(breakEven.perDay, 0)} por dia · {formatBRL(breakEven.revenue)} de faturamento
             </p>
-            {ctx.monthlyUnits ? (
+            {ctx.monthlyRevenue ? (
               <>
                 <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-border" aria-hidden>
-                  <div className={`h-full rounded-full ${ctx.monthlyUnits >= breakEven.units ? "bg-success" : "bg-danger"}`} style={{ width: `${Math.min(100, (ctx.monthlyUnits / breakEven.units) * 100)}%` }} />
+                  <div className={`h-full rounded-full ${ctx.monthlyRevenue >= breakEven.revenue ? "bg-success" : "bg-danger"}`} style={{ width: `${Math.min(100, (ctx.monthlyRevenue / breakEven.revenue) * 100)}%` }} />
                 </div>
                 <p className="text-xs text-muted">
-                  Você vende cerca de {formatNumber(ctx.monthlyUnits, 0)} por mês: {ctx.monthlyUnits >= breakEven.units ? "acima" : "abaixo"} do equilíbrio.
+                  Você fatura cerca de {formatBRL(ctx.monthlyRevenue)} por mês: {ctx.monthlyRevenue >= breakEven.revenue ? "acima" : "abaixo"} do equilíbrio.
                 </p>
               </>
             ) : null}

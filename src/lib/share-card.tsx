@@ -30,14 +30,14 @@ export function shareCardImage(input: { orgName: string; month: string; composit
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 18 }}>
           <div style={{ display: "flex", fontSize: 54, fontWeight: 800, color: GREEN, textAlign: "center" }}>{orgName}</div>
-          <div style={{ display: "flex", fontSize: 28, color: MUTED, marginTop: 6 }}>Meu negócio em {month}</div>
+          <div style={{ display: "flex", fontSize: 28, color: MUTED, marginTop: 6 }}>Margem média dos meus preços · {month}</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", background: "white", borderRadius: 40, padding: "40px 48px", marginTop: 34, width: "100%", boxShadow: "0 8px 40px rgba(28,59,51,0.12)" }}>
           <div style={{ display: "flex", fontSize: 26, fontWeight: 700, color: MUTED, letterSpacing: 2 }}>LUCRO LÍQUIDO MÉDIO</div>
           <div style={{ display: "flex", fontSize: 190, fontWeight: 900, color: GREEN, lineHeight: 1.05 }}>{formatPct(c.profit)}</div>
           <div style={{ display: "flex", fontSize: 30, color: MUTED }}>
-            Em cada R$ 100 vendidos, sobram {formatBRL(c.profit * 100)}
+            {c.profit >= 0 ? "Em cada R$ 100 vendidos, sobram" : "Em cada R$ 100 vendidos, faltam"} {formatBRL(Math.abs(c.profit) * 100)}
           </div>
 
           <div style={{ display: "flex", width: "100%", height: 34, borderRadius: 17, overflow: "hidden", marginTop: 36, background: "#e5e7e3" }}>

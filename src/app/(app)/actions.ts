@@ -28,7 +28,7 @@ export async function viewAsOrganization(formData: FormData) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 8, // some sozinho no fim do expediente
+    maxAge: 60 * 60 * 2, // some sozinho em 2 horas
   });
   redirect("/");
 }

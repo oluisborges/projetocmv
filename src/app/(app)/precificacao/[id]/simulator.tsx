@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { Hint } from "@/components/hint";
+import { EstimateNotice } from "@/components/estimate-notice";
 import { MarginBadge } from "@/components/margin-badge";
 import { formatBRL, formatPct, parseDecimal } from "@/lib/format";
 import { analyzePrice, priceBreakdown, type PricingSettings } from "@/lib/pricing-view";
@@ -26,7 +26,7 @@ export function Simulator({
   currentPrice,
   settings,
   configured,
-  fixedAuto,
+  estimateReason,
   channels,
   canWrite,
 }: {
@@ -34,8 +34,9 @@ export function Simulator({
   cost: number;
   currentPrice: number | null;
   settings: PricingSettings;
+  /** `false` = lucros são estimativa. */
   configured: boolean;
-  fixedAuto: boolean;
+  estimateReason: "tax" | "expenses" | null;
   channels: Channel[];
   canWrite: boolean;
 }) {
@@ -89,15 +90,7 @@ export function Simulator({
         </div>
       ) : null}
 
-      {!configured ? (
-        <p role="status" className="rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
-          Estimativa: {fixedAuto ? "faltam os impostos." : "faltam impostos e despesas fixas."}{" "}
-          <Link href="/precificacao/ajustes" className="font-semibold underline">
-            Informe nos Ajustes
-          </Link>
-          .
-        </p>
-      ) : null}
+      <EstimateNotice reason={estimateReason} />
 
       <section className="flex flex-col gap-3 card p-4">
         <label className="flex flex-col gap-1.5 text-sm font-medium">

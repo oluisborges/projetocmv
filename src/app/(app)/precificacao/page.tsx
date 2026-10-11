@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireMember } from "@/lib/auth";
-import { computeRecipe, type CostItem } from "@/lib/recipe-cost";
+import { computeRecipe, recipeCostSettings, type CostItem } from "@/lib/recipe-cost";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { PricingList, type PricingRowData } from "./pricing-list";
@@ -27,7 +27,7 @@ export default async function PricingPage() {
     const costItems: CostItem[] = items
       .filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id))
       .map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope }));
-    const view = computeRecipe({ portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving", safetyMarginPct: ctx.settings.safetyMarginPct }, costItems);
+    const view = computeRecipe(recipeCostSettings(r, ctx.settings.safetyMarginPct), costItems);
     return {
       id: r.id,
       name: r.name,
@@ -54,7 +54,7 @@ export default async function PricingPage() {
           Ainda não há fichas técnicas. Monte a primeira em <Link href="/fichas" className="font-semibold text-primary">Fichas</Link>: o preço sai do custo dela.
         </p>
       ) : (
-        <PricingList rows={rows} channels={ctx.channels} settings={ctx.settings} configured={ctx.configured} fixedAuto={ctx.fixedAuto} canWrite={canWrite} />
+        <PricingList rows={rows} channels={ctx.channels} settings={ctx.settings} configured={!ctx.estimate} estimateReason={ctx.estimateReason} canWrite={canWrite} />
       )}
     </>
   );

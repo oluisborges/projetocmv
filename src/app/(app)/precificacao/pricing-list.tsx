@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { EstimateNotice } from "@/components/estimate-notice";
 import { MarginBadge } from "@/components/margin-badge";
 import { formatBRL, parseDecimal } from "@/lib/format";
 import { analyzePrice, type PricingSettings } from "@/lib/pricing-view";
@@ -111,14 +112,15 @@ export function PricingList({
   channels,
   settings,
   configured,
-  fixedAuto,
+  estimateReason,
   canWrite,
 }: {
   rows: PricingRowData[];
   channels: Channel[];
   settings: PricingSettings;
+  /** `false` = lucros são estimativa. */
   configured: boolean;
-  fixedAuto: boolean;
+  estimateReason: "tax" | "expenses" | null;
   canWrite: boolean;
 }) {
   const [channelId, setChannelId] = useState(channels[0]?.id ?? "");
@@ -149,15 +151,7 @@ export function PricingList({
         </div>
       ) : null}
 
-      {!configured ? (
-        <p role="status" className="rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning">
-          Estes lucros são <strong>estimativas</strong>: {fixedAuto ? "faltam os impostos." : "faltam impostos e despesas fixas."}{" "}
-          <Link href="/precificacao/ajustes" className="font-semibold underline">
-            Informe nos Ajustes
-          </Link>{" "}
-          para ver o lucro de verdade.
-        </p>
-      ) : null}
+      <EstimateNotice reason={estimateReason} />
 
       {configured && below > 0 ? (
         <p role="status" className="rounded-xl bg-danger/10 px-4 py-3 text-sm font-medium text-danger">

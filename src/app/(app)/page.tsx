@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadDashboard } from "@/lib/dashboard-data";
 import { formatPct } from "@/lib/format";
+import { BrandFooter } from "@/components/brand-footer";
 import { DashboardView } from "./dashboard";
 
 type Step = { key: string; title: string; detail: string; href: string; cta: string; minutes: number; done: boolean };
@@ -114,7 +115,9 @@ export default async function HomePage() {
           ) : null}
         </div>
 
-        <ul className="divide-y divide-border card px-4">
+        <details className="card">
+          <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Ver todos os passos</summary>
+        <ul className="divide-y divide-border border-t border-border px-4">
           {steps.map((step, i) => (
             <li key={step.key}>
               <Link href={step.href} className="flex min-h-12 items-center gap-3 py-2.5 text-sm">
@@ -130,6 +133,7 @@ export default async function HomePage() {
             </li>
           ))}
         </ul>
+        </details>
       </section>
     ) : null;
 
@@ -139,7 +143,7 @@ export default async function HomePage() {
         <span className="flex flex-col">
           <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Lucro líquido médio</span>
           <span className="tabular text-4xl font-extrabold tracking-tight">{formatPct(data.panel.composition.profit)}</span>
-          <span className="text-sm opacity-90">de cada venda sobra para você{!data.ctx.configured ? " (estimativa)" : ""}</span>
+          <span className="text-sm opacity-90">de cada venda sobra para você{data.ctx.estimate ? " (estimativa)" : ""}</span>
         </span>
         <span className="shrink-0 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-primary">Ver painel</span>
       </Link>
@@ -183,14 +187,7 @@ export default async function HomePage() {
         </Link>
       ) : null}
 
-      <div className="flex flex-col items-center gap-1 pt-2 text-sm">
-        <Link href="/conta/senha" className="inline-flex min-h-11 items-center font-semibold text-primary">
-          Trocar minha senha
-        </Link>
-        <Link href="/privacidade" className="inline-flex min-h-11 items-center text-muted underline">
-          Como seus dados são tratados
-        </Link>
-      </div>
+      <BrandFooter />
     </>
   );
 }

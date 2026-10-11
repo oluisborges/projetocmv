@@ -1,12 +1,10 @@
 import {
   D,
-  ImpossiblePriceError,
   contributionMargin,
   contributionMarginPct,
   marginStatus,
   netMargin,
   netMarginPct,
-  suggestedPrice,
   totalRates,
   type MarginStatus,
 } from "@/lib/calc";
@@ -25,10 +23,6 @@ export type PricingSettings = {
 };
 
 export type PriceAnalysis = {
-  /** Preço que garante o lucro desejado, arredondado PARA CIMA em centavos (nunca abaixo da meta). */
-  suggested: number | null;
-  /** `true` quando impostos + taxas + despesas + lucro somam 100% ou mais: não existe preço que feche a conta. */
-  impossible: boolean;
   /** Análise do preço informado (praticado ou simulado); `null` se não há preço. */
   at: null | {
     price: number;
@@ -40,29 +34,20 @@ export type PriceAnalysis = {
   };
 };
 
-const ceilCents = (v: number) => D(v).mul(100).ceil().div(100).toNumber();
-
-/** Tudo que a tela de preço mostra, num lugar só (e testado). `feePct` é a taxa do canal de venda escolhido. */
+/**
+ * Tudo que a tela de preço mostra, num lugar só (e testado). `feePct` é a taxa do canal de venda escolhido.
+ * Não existe "preço sugerido" de propósito: calculado só pelos custos ele puxa o preço para baixo, sem considerar
+ * região, concorrência nem o que o cliente aceita pagar. Quem decide o preço é o dono; o app mostra o que sobra.
+ */
 export function analyzePrice(input: { cost: number; settings: PricingSettings; feePct: number; price?: number | null }): PriceAnalysis {
   const { cost, settings, feePct } = input;
   const rates = { taxPct: settings.taxPct, salesFeePct: feePct + (settings.otherPct ?? 0), fixedExpensePct: settings.fixedExpensePct, profitPct: settings.profitPct };
 
-  let suggested: number | null = null;
-  let impossible = false;
-  try {
-    suggested = ceilCents(suggestedPrice(cost, rates).toNumber());
-  } catch (e) {
-    if (!(e instanceof ImpossiblePriceError)) throw e;
-    impossible = true;
-  }
-
   const price = input.price ?? 0;
-  if (!(price > 0)) return { suggested, impossible, at: null };
+  if (!(price > 0)) return { at: null };
 
   const net = netMarginPct(price, cost, rates).toNumber();
   return {
-    suggested,
-    impossible,
     at: {
       price,
       contribution: contributionMargin(price, cost, rates).toNumber(),

@@ -3,11 +3,11 @@ import { saveMonthSnapshot } from "@/lib/snapshot-data";
 import { summarizeFixedCosts, type FixedCostSummary } from "@/lib/fixed-costs-view";
 import { summarizePanel, type PanelSummary } from "@/lib/panel-view";
 import { loadStaff } from "@/lib/costs-data";
-import { currentMonthStart, summarizeMonth, type MonthSummary } from "@/lib/month-view";
+import { currentMonthStart, lastMonths, summarizeMonth, type MonthSummary } from "@/lib/month-view";
 import { priceIncreaseAlerts, type PriceIncreaseAlert } from "@/lib/price-alerts";
 import { loadCurrentPrices, loadPricingContext, type PricingContext } from "@/lib/pricing-data";
 import { analyzePrice, type PriceAnalysis } from "@/lib/pricing-view";
-import { computeRecipe } from "@/lib/recipe-cost";
+import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { STALE_DAYS } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -40,6 +40,8 @@ export type Dashboard = {
   increases: PriceIncreaseAlert[];
   /** Médias dos produtos com preço (CMV, CMO, despesas, lucro); `null` se nenhuma tem custo e preço. */
   panel: PanelSummary | null;
+  /** `avgNetPct` e o painel pesam cada produto pelas vendas dos últimos meses. */
+  weighted: boolean;
   /** Equilíbrio do mês (precisa de custos cadastrados e de produto com preço). */
   breakEven: FixedCostSummary["breakEven"];
 };
@@ -50,31 +52,47 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   if (!ctx) return null;
 
   const supabase = await createClient();
-  const monthStart = currentMonthStart();
+  const now = currentMonthStart();
+  const previous = lastMonths(now, 2)[1];
 
-  const [ingredients, { recipes, items }, prices, staff, { data: ingPrices }, { data: period }, { data: history }] = await Promise.all([
+  const [ingredients, { recipes, items }, prices, staff, { data: ingPrices }, { data: monthPeriods }, { data: recentPeriods }, { data: history }] = await Promise.all([
     loadIngredients(),
     loadRecipes(),
     loadCurrentPrices(ctx.unit.id),
     loadStaff(ctx.unit.id),
     supabase.from("ingredients").select("purchase_price, price_updated_at").eq("org_id", orgId).is("archived_at", null),
-    supabase.from("periods").select("id, revenue, purchases").eq("unit_id", ctx.unit.id).eq("month", monthStart).maybeSingle(),
+    supabase.from("periods").select("id, month, revenue, purchases").eq("unit_id", ctx.unit.id).in("month", [now, previous]),
+    supabase.from("periods").select("id").eq("unit_id", ctx.unit.id).gt("revenue", 0).order("month", { ascending: false }).limit(3),
     // Sem limite inferior de data: o alerta precisa do último preço ANTES da janela como base. Os mais recentes primeiro,
     // para que um eventual corte do limite descarte o histórico antigo, nunca o preço atual.
     supabase.from("ingredient_price_history").select("ingredient_id, unit_cost, changed_at").eq("org_id", orgId).order("changed_at", { ascending: false }).limit(2000),
   ]);
 
-  const { data: salesRows } = period
-    ? await supabase.from("period_sales").select("recipe_id, qty_sold").eq("period_id", period.id)
-    : { data: [] as { recipe_id: string; qty_sold: number }[] };
+  // O resumo do mês usa o mês em andamento se ele já tem números; senão, o mês anterior (no começo do mês o atual está vazio).
+  const hasNumbers = (p?: { revenue: unknown; purchases: unknown }) => Number(p?.revenue ?? 0) > 0 || Number(p?.purchases ?? 0) > 0;
+  const currentPeriod = (monthPeriods ?? []).find((p) => String(p.month) === now);
+  const previousPeriod = (monthPeriods ?? []).find((p) => String(p.month) === previous);
+  const period = hasNumbers(currentPeriod) ? currentPeriod : hasNumbers(previousPeriod) ? previousPeriod : currentPeriod;
+  const monthStart = period ? String(period.month) : now;
 
-  const cheapest = [...ctx.channels].sort((a, b) => a.fee_pct - b.fee_pct)[0];
+  const periodIds = [...new Set([period?.id, ...(recentPeriods ?? []).map((p) => p.id)].filter(Boolean) as string[])];
+  const { data: allSales } = periodIds.length
+    ? await supabase.from("period_sales").select("period_id, recipe_id, qty_sold").in("period_id", periodIds)
+    : { data: [] as { period_id: string; recipe_id: string; qty_sold: number }[] };
+  const salesRows = (allSales ?? []).filter((r) => r.period_id === period?.id);
+  // Pesos das médias: vendas dos últimos meses informados (até 3), por produto.
+  const recentIds = new Set((recentPeriods ?? []).map((p) => p.id as string));
+  const weights = new Map<string, number>();
+  for (const r of allSales ?? []) if (recentIds.has(r.period_id as string)) weights.set(r.recipe_id as string, (weights.get(r.recipe_id as string) ?? 0) + Number(r.qty_sold));
+
+  // Canal de referência: o de menor taxa (a lista já vem ordenada assim; é o mesmo em todas as telas).
+  const cheapest = ctx.channels[0];
   const feePct = cheapest?.fee_pct ?? 0;
 
   const byIngredient = new Map(ingredients.map((i) => [i.id, i]));
   const dishes: DashboardDish[] = recipes.map((r) => {
     const view = computeRecipe(
-      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving", safetyMarginPct: ctx.settings.safetyMarginPct },
+      recipeCostSettings(r, ctx.settings.safetyMarginPct),
       items.filter((i) => i.recipe_id === r.id && byIngredient.has(i.ingredient_id)).map((i) => ({ ingredient: byIngredient.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
     );
     const cost = view.ok ? view.cost.costPerPortion.toNumber() : null;
@@ -82,11 +100,15 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
     return { id: r.id, name: r.name, cost, price, analysis: cost === null ? null : analyzePrice({ cost, settings: ctx.settings, feePct, price }) };
   });
 
-  const priced = dishes.filter((d) => d.analysis?.at);
+  // "Produto com preço" = custo calculado (> 0) e preço de venda definido: o mesmo critério do Painel.
+  const priced = dishes.filter((d) => d.analysis?.at && (d.cost ?? 0) > 0);
   const belowTarget = priced.filter((d) => d.analysis!.at!.status === "below-target");
-  const avgNetPct = priced.length > 0 ? priced.reduce((s, d) => s + d.analysis!.at!.netPct, 0) / priced.length : null;
+  const weighted = priced.some((d) => (weights.get(d.id) ?? 0) > 0);
+  const weightOf = (id: string) => (weighted ? (weights.get(id) ?? 0) : 1);
+  const weightSum = priced.reduce((s, d) => s + weightOf(d.id), 0);
+  const avgNetPct = priced.length > 0 && weightSum > 0 ? priced.reduce((s, d) => s + d.analysis!.at!.netPct * weightOf(d.id), 0) / weightSum : null;
 
-  const qty = new Map((salesRows ?? []).map((r) => [r.recipe_id as string, Number(r.qty_sold)]));
+  const qty = new Map(salesRows.map((r) => [r.recipe_id as string, Number(r.qty_sold)]));
   const summary = summarizeMonth({
     revenue: Number(period?.revenue ?? 0),
     purchases: Number(period?.purchases ?? 0),
@@ -113,13 +135,14 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
     settings: ctx.settings,
     feePct,
     staffShareOfFixed: ctx.fixedTotal > 0 ? ctx.staffTotal / ctx.fixedTotal : 0,
+    weights,
   });
   const { breakEven } = summarizeFixedCosts({
     fixedCosts: [ctx.fixedTotal - ctx.staffTotal],
     staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
     monthlyRevenue: ctx.monthlyRevenue,
     monthlyUnits: ctx.monthlyUnits,
-    dishes: dishes.filter((d) => d.cost !== null && (d.price ?? 0) > 0).map((d) => ({ price: d.price as number, cost: d.cost as number })),
+    dishes: dishes.filter((d) => d.cost !== null && (d.price ?? 0) > 0).map((d) => ({ price: d.price as number, cost: d.cost as number, qty: weights.get(d.id) })),
     taxPct: ctx.settings.taxPct,
     feePct: feePct + (ctx.settings.otherPct ?? 0),
   });
@@ -130,7 +153,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
       fixedTotal: ctx.fixedTotal - ctx.staffTotal,
       staffTotal: ctx.staffTotal,
       taxPct: ctx.settings.taxPct,
-      feePct,
+      feePct: feePct + (ctx.settings.otherPct ?? 0), // taxa do canal + outras taxas: é a soma que entra na conta do mês
       products: dishes.map((d) => ({ id: d.id, name: d.name, cost: d.cost, price: d.price })),
     });
   }
@@ -154,6 +177,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
       recipesUsing,
     }),
     panel,
+    weighted,
     breakEven,
   };
 }

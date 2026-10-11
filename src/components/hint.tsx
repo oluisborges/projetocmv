@@ -1,14 +1,28 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 /** Botão "?" que abre uma explicação em linguagem simples (funciona com toque, sem depender de hover). */
 export function Hint({ children, label = "O que é isso?" }: { children: React.ReactNode; label?: string }) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const root = useRef<HTMLSpanElement>(null);
+
+  // Toque fora (ou Esc) fecha a explicação.
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => e.target instanceof Node && !root.current?.contains(e.target) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
 
   return (
-    <span className="inline-flex flex-col align-middle">
+    <span ref={root} className="inline-flex flex-col align-middle">
       <button
         type="button"
         aria-label={label}

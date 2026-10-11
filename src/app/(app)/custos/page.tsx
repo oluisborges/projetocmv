@@ -5,7 +5,7 @@ import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
-import { computeRecipe } from "@/lib/recipe-cost";
+import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { StepCard } from "./step-card";
 import { AddFixedCostForm, AddStaffForm, FixedCostRow, MonthlyNumbersForm, StaffRowView } from "./costs-forms";
@@ -38,7 +38,7 @@ export default async function CostsPage() {
   const dishes = recipes.flatMap((r) => {
     const price = prices.get(r.id) ?? 0;
     const view = computeRecipe(
-      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving", safetyMarginPct: ctx.settings.safetyMarginPct },
+      recipeCostSettings(r, ctx.settings.safetyMarginPct),
       items.filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id)).map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
     );
     return view.ok && price > 0 ? [{ price, cost: view.cost.costPerPortion.toNumber() }] : [];

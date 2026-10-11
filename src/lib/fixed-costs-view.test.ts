@@ -66,3 +66,14 @@ describe("summarizeFixedCosts", () => {
     expect(delivery).toBeGreaterThan(direct);
   });
 });
+
+describe("ponto de equilíbrio com vendas", () => {
+  it("pesa pelo que cada produto vende: o campeão de margem baixa empurra o equilíbrio para cima", () => {
+    const base = { fixedCosts: [3000], staff: [], monthlyRevenue: null, monthlyUnits: null, taxPct: 0, feePct: 0 };
+    const equal = summarizeFixedCosts({ ...base, dishes: [{ price: 20, cost: 10 }, { price: 20, cost: 18 }] }).breakEven!;
+    const weighted = summarizeFixedCosts({ ...base, dishes: [{ price: 20, cost: 10, qty: 10 }, { price: 20, cost: 18, qty: 90 }] }).breakEven!;
+    // margens: R$ 10 e R$ 2. Igual: média R$ 6 -> 500 un. Pesado (10/90): média R$ 2,80 -> ~1.071 un.
+    expect(equal.units).toBeCloseTo(500, 6);
+    expect(weighted.units).toBe(1072); // 3000 ÷ 2,80 = 1.071,4, arredondado para cima
+  });
+});

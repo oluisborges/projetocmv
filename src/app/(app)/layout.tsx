@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { AccountMenu } from "@/components/account-menu";
 import { BottomNav } from "@/components/bottom-nav";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { exitViewAs, signOut } from "./actions";
@@ -35,25 +36,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {orgName ? <span className="text-xs font-medium text-accent">Shogun Precificação</span> : null}
           </span>
         </Link>
-        <nav className="flex items-center gap-2">
-          {session.isPlatformAdmin ? (
-            <Link href="/admin" className="rounded-lg px-3 py-2 text-sm font-semibold text-accent">
-              Admin
-            </Link>
-          ) : null}
-          <form action={signOut}>
-            <button type="submit" className="h-10 rounded-lg border border-white/25 bg-white/10 px-3 text-sm font-medium text-white">
-              Sair
-            </button>
-          </form>
-        </nav>
+        <AccountMenu isAdmin={session.isPlatformAdmin} signOutAction={signOut} />
       </header>
       <main className="flex flex-1 flex-col gap-6 px-4 py-6 pb-24">
         {children}
-        <footer className="mt-4 flex flex-col items-center gap-1.5 pt-2 text-center">
-          <Image src="/brand/logo-stacked.png" alt="Grupo Shogun" width={560} height={359} className="h-14 w-auto opacity-90" />
-          <p className="text-xs text-muted">Shogun Precificação · uma ferramenta do Grupo Shogun</p>
-        </footer>
       </main>
       <BottomNav />
     </div>

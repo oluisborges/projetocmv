@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireMember } from "@/lib/auth";
 import { loadSafetyMargin } from "@/lib/pricing-data";
 import { formatBRL, formatNumber } from "@/lib/format";
-import { computeRecipe, type CostItem } from "@/lib/recipe-cost";
+import { computeRecipe, recipeCostSettings, type CostItem } from "@/lib/recipe-cost";
 import { loadArchivedRecipes, loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { restoreRecipe } from "./actions";
 
@@ -17,7 +17,7 @@ export default async function RecipesPage() {
     const costItems: CostItem[] = items
       .filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id))
       .map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope }));
-    const view = computeRecipe({ portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving", safetyMarginPct }, costItems);
+    const view = computeRecipe(recipeCostSettings(r, safetyMarginPct), costItems);
     return { recipe: r, view };
   });
 

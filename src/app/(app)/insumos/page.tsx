@@ -54,15 +54,17 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
       ) : null}
 
       {canWrite ? (
-        <div className="grid grid-cols-3 gap-2">
-          <Link href="/insumos/novo" className={`${button} ${primary}`}>
-            + Novo
-          </Link>
-          <Link href="/insumos/reajuste" className={`${button} ${secondary}`}>
-            Reajustar
-          </Link>
-          <Link href="/insumos/catalogo" className={`${button} ${secondary}`}>
-            Catálogo
+        <div className="flex flex-col gap-1">
+          <div className="grid grid-cols-2 gap-2">
+            <Link href="/insumos/novo" className={`${button} ${primary}`}>
+              + Novo insumo
+            </Link>
+            <Link href="/insumos/catalogo" className={`${button} ${secondary}`}>
+              Catálogo Shogun
+            </Link>
+          </div>
+          <Link href="/insumos/reajuste" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
+            Reajustar vários preços de uma vez (%)
           </Link>
         </div>
       ) : null}

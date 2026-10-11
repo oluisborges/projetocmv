@@ -57,3 +57,20 @@ export function computeRecipe(settings: CostSettings, items: CostItem[]): Recipe
     return { ok: false, reason: e instanceof NoPortionsError ? "no-portions" : "invalid" };
   }
 }
+
+/**
+ * Ajustes de custo de uma ficha como vêm do banco. Um lugar só monta isso (todas as telas passam por aqui),
+ * para nenhuma esquecer a margem de segurança nem o modo "por unidade".
+ */
+export function recipeCostSettings(
+  r: { portions: number | null; portion_weight: number | null; cooking_loss_pct: number; mode: "serving" | "batch" },
+  safetyMarginPct: number | undefined,
+): CostSettings {
+  return {
+    portions: r.portions,
+    portionWeight: r.portion_weight,
+    cookingLossPct: r.cooking_loss_pct,
+    useCookingYield: r.mode === "serving",
+    safetyMarginPct: safetyMarginPct ?? 0,
+  };
+}

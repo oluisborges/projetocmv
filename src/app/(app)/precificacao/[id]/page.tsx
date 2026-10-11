@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireMember } from "@/lib/auth";
 import { formatBRL } from "@/lib/format";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
-import { computeRecipe } from "@/lib/recipe-cost";
+import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipe } from "@/lib/recipes-data";
 import { Simulator } from "./simulator";
 
@@ -24,7 +24,7 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
   const { recipe, items } = loaded;
 
   const view = computeRecipe(
-    { portions: recipe.portions, portionWeight: recipe.portion_weight, cookingLossPct: recipe.cooking_loss_pct, useCookingYield: recipe.mode === "serving", safetyMarginPct: ctx.settings.safetyMarginPct },
+    recipeCostSettings(recipe, ctx.settings.safetyMarginPct),
     items.filter((i) => byId.has(i.ingredient_id)).map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
   );
 
@@ -54,8 +54,8 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
           cost={view.cost.costPerPortion.toNumber()}
           currentPrice={prices.get(recipe.id) ?? null}
           settings={ctx.settings}
-          configured={ctx.configured}
-          fixedAuto={ctx.fixedAuto}
+          configured={!ctx.estimate}
+          estimateReason={ctx.estimateReason}
           channels={ctx.channels}
           canWrite={canWrite}
         />

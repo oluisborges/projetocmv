@@ -4,14 +4,11 @@ import { analyzePrice, priceBreakdown, type PricingSettings } from "./pricing-vi
 const settings: PricingSettings = { taxPct: 0.06, fixedExpensePct: 0.12, profitPct: 0.15, minMarginPct: 0.1 };
 
 describe("analyzePrice", () => {
-  it("custo 7,51 com 6% imposto, 5% taxa, 12% fixas e 15% lucro: sugere R$ 12,12 (arredonda para cima)", () => {
-    const a = analyzePrice({ cost: 7.51, settings, feePct: 0.05 });
-    expect(a.suggested).toBe(12.12);
-    expect(a.impossible).toBe(false);
-    expect(a.at).toBeNull();
+  it("sem preço informado não há análise", () => {
+    expect(analyzePrice({ cost: 7.51, settings, feePct: 0.05 }).at).toBeNull();
   });
 
-  it("no preço sugerido a margem líquida fica no lucro desejado (ou um tico acima)", () => {
+  it("a R$ 12,12 (custo 7,51, 6% imposto, 5% taxa, 12% fixas) a margem líquida é de uns 15%", () => {
     const a = analyzePrice({ cost: 7.51, settings, feePct: 0.05, price: 12.12 });
     expect(a.at!.netPct).toBeGreaterThanOrEqual(0.15);
     expect(a.at!.netPct).toBeLessThan(0.151);
@@ -26,17 +23,16 @@ describe("analyzePrice", () => {
     expect(a.at!.status).toBe("below-target");
   });
 
-  it("canal com taxa maior pede preço maior", () => {
-    const direct = analyzePrice({ cost: 7.51, settings, feePct: 0 }).suggested!;
-    const delivery = analyzePrice({ cost: 7.51, settings, feePct: 0.27 }).suggested!;
-    expect(delivery).toBeGreaterThan(direct);
+  it("canal com taxa maior deixa sobrar menos no mesmo preço", () => {
+    const direct = analyzePrice({ cost: 7.51, settings, feePct: 0, price: 15 }).at!;
+    const delivery = analyzePrice({ cost: 7.51, settings, feePct: 0.27, price: 15 }).at!;
+    expect(delivery.net).toBeLessThan(direct.net);
   });
 
-  it("percentuais que somam 100% ou mais: não existe preço, sem quebrar", () => {
-    const a = analyzePrice({ cost: 7.51, settings: { ...settings, profitPct: 0.6 }, feePct: 0.3, price: 12 });
-    expect(a.impossible).toBe(true);
-    expect(a.suggested).toBeNull();
-    expect(a.at).not.toBeNull(); // o preço praticado ainda pode ser analisado
+  it("taxas que passam do preço dão prejuízo, sem quebrar", () => {
+    const a = analyzePrice({ cost: 7.51, settings, feePct: 0.9, price: 12 });
+    expect(a.at!.net).toBeLessThan(0);
+    expect(a.at!.status).toBe("below-target");
   });
 
   it("preço zero ou vazio não gera análise", () => {

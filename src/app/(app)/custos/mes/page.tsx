@@ -4,9 +4,10 @@ import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
+import { normalizeSnapshot, summarizeSamples } from "@/lib/history-view";
 import { currentMonthStart, lastMonths, monthLabel, monthStart, summarizeMonth } from "@/lib/month-view";
 import { loadPricingContext } from "@/lib/pricing-data";
-import { computeRecipe } from "@/lib/recipe-cost";
+import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { createClient } from "@/lib/supabase/server";
 import { PeriodForm, SalesRow } from "./month-forms";
@@ -43,15 +44,23 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     ? await supabase.from("period_sales").select("recipe_id, qty_sold").eq("period_id", period.id)
     : { data: [] as { recipe_id: string; qty_sold: number }[] };
 
+  // Mês que já passou e tem registro: usa os custos e a equipe daquele mês (os mesmos números do Histórico), não os de hoje.
+  const { data: snapRow } = month < now ? await supabase.from("month_snapshots").select("data").eq("unit_id", ctx.unit.id).eq("month", month).maybeSingle() : { data: null };
+  const snap = snapRow ? normalizeSnapshot(snapRow.data, month) : null;
+  const [yy, mm] = month.split("-").map(Number);
+  const series = snap ? summarizeSamples(snap, month, new Date(Date.UTC(yy, mm, 1))) : null;
+  const seriesCost = new Map((series?.products ?? []).map((p) => [p.id, p.avgCost]));
+
   const byIngredient = new Map(ingredients.map((i) => [i.id, i]));
   const qtyByRecipe = new Map((salesRows ?? []).map((r) => [r.recipe_id as string, Number(r.qty_sold)]));
 
   const dishes = recipes.map((r) => {
     const view = computeRecipe(
-      { portions: r.portions, portionWeight: r.portion_weight, cookingLossPct: r.cooking_loss_pct, useCookingYield: r.mode === "serving", safetyMarginPct: ctx.settings.safetyMarginPct },
+      recipeCostSettings(r, ctx.settings.safetyMarginPct),
       items.filter((i) => i.recipe_id === r.id && byIngredient.has(i.ingredient_id)).map((i) => ({ ingredient: byIngredient.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
     );
-    return { id: r.id, name: r.name, cost: view.ok ? view.cost.costPerPortion.toNumber() : null, qty: qtyByRecipe.get(r.id) ?? 0 };
+    const cost = series ? (seriesCost.get(r.id) ?? null) : view.ok ? view.cost.costPerPortion.toNumber() : null;
+    return { id: r.id, name: r.name, cost, qty: qtyByRecipe.get(r.id) ?? 0 };
   });
 
   const revenue = Number(period?.revenue ?? 0);
@@ -60,7 +69,9 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     revenue,
     purchases,
     sales: dishes.map((d) => ({ recipeId: d.id, qty: d.qty, cost: d.cost })),
-    staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
+    staff: series
+      ? [{ area: "cozinha" as const, monthlySalary: series.average.staffTotal, chargesPct: 0 }]
+      : staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
   });
 
   const months = lastMonths(now, 6);
@@ -139,7 +150,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
             <div>
               <dt className="text-muted">
                 As fichas dizem que deveria ser
-                <Hint>Custo de cada produto (pela ficha) × quantas você vendeu, dividido pelo faturamento. É o gasto ideal, sem desperdício.</Hint>
+                <Hint>Custo de cada produto (pela ficha, já com a margem de segurança) × quantas você vendeu, dividido pelo faturamento. Se você gastou bem mais que isso, pode ser desperdício, sobra de estoque ou preço de insumo desatualizado.</Hint>
               </dt>
               <dd className="tabular text-xl font-extrabold">{summary.cmvTheoreticalPct !== null ? formatPct(summary.cmvTheoreticalPct) : "—"}</dd>
               <dd className="tabular text-xs text-muted">{summary.theoreticalCost !== null ? formatBRL(summary.theoreticalCost) : "informe as vendas abaixo"}</dd>

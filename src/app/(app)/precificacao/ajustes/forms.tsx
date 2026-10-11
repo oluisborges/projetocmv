@@ -40,11 +40,7 @@ export function SettingsForm({
     <ActionForm action={saveSettings} submitLabel="Salvar ajustes">
       <label className="flex flex-col gap-1.5 text-sm font-medium">
         Como você paga imposto?
-        <select
-          value={regime}
-          onChange={(e) => setRegime(e.target.value)}
-          className="h-12 card px-3 text-base"
-        >
+        <select value={regime} onChange={(e) => setRegime(e.target.value)} className="h-12 rounded-xl border border-border bg-surface px-3 text-base">
           <option value="" disabled>
             Escolha uma opção
           </option>
@@ -67,20 +63,12 @@ export function SettingsForm({
         hint={<Hint>Quanto de cada R$ 100 vendidos vai embora em imposto. É uma estimativa para o preço: seu contador sabe o número exato.</Hint>}
       />
       <TextField
-        label="Outras taxas sobre cada venda (%) · opcional"
-        name="other"
+        label="Lucro mínimo que você aceita (%)"
+        name="min_margin"
         inputMode="decimal"
-        defaultValue={pct(settings.otherPct ?? 0)}
+        defaultValue={pct(settings.minMarginPct)}
         required={false}
-        hint={<Hint>Comissão de vendedor, taxa de plataforma ou qualquer outra porcentagem que sai de cada venda e não é imposto nem taxa de canal. Sem nenhuma, deixe 0.</Hint>}
-      />
-      <TextField
-        label="Margem de segurança nos insumos (%)"
-        name="safety"
-        inputMode="decimal"
-        defaultValue={pct(settings.safetyMarginPct ?? 0)}
-        required={false}
-        hint={<Hint>Soma esse percentual ao custo dos ingredientes de cada ficha para cobrir perdas e desperdício. Para retirar, deixe 0.</Hint>}
+        hint={<Hint>De cada R$ 100 vendidos, quanto no mínimo você quer que sobre limpo no bolso. Abaixo disso o app avisa em vermelho que o produto está dando pouco lucro.</Hint>}
       />
       {fixedAuto ? (
         <div className="flex flex-col gap-1 card p-4 text-sm">
@@ -99,18 +87,26 @@ export function SettingsForm({
           </Link>
         </div>
       )}
-      <TextField
-        label="Lucro mínimo que você aceita (%)"
-        name="min_margin"
-        inputMode="decimal"
-        defaultValue={pct(settings.minMarginPct)}
-        required={false}
-        hint={<Hint>De cada R$ 100 vendidos, quanto no mínimo você quer que sobre limpo no bolso. Abaixo disso o app avisa em vermelho que o produto está dando pouco lucro.</Hint>}
-      />
-      {!fixedAuto ? (
-        <details className="card">
-          <summary className="flex min-h-11 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Avançado</summary>
-          <div className="flex flex-col gap-4 border-t border-border p-4">
+      <details className="card">
+        <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold text-primary">Avançado</summary>
+        <div className="flex flex-col gap-4 border-t border-border p-4">
+          <TextField
+            label="Outras taxas sobre cada venda (%) · opcional"
+            name="other"
+            inputMode="decimal"
+            defaultValue={pct(settings.otherPct ?? 0)}
+            required={false}
+            hint={<Hint>Comissão de vendedor, taxa de plataforma ou qualquer outra porcentagem que sai de cada venda e não é imposto nem taxa de canal. Sem nenhuma, deixe 0.</Hint>}
+          />
+          <TextField
+            label="Margem de segurança nos insumos (%)"
+            name="safety"
+            inputMode="decimal"
+            defaultValue={pct(settings.safetyMarginPct ?? 0)}
+            required={false}
+            hint={<Hint>Soma esse percentual ao custo dos ingredientes de cada ficha para cobrir perdas e desperdício. Para retirar, deixe 0.</Hint>}
+          />
+          {!fixedAuto ? (
             <TextField
               label="Despesas fixas à mão (% do que vende)"
               name="fixed"
@@ -119,9 +115,9 @@ export function SettingsForm({
               required={false}
               hint={<Hint>Só se não quiser informar as contas em Custos. Digite uma estimativa do quanto de cada venda vai para despesas fixas.</Hint>}
             />
-          </div>
-        </details>
-      ) : null}
+          ) : null}
+        </div>
+      </details>
     </ActionForm>
   );
 }

@@ -25,7 +25,7 @@ function Kpi({ label, value, hint, tone = "default", href }: { label: string; va
 /** Painel do Início: o que o dono precisa ver em 10 segundos. Só aparece quando já há produto com preço. */
 export function DashboardView({ data, variant = "full" }: { data: Dashboard; variant?: "full" | "alerts" }) {
   const { ctx, month } = data;
-  const estimate = !ctx.configured;
+  const estimate = ctx.estimate;
 
   const worst = data.dishes
     .filter((d) => d.analysis?.at)
