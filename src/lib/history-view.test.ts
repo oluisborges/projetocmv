@@ -71,17 +71,17 @@ describe("variação durante o mês", () => {
   });
 
   it("só grava amostra nova quando algo mudou", () => {
-    const first = appendSample(null, state(15), new Date("2026-09-02T12:00:00Z"))!;
+    const first = appendSample(null, state(15), new Date("2026-09-02T12:00:00-03:00"))!;
     expect(first.samples).toHaveLength(1);
-    expect(appendSample(first, state(15), new Date("2026-09-03T12:00:00Z"))).toBeNull();
-    const second = appendSample(first, state(16), new Date("2026-09-16T12:00:00Z"))!;
+    expect(appendSample(first, state(15), new Date("2026-09-03T12:00:00-03:00"))).toBeNull();
+    const second = appendSample(first, state(16), new Date("2026-09-16T12:00:00-03:00"))!;
     expect(second.samples).toHaveLength(2);
   });
 
   it("média ponderada pelo tempo: preço 15 até o dia 16 e 16 depois", () => {
-    let snap = appendSample(null, state(15), new Date("2026-09-05T12:00:00Z"))!;
-    snap = appendSample(snap, state(16), new Date("2026-09-16T00:00:00Z"))!;
-    const r = summarizeSamples(snap, "2026-09-01", new Date("2026-10-01T00:00:00Z"));
+    let snap = appendSample(null, state(15), new Date("2026-09-05T12:00:00-03:00"))!;
+    snap = appendSample(snap, state(16), new Date("2026-09-16T00:00:00-03:00"))!;
+    const r = summarizeSamples(snap, "2026-09-01", new Date("2026-10-01T00:00:00-03:00"));
     // 15 dias a R$ 15 (1 a 16) e 15 dias a R$ 16 (16 a 1/10)
     expect(r.products[0].avgPrice).toBeCloseTo(15.5, 6);
     expect(r.products[0].minPrice).toBe(15);
@@ -91,12 +91,30 @@ describe("variação durante o mês", () => {
   });
 
   it("registra mudança da equipe e lê a foto antiga de um estado só", () => {
-    let snap = appendSample(null, state(15, 4000), new Date("2026-09-02T00:00:00Z"))!;
-    snap = appendSample(snap, state(15, 5000), new Date("2026-09-16T00:00:00Z"))!;
-    expect(summarizeSamples(snap, "2026-09-01", new Date("2026-10-01T00:00:00Z")).events.map((e) => e.kind)).toEqual(["staff"]);
+    let snap = appendSample(null, state(15, 4000), new Date("2026-09-02T00:00:00-03:00"))!;
+    snap = appendSample(snap, state(15, 5000), new Date("2026-09-16T00:00:00-03:00"))!;
+    expect(summarizeSamples(snap, "2026-09-01", new Date("2026-10-01T00:00:00-03:00")).events.map((e) => e.kind)).toEqual(["staff"]);
 
     const old = normalizeSnapshot({ v: 1, ...state(15) }, "2026-09-01")!;
     expect(old.samples).toHaveLength(1);
-    expect(summarizeSamples(old, "2026-09-01", new Date("2026-10-01T00:00:00Z")).average.staffTotal).toBe(4000);
+    expect(summarizeSamples(old, "2026-09-01", new Date("2026-10-01T00:00:00-03:00")).average.staffTotal).toBe(4000);
+  });
+});
+
+describe("fuso de Brasília", () => {
+  it("um registro às 22h do último dia do mês conta no mês certo, com peso", async () => {
+    const { monthBounds } = await import("./month-view");
+    const b = monthBounds("2026-09-01");
+    expect(b.start.toISOString()).toBe("2026-09-01T03:00:00.000Z");
+    expect(b.end.toISOString()).toBe("2026-10-01T03:00:00.000Z");
+    // 22h de Brasília de 30/09 = 01h UTC de 01/10: em UTC cairia em outubro
+    const at = new Date("2026-09-30T22:00:00-03:00");
+    expect(at.getTime()).toBeGreaterThanOrEqual(b.start.getTime());
+    expect(at.getTime()).toBeLessThan(b.end.getTime());
+    const first = appendSample(null, { fixedTotal: 1, staffTotal: 1, taxPct: 0, feePct: 0, products: [{ id: "p", name: "P", cost: 5, price: 10 }] }, new Date("2026-09-10T12:00:00-03:00"))!;
+    const snap = appendSample(first, { fixedTotal: 1, staffTotal: 1, taxPct: 0, feePct: 0, products: [{ id: "p", name: "P", cost: 5, price: 20 }] }, at)!;
+    const r = summarizeSamples(snap, "2026-09-01", b.end);
+    expect(r.products[0].avgPrice!).toBeGreaterThan(10); // as 2h finais valem R$ 20, então a média passa de 10
+    expect(monthBounds("2026-12-01").end.toISOString()).toBe("2027-01-01T03:00:00.000Z");
   });
 });

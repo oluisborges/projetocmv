@@ -1,7 +1,7 @@
 import "server-only";
 import { loadDashboard } from "@/lib/dashboard-data";
 import { monthPriceMoves, normalizeSnapshot, summarizeHistoryMonth, summarizeSamples, type ChangeEvent, type HistoryMonth, type PriceMove, type ProductSeries } from "@/lib/history-view";
-import { currentMonthStart, lastMonths } from "@/lib/month-view";
+import { currentMonthStart, lastMonths, monthBounds } from "@/lib/month-view";
 import { createClient } from "@/lib/supabase/server";
 
 /** Já existe algum mês com faturamento informado? Antes disso o Histórico não tem o que mostrar. */
@@ -55,8 +55,7 @@ export async function loadHistory(orgId: string, canWrite: boolean): Promise<{ e
     if (!period && !snapshot) continue;
 
     const qty = new Map((sales ?? []).filter((s) => s.period_id === period?.id).map((s) => [s.recipe_id as string, Number(s.qty_sold)]));
-    const [yy, mm] = month.split("-").map(Number);
-    const monthEnd = new Date(Date.UTC(yy, mm, 1));
+    const monthEnd = monthBounds(month).end;
     const series = snapshot ? summarizeSamples(snapshot, month, monthEnd.getTime() > Date.now() ? new Date() : monthEnd) : null;
     const avgCost = new Map((series?.products ?? []).map((p) => [p.id, p.avgCost]));
     const costOf = (id: string) => (series ? (avgCost.get(id) ?? null) : (todayCost.get(id) ?? null));

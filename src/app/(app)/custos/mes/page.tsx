@@ -5,7 +5,7 @@ import { requireMember } from "@/lib/auth";
 import { loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { normalizeSnapshot, summarizeSamples } from "@/lib/history-view";
-import { currentMonthStart, lastMonths, monthLabel, monthStart, summarizeMonth } from "@/lib/month-view";
+import { currentMonthStart, lastMonths, monthBounds, monthLabel, monthStart, summarizeMonth } from "@/lib/month-view";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
@@ -47,8 +47,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
   // Mês que já passou e tem registro: usa os custos e a equipe daquele mês (os mesmos números do Histórico), não os de hoje.
   const { data: snapRow } = month < now ? await supabase.from("month_snapshots").select("data").eq("unit_id", ctx.unit.id).eq("month", month).maybeSingle() : { data: null };
   const snap = snapRow ? normalizeSnapshot(snapRow.data, month) : null;
-  const [yy, mm] = month.split("-").map(Number);
-  const series = snap ? summarizeSamples(snap, month, new Date(Date.UTC(yy, mm, 1))) : null;
+  const series = snap ? summarizeSamples(snap, month, monthBounds(month).end) : null;
   const seriesCost = new Map((series?.products ?? []).map((p) => [p.id, p.avgCost]));
 
   const byIngredient = new Map(ingredients.map((i) => [i.id, i]));

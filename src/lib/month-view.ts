@@ -53,6 +53,17 @@ export function summarizeMonth(input: { revenue: number; purchases: number; sale
   };
 }
 
+/**
+ * Início e fim de um mês no horário de Brasília (UTC−3; o Brasil não tem horário de verão desde 2019).
+ * `month` = "YYYY-MM-01". Todo corte de mês do app usa isto, nunca UTC, para um registro das 22h do último dia
+ * não cair no mês seguinte.
+ */
+export function monthBounds(month: string): { start: Date; end: Date } {
+  const [y, m] = month.split("-").map(Number);
+  const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  return { start: new Date(`${month}T00:00:00-03:00`), end: new Date(`${next}T00:00:00-03:00`) };
+}
+
 /** "2026-10" (ou "2026-10-09") -> "2026-10-01"; `null` se inválido. A coluna do banco exige o dia 1. */
 export function monthStart(input: string | undefined | null): string | null {
   const m = /^(20\d{2})-(0[1-9]|1[0-2])(?:-\d{2})?$/.exec(input ?? "");

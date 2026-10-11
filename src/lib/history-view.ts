@@ -1,3 +1,5 @@
+import { monthBounds } from "@/lib/month-view";
+
 /** Como estava o negócio num instante. Tudo em reais/fração, nada calculado aqui. */
 export type SnapshotState = {
   /** Contas fixas do mês, sem a equipe. */
@@ -36,7 +38,7 @@ export function normalizeSnapshot(raw: unknown, month: string): MonthSnapshot | 
   if (o.v === 1) {
     const { v: _v, ...state } = o;
     void _v;
-    return { v: 2, samples: [{ at: `${month}T00:00:00.000Z`, s: state as unknown as SnapshotState }] };
+    return { v: 2, samples: [{ at: monthBounds(month).start.toISOString(), s: state as unknown as SnapshotState }] };
   }
   return null;
 }
@@ -66,7 +68,7 @@ export type ChangeEvent = { at: string; kind: "price" | "cost" | "fixed" | "staf
  * começo do mês, pois não sabemos o que havia antes) e a lista do que mudou. `end` = fim do mês, ou agora se o mês não acabou.
  */
 export function summarizeSamples(snapshot: MonthSnapshot, month: string, end: Date): { average: SnapshotState; products: ProductSeries[]; events: ChangeEvent[] } {
-  const start = Date.parse(`${month}T00:00:00Z`);
+  const start = monthBounds(month).start.getTime();
   const stop = end.getTime();
   const samples = [...snapshot.samples].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
 
@@ -191,9 +193,9 @@ export function monthPriceMoves(
   month: string,
   limit = 3,
 ): PriceMove[] {
-  const start = Date.parse(`${month}T00:00:00Z`);
-  const [y, m] = month.split("-").map(Number);
-  const end = Date.UTC(y, m, 1); // m já é o mês seguinte (base 0)
+  const { start: startDate, end: endDate } = monthBounds(month);
+  const start = startDate.getTime();
+  const end = endDate.getTime();
 
   const byIngredient = new Map<string, { unit_cost: number; at: number }[]>();
   for (const h of history) {
