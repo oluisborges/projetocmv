@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { recordSnapshot } from "@/lib/snapshot-record";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireMember } from "@/lib/auth";
+import { getSession, requireMember } from "@/lib/auth";
 import { normalizeName } from "@/lib/names";
 import { baseUnitOf, isPurchaseUnit } from "@/lib/calc";
 import { parseDecimal } from "@/lib/format";
@@ -221,6 +221,13 @@ export async function importFromCatalog(_prev: FormState, formData: FormData): P
   const supabase = await createClient();
   // As fichas prontas trazem junto os insumos e as embalagens que usam.
   const { error } = await supabase.rpc("import_template", { p_org: orgId, p_ingredient_ids: ids.data, p_recipe_ids: recipeIds.data });
+  if (!error) {
+    const parts = [ids.data.length > 0 ? `${ids.data.length} insumo(s)` : null, recipeIds.data.length > 0 ? `${recipeIds.data.length} ficha(s) pronta(s)` : null].filter(Boolean);
+    const session = await getSession();
+    if (session && parts.length > 0) {
+      await supabase.from("activity_log").insert({ org_id: orgId, user_id: session.userId, by_admin: session.isPlatformAdmin, kind: "change", summary: `Importou do catálogo da Shogun: ${parts.join(" e ")}` });
+    }
+  }
   if (error) return fail("Não foi possível importar.");
 
   recordSnapshot();

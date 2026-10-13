@@ -181,7 +181,7 @@ export default async function HomePage() {
       {summary}
       {showDashboard && data ? <DashboardView data={data} variant="alerts" /> : null}
 
-      {session.isPlatformAdmin ? (
+      {session.isPlatformAdmin && !member?.viewingAs ? (
         <Link href="/admin" className="rounded-xl bg-primary px-4 py-3 text-center font-semibold text-primary-foreground">
           Abrir painel Shogun
         </Link>

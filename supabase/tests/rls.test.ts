@@ -469,6 +469,48 @@ describe("nomes de insumo não se repetem na marmitaria", () => {
   });
 });
 
+describe("histórico de uso (activity_log)", () => {
+  it("alterar preço de insumo grava uma frase com antes e depois, e só o admin Shogun lê", async () => {
+    await as(ids.ownerA, "dono-a@marmita.com", () => q(`update public.ingredients set purchase_price = 15.5 where id = $1`, [ids.ingA]));
+
+    const seenByAdmin = await as(ids.admin, "admin@shogun.com", () =>
+      q(`select summary, kind, by_admin, user_id from public.activity_log where org_id = $1 and summary like 'Preço de "Frango A"%'`, [ids.orgA]),
+    );
+    expect(seenByAdmin.length).toBeGreaterThan(0);
+    expect(seenByAdmin[0].summary).toBe('Preço de "Frango A": R$ 14,00 → R$ 15,50');
+    expect(seenByAdmin[0].kind).toBe("change");
+    expect(seenByAdmin[0].by_admin).toBe(false);
+    expect(seenByAdmin[0].user_id).toBe(ids.ownerA);
+
+    // nem o dono nem a outra marmitaria enxergam o histórico
+    expect(await as(ids.ownerA, "dono-a@marmita.com", () => q(`select * from public.activity_log`))).toHaveLength(0);
+    expect(await as(ids.ownerB, "dono-b@marmita.com", () => q(`select * from public.activity_log`))).toHaveLength(0);
+  });
+
+  it("ação do admin dentro de uma marmitaria fica marcada como Shogun", async () => {
+    await as(ids.admin, "admin@shogun.com", () => q(`update public.ingredients set purchase_price = 16 where id = $1`, [ids.ingA]));
+    const rows = await as(ids.admin, "admin@shogun.com", () =>
+      q(`select by_admin, summary from public.activity_log where org_id = $1 and summary like '%→ R$ 16,00' order by id desc`, [ids.orgA]),
+    );
+    expect(rows[0]?.by_admin, JSON.stringify(rows)).toBe(true);
+  });
+
+  it("quem usa registra o próprio uso (entrada e telas), mas não apaga nem altera o histórico", async () => {
+    await as(ids.ownerA, "dono-a@marmita.com", () =>
+      q(`insert into public.activity_log (org_id, user_id, kind, summary, path) values ($1,$2,'view','Abriu Insumos','/insumos')`, [ids.orgA, ids.ownerA]),
+    );
+    // não dá para registrar em nome de outra pessoa nem em outra marmitaria
+    await expect(
+      as(ids.ownerA, "dono-a@marmita.com", () => q(`insert into public.activity_log (org_id, user_id, kind, summary) values ($1,$2,'view','x')`, [ids.orgA, ids.ownerB])),
+    ).rejects.toThrow(/row-level security/i);
+    await expect(
+      as(ids.ownerA, "dono-a@marmita.com", () => q(`insert into public.activity_log (org_id, user_id, kind, summary) values ($1,$2,'view','x')`, [ids.orgB, ids.ownerA])),
+    ).rejects.toThrow(/row-level security/i);
+    await expect(as(ids.ownerA, "dono-a@marmita.com", () => q(`delete from public.activity_log`))).rejects.toThrow(/permission denied/i);
+    await expect(as(ids.ownerA, "dono-a@marmita.com", () => q(`update public.activity_log set summary = 'apagado'`))).rejects.toThrow(/permission denied/i);
+  });
+});
+
 describe("ajustes opcionais e campos de ficha", () => {
   it("margem de segurança e outras taxas têm limites; padrão 10% e 0%", async () => {
     const [row] = await q(`select safety_margin_pct, other_pct from public.unit_settings where unit_id = $1`, [ids.unitA]);

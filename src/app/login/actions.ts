@@ -13,6 +13,30 @@ export type LoginState = {
   email?: string;
 };
 
+/** Histórico de uso: anota a entrada (com a marmitaria da pessoa, se tiver). Falhar aqui nunca impede o login. */
+async function logLogin(supabase: Awaited<ReturnType<typeof createClient>>) {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const [{ data: membership }, { data: profile }] = await Promise.all([
+      supabase.from("memberships").select("org_id").eq("user_id", user.id).order("created_at").limit(1).maybeSingle(),
+      supabase.from("profiles").select("is_platform_admin").eq("id", user.id).maybeSingle(),
+    ]);
+    const admin = Boolean(profile?.is_platform_admin);
+    await supabase.from("activity_log").insert({
+      org_id: membership?.org_id ?? null,
+      user_id: user.id,
+      by_admin: admin,
+      kind: "login",
+      summary: admin ? "Admin Shogun entrou no sistema" : "Entrou no sistema",
+    });
+  } catch {
+    /* ignora */
+  }
+}
+
 const schema = z.object({ email: z.email(), password: z.string().min(1) });
 
 export async function signIn(_prev: LoginState, formData: FormData): Promise<LoginState> {
@@ -36,5 +60,6 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   }
 
   await clearLoginFailures(keys);
+  await logLogin(supabase);
   redirect("/");
 }

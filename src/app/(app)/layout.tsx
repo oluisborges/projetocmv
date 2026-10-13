@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { AccountMenu } from "@/components/account-menu";
+import { ActivityTracker } from "@/components/activity-tracker";
 import { BottomNav } from "@/components/bottom-nav";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { exitViewAs, signOut } from "./actions";
@@ -36,11 +37,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {orgName ? <span className="text-xs font-medium text-accent">Shogun Precificação</span> : null}
           </span>
         </Link>
-        <AccountMenu isAdmin={session.isPlatformAdmin} signOutAction={signOut} />
+        {/* Em "ver como", a barra é a da marmitaria: sem menu de conta nem atalhos de admin; a saída é o botão da faixa laranja. */}
+        {active?.viewingAs ? null : <AccountMenu isAdmin={session.isPlatformAdmin} signOutAction={signOut} />}
       </header>
       <main className="flex flex-1 flex-col gap-6 px-4 py-6 pb-24">
         {children}
       </main>
+      <ActivityTracker />
       <BottomNav />
     </div>
   );

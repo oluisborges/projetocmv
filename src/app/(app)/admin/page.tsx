@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { viewAsOrganization } from "../actions";
@@ -53,12 +54,17 @@ export default async function AdminPage() {
                   <h3 className="truncate text-lg font-bold">{org.name}</h3>
                   <p className="text-xs text-muted">{members.length} usuário(s)</p>
                 </div>
-                <form action={viewAsOrganization}>
-                  <input type="hidden" name="orgId" value={org.id} />
-                  <button type="submit" className="h-11 shrink-0 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
-                    Ver como esta marmitaria
-                  </button>
-                </form>
+                <div className="flex shrink-0 flex-col items-stretch gap-2">
+                  <form action={viewAsOrganization}>
+                    <input type="hidden" name="orgId" value={org.id} />
+                    <button type="submit" className="h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
+                      Ver como esta marmitaria
+                    </button>
+                  </form>
+                  <Link href={`/admin/uso/${org.id}`} className="flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-primary">
+                    Histórico de uso
+                  </Link>
+                </div>
               </header>
 
               <ul className="flex flex-col divide-y divide-border">
