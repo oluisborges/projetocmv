@@ -7,11 +7,11 @@ import { AdjustForm } from "./reajuste-form";
 export const metadata = { title: "Reajustar preços" };
 
 export default async function AdjustPage() {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) redirect("/insumos");
 
   const supabase = await createClient();
-  const { data } = await supabase.from("ingredients").select("category").is("archived_at", null).gt("purchase_price", 0);
+  const { data } = await supabase.from("ingredients").select("category").eq("org_id", orgId).is("archived_at", null).gt("purchase_price", 0);
 
   // Insumos sem categoria só entram em "Todos".
   const counts = new Map<string, number>();

@@ -89,7 +89,7 @@ export async function addFixedCost(_prev: FormState, formData: FormData): Promis
 }
 
 export async function updateFixedCostAmount(id: string, raw: string): Promise<Result & { amount?: number }> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
   const uuid = z.uuid().safeParse(id);
@@ -98,7 +98,7 @@ export async function updateFixedCostAmount(id: string, raw: string): Promise<Re
   if (!amount.ok) return { ok: false, error: amount.error };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("fixed_costs").update({ monthly_amount: amount.value }).eq("id", uuid.data).select("monthly_amount").maybeSingle();
+  const { data, error } = await supabase.from("fixed_costs").update({ monthly_amount: amount.value }).eq("id", uuid.data).eq("org_id", orgId).select("monthly_amount").maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
   recordSnapshot();
@@ -108,12 +108,12 @@ export async function updateFixedCostAmount(id: string, raw: string): Promise<Re
 }
 
 export async function deleteFixedCost(formData: FormData): Promise<void> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const id = z.uuid().safeParse(formData.get("id"));
   if (!canWrite || !id.success) return;
 
   const supabase = await createClient();
-  await supabase.from("fixed_costs").delete().eq("id", id.data);
+  await supabase.from("fixed_costs").delete().eq("id", id.data).eq("org_id", orgId);
   recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");
@@ -148,7 +148,7 @@ export async function addStaff(_prev: FormState, formData: FormData): Promise<Fo
 }
 
 export async function updateStaffPay(id: string, rawSalary: string, rawCharges: string): Promise<Result & { salary?: number; charges?: number }> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
   const uuid = z.uuid().safeParse(id);
@@ -163,6 +163,7 @@ export async function updateStaffPay(id: string, rawSalary: string, rawCharges: 
     .from("staff")
     .update({ monthly_salary: salary.value, charges_pct: enc.value })
     .eq("id", uuid.data)
+    .eq("org_id", orgId)
     .select("monthly_salary, charges_pct")
     .maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
@@ -174,12 +175,12 @@ export async function updateStaffPay(id: string, rawSalary: string, rawCharges: 
 }
 
 export async function deleteStaff(formData: FormData): Promise<void> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const id = z.uuid().safeParse(formData.get("id"));
   if (!canWrite || !id.success) return;
 
   const supabase = await createClient();
-  await supabase.from("staff").delete().eq("id", id.data);
+  await supabase.from("staff").delete().eq("id", id.data).eq("org_id", orgId);
   recordSnapshot();
   revalidatePath("/custos");
   revalidatePath("/precificacao");

@@ -10,13 +10,14 @@ const secondary = "border-border bg-surface";
 const primary = "border-primary bg-primary text-primary-foreground";
 
 export default async function IngredientsPage(props: PageProps<"/insumos">) {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const { importado } = await props.searchParams;
 
   const supabase = await createClient();
   const { data } = await supabase
     .from("ingredients")
     .select("id, name, category, kind, purchase_unit, purchase_qty, purchase_price, price_updated_at")
+    .eq("org_id", orgId)
     .is("archived_at", null)
     .order("name");
   const items = (data ?? []) as IngredientRow[];

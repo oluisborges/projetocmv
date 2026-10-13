@@ -120,7 +120,7 @@ export async function addChannel(_prev: FormState, formData: FormData): Promise<
 }
 
 export async function updateChannel(_prev: FormState, formData: FormData): Promise<FormState> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { error: NO_PERMISSION };
   const id = z.uuid().safeParse(formData.get("id"));
   const input = channelInput(formData);
@@ -128,7 +128,7 @@ export async function updateChannel(_prev: FormState, formData: FormData): Promi
   if (!input.ok) return { error: input.error };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("sales_channels").update({ name: input.name, fee_pct: input.fee }).eq("id", id.data).select("id").maybeSingle();
+  const { data, error } = await supabase.from("sales_channels").update({ name: input.name, fee_pct: input.fee }).eq("id", id.data).eq("org_id", orgId).select("id").maybeSingle();
   if (error || !data) return { error: error?.code === "23505" ? "Já existe um canal com esse nome." : "Não foi possível salvar." };
 
   recordSnapshot();
@@ -137,12 +137,12 @@ export async function updateChannel(_prev: FormState, formData: FormData): Promi
 }
 
 export async function deleteChannel(formData: FormData): Promise<void> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const id = z.uuid().safeParse(formData.get("id"));
   if (!canWrite || !id.success) return;
 
   const supabase = await createClient();
-  await supabase.from("sales_channels").delete().eq("id", id.data);
+  await supabase.from("sales_channels").delete().eq("id", id.data).eq("org_id", orgId);
   recordSnapshot();
   revalidatePath("/precificacao");
 }

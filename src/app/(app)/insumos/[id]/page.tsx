@@ -11,20 +11,21 @@ import { IngredientForm } from "../ingredient-form";
 export const metadata = { title: "Insumo" };
 
 export default async function IngredientPage(props: PageProps<"/insumos/[id]">) {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const { id } = await props.params;
   if (!z.uuid().safeParse(id).success) notFound();
 
   const supabase = await createClient();
   const [{ data: ing }, { data: history }, { data: cats }] = await Promise.all([
-    supabase.from("ingredients").select("*").eq("id", id).maybeSingle(),
+    supabase.from("ingredients").select("*").eq("id", id).eq("org_id", orgId).maybeSingle(),
     supabase
       .from("ingredient_price_history")
       .select("id, purchase_price, purchase_qty, changed_at")
       .eq("ingredient_id", id)
+      .eq("org_id", orgId)
       .order("changed_at", { ascending: false })
       .limit(8),
-    supabase.from("ingredients").select("category").not("category", "is", null),
+    supabase.from("ingredients").select("category").eq("org_id", orgId).not("category", "is", null),
   ]);
   if (!ing) notFound();
 

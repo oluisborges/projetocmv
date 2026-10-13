@@ -28,7 +28,7 @@ const num = (raw: FormDataEntryValue | null, opts?: { allowZero?: boolean }) => 
 
 /** Salva só o preço (edição rápida na lista). */
 export async function updateIngredientPrice(id: string, rawPrice: string): Promise<{ ok: true; price: number } | { ok: false; error: string }> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
   const parsed = z.uuid().safeParse(id);
@@ -41,6 +41,7 @@ export async function updateIngredientPrice(id: string, rawPrice: string): Promi
     .from("ingredients")
     .update({ purchase_price: Number(price) })
     .eq("id", parsed.data)
+    .eq("org_id", orgId)
     .select("purchase_price")
     .maybeSingle();
 
@@ -146,7 +147,7 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
 
   // As fichas guardam a quantidade na unidade-base do insumo (g, ml ou un). Trocar a base, ou trocar entre
   // insumo e embalagem, de um insumo que já está numa ficha mudaria o custo dela sem ninguém perceber.
-  const { data: current } = await supabase.from("ingredients").select("kind, purchase_unit").eq("id", id.data).maybeSingle();
+  const { data: current } = await supabase.from("ingredients").select("kind, purchase_unit").eq("id", id.data).eq("org_id", orgId).maybeSingle();
   if (!current) return fail("Insumo não encontrado.");
   const baseOf = (u: string) => (isPurchaseUnit(u) ? baseUnitOf(u) : u);
   const changesMeaning = current.kind !== read.value.kind || baseOf(current.purchase_unit) !== baseOf(read.value.purchase_unit);
@@ -160,7 +161,7 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
     }
   }
 
-  const { data, error } = await supabase.from("ingredients").update(read.value).eq("id", id.data).select("id").maybeSingle();
+  const { data, error } = await supabase.from("ingredients").update(read.value).eq("id", id.data).eq("org_id", orgId).select("id").maybeSingle();
   if (error?.code === "23514") return fail("Esse item está em fichas: não dá para mudar o tipo ou a medida dele.");
   if (error?.code === "23505") return fail(duplicateMessage(read.value.name, read.value.name));
   if (error || !data) return fail("Não foi possível salvar as alterações.");
@@ -171,13 +172,13 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
 }
 
 export async function archiveIngredient(formData: FormData): Promise<void> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const id = z.uuid().safeParse(formData.get("id"));
   if (!canWrite || !id.success) return;
 
   const supabase = await createClient();
   // Arquiva (não apaga): fichas técnicas antigas continuam funcionando.
-  await supabase.from("ingredients").update({ archived_at: new Date().toISOString() }).eq("id", id.data);
+  await supabase.from("ingredients").update({ archived_at: new Date().toISOString() }).eq("id", id.data).eq("org_id", orgId);
   recordSnapshot();
   revalidatePath("/insumos");
   redirect("/insumos");

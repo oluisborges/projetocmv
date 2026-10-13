@@ -137,21 +137,21 @@ export async function updateRecipeSettings(input: {
   portionWeightUnit: string;
   cookingLoss: string;
 }): Promise<Result> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
   const id = z.uuid().safeParse(input.id);
   if (!id.success) return { ok: false, error: "Ficha inválida." };
 
   const supabase = await createClient();
-  const { data: current } = await supabase.from("recipes").select("mode").eq("id", id.data).maybeSingle();
+  const { data: current } = await supabase.from("recipes").select("mode").eq("id", id.data).eq("org_id", orgId).maybeSingle();
   if (!current) return { ok: false, error: "Ficha não encontrada." };
 
   if (current.mode === "serving") {
     // Ficha por unidade: porções e perda de cocção não existem; só o nome muda.
     const name = input.name.trim();
     if (!name || name.length > 80) return { ok: false, error: "Dê um nome à ficha (até 80 letras)." };
-    const { data, error } = await supabase.from("recipes").update({ name }).eq("id", id.data).select("id").maybeSingle();
+    const { data, error } = await supabase.from("recipes").update({ name }).eq("id", id.data).eq("org_id", orgId).select("id").maybeSingle();
     if (error || !data) return { ok: false, error: "Não foi possível salvar." };
     revalidatePath("/fichas");
     return { ok: true };
@@ -168,7 +168,7 @@ export async function updateRecipeSettings(input: {
     portion_weight_unit: v.portionWeightUnit,
     cooking_loss_pct: v.cookingLossPct,
   };
-  const { data, error } = await supabase.from("recipes").update(row).eq("id", id.data).select("id").maybeSingle();
+  const { data, error } = await supabase.from("recipes").update(row).eq("id", id.data).eq("org_id", orgId).select("id").maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
   revalidatePath("/fichas");
@@ -177,7 +177,7 @@ export async function updateRecipeSettings(input: {
 
 /** Código do produto e observação sobre a porção: campos de organização, opcionais. */
 export async function updateRecipeDetails(input: { id: string; code: string; note: string }): Promise<Result> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
   const id = z.uuid().safeParse(input.id);
@@ -188,7 +188,7 @@ export async function updateRecipeDetails(input: { id: string; code: string; not
   if (note.length > 200) return { ok: false, error: "A observação pode ter até 200 caracteres." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("recipes").update({ code: code || null, portion_note: note || null }).eq("id", id.data).select("id").maybeSingle();
+  const { data, error } = await supabase.from("recipes").update({ code: code || null, portion_note: note || null }).eq("id", id.data).eq("org_id", orgId).select("id").maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
   revalidatePath("/fichas");
   return { ok: true };
@@ -216,7 +216,7 @@ export async function addRecipeItem(input: { recipeId: string; ingredientId: str
   if (!ids.success) return { ok: false, error: "Item inválido." };
 
   const supabase = await createClient();
-  const { data: ing } = await supabase.from("ingredients").select("kind, purchase_unit").eq("id", ids.data.ingredientId).maybeSingle();
+  const { data: ing } = await supabase.from("ingredients").select("kind, purchase_unit").eq("id", ids.data.ingredientId).eq("org_id", orgId).maybeSingle();
   if (!ing) return { ok: false, error: "Insumo não encontrado." };
 
   const base = toBase(input.qty, input.unit, ing.purchase_unit);
@@ -244,15 +244,15 @@ export async function addRecipeItem(input: { recipeId: string; ingredientId: str
 }
 
 export async function updateRecipeItemQty(itemId: string, rawQty: string, unit: string): Promise<Result<{ qty: number; unit: string }>> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
   const id = z.uuid().safeParse(itemId);
   if (!id.success) return { ok: false, error: "Item inválido." };
 
   const supabase = await createClient();
-  const { data: item } = await supabase.from("recipe_items").select("ingredient_id").eq("id", id.data).maybeSingle();
-  const { data: ing } = item ? await supabase.from("ingredients").select("purchase_unit").eq("id", item.ingredient_id).maybeSingle() : { data: null };
+  const { data: item } = await supabase.from("recipe_items").select("ingredient_id").eq("id", id.data).eq("org_id", orgId).maybeSingle();
+  const { data: ing } = item ? await supabase.from("ingredients").select("purchase_unit").eq("id", item.ingredient_id).eq("org_id", orgId).maybeSingle() : { data: null };
   if (!item || !ing) return { ok: false, error: "Item não encontrado." };
 
   const base = toBase(rawQty, unit, ing.purchase_unit);
@@ -262,6 +262,7 @@ export async function updateRecipeItemQty(itemId: string, rawQty: string, unit: 
     .from("recipe_items")
     .update({ net_qty: base.qty, qty_unit: base.unit })
     .eq("id", id.data)
+    .eq("org_id", orgId)
     .select("net_qty")
     .maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
@@ -271,13 +272,13 @@ export async function updateRecipeItemQty(itemId: string, rawQty: string, unit: 
 }
 
 export async function removeRecipeItem(itemId: string): Promise<Result> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
   const id = z.uuid().safeParse(itemId);
   if (!id.success) return { ok: false, error: "Item inválido." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("recipe_items").delete().eq("id", id.data);
+  const { error } = await supabase.from("recipe_items").delete().eq("id", id.data).eq("org_id", orgId);
   if (error) return { ok: false, error: "Não foi possível remover." };
 
   revalidatePath("/fichas");
@@ -291,7 +292,7 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
 
   const supabase = await createClient();
   const [{ data: recipe }, { data: items }] = await Promise.all([
-    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("id", id.data).maybeSingle(),
+    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("id", id.data).eq("org_id", orgId).maybeSingle(),
     supabase.from("recipe_items").select("ingredient_id, net_qty, qty_unit, scope, counts_for_yield").eq("recipe_id", id.data),
   ]);
   if (!recipe) return;
@@ -306,7 +307,7 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
   if (items && items.length > 0) {
     const { error } = await supabase.from("recipe_items").insert(items.map((i) => ({ ...i, org_id: orgId, recipe_id: copy.id })));
     if (error) {
-      await supabase.from("recipes").delete().eq("id", copy.id); // não deixa uma cópia vazia para trás
+      await supabase.from("recipes").delete().eq("id", copy.id).eq("org_id", orgId); // não deixa uma cópia vazia para trás
       return;
     }
   }
@@ -316,23 +317,23 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
 }
 
 export async function archiveRecipe(formData: FormData): Promise<void> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const id = z.uuid().safeParse(formData.get("id"));
   if (!canWrite || !id.success) return;
 
   const supabase = await createClient();
-  await supabase.from("recipes").update({ active: false }).eq("id", id.data);
+  await supabase.from("recipes").update({ active: false }).eq("id", id.data).eq("org_id", orgId);
   revalidatePath("/fichas");
   redirect("/fichas");
 }
 
 export async function restoreRecipe(formData: FormData): Promise<void> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   const id = z.uuid().safeParse(formData.get("id"));
   if (!canWrite || !id.success) return;
 
   const supabase = await createClient();
-  await supabase.from("recipes").update({ active: true }).eq("id", id.data);
+  await supabase.from("recipes").update({ active: true }).eq("id", id.data).eq("org_id", orgId);
   revalidatePath("/fichas");
   redirect(`/fichas/${id.data}`);
 }
