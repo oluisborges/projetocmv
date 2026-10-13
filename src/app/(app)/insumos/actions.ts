@@ -5,6 +5,7 @@ import { recordSnapshot } from "@/lib/snapshot-record";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireMember } from "@/lib/auth";
+import { normalizeName } from "@/lib/names";
 import { baseUnitOf, isPurchaseUnit } from "@/lib/calc";
 import { parseDecimal } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -98,6 +99,17 @@ function readIngredientForm(formData: FormData): { ok: true; value: IngredientIn
   };
 }
 
+/** Insumo ativo da marmitaria com o mesmo nome (sem contar maiúsculas, acentos nem espaços); `exceptId` ignora o próprio item ao editar. */
+async function findSameName(supabase: Awaited<ReturnType<typeof createClient>>, orgId: string, name: string, exceptId?: string): Promise<string | null> {
+  const wanted = normalizeName(name);
+  const { data } = await supabase.from("ingredients").select("id, name").eq("org_id", orgId).is("archived_at", null);
+  const hit = (data ?? []).find((i) => i.id !== exceptId && normalizeName(i.name as string) === wanted);
+  return hit ? (hit.name as string) : null;
+}
+
+const duplicateMessage = (existing: string, typed: string) =>
+  `Você já tem "${existing}". Use o que já existe. Se for outra marca, coloque a marca no nome (por exemplo, "${typed.trim()} Tio João").`;
+
 export async function createIngredient(_prev: FormState, formData: FormData): Promise<FormState> {
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return fail(NO_PERMISSION);
@@ -106,7 +118,11 @@ export async function createIngredient(_prev: FormState, formData: FormData): Pr
   if (!read.ok) return fail(read.error);
 
   const supabase = await createClient();
+  const same = await findSameName(supabase, orgId, read.value.name);
+  if (same) return fail(duplicateMessage(same, read.value.name));
+
   const { error } = await supabase.from("ingredients").insert({ ...read.value, org_id: orgId });
+  if (error?.code === "23505") return fail(duplicateMessage(read.value.name, read.value.name));
   if (error) return fail("Não foi possível salvar o insumo.");
 
   recordSnapshot();
@@ -115,7 +131,7 @@ export async function createIngredient(_prev: FormState, formData: FormData): Pr
 }
 
 export async function updateIngredient(_prev: FormState, formData: FormData): Promise<FormState> {
-  const { canWrite } = await requireMember();
+  const { orgId, canWrite } = await requireMember();
   if (!canWrite) return fail(NO_PERMISSION);
 
   const id = z.uuid().safeParse(formData.get("id"));
@@ -124,6 +140,9 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
   if (!read.ok) return fail(read.error);
 
   const supabase = await createClient();
+
+  const same = await findSameName(supabase, orgId, read.value.name, id.data);
+  if (same) return fail(duplicateMessage(same, read.value.name));
 
   // As fichas guardam a quantidade na unidade-base do insumo (g, ml ou un). Trocar a base, ou trocar entre
   // insumo e embalagem, de um insumo que já está numa ficha mudaria o custo dela sem ninguém perceber.
@@ -143,6 +162,7 @@ export async function updateIngredient(_prev: FormState, formData: FormData): Pr
 
   const { data, error } = await supabase.from("ingredients").update(read.value).eq("id", id.data).select("id").maybeSingle();
   if (error?.code === "23514") return fail("Esse item está em fichas: não dá para mudar o tipo ou a medida dele.");
+  if (error?.code === "23505") return fail(duplicateMessage(read.value.name, read.value.name));
   if (error || !data) return fail("Não foi possível salvar as alterações.");
 
   recordSnapshot();

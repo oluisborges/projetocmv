@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireMember } from "@/lib/auth";
+import { normalizeName } from "@/lib/names";
 import { createClient } from "@/lib/supabase/server";
 import { CatalogPicker, type CatalogItem, type CatalogRecipe } from "./catalog-picker";
 
@@ -13,15 +14,17 @@ export default async function CatalogPage() {
   const supabase = await createClient();
   const [{ data: templates }, { data: mine }, { data: tplRecipes }, { data: tplItems }, { data: myRecipes }] = await Promise.all([
     supabase.from("template_ingredients").select("id, name, category, purchase_unit, purchase_qty").order("category").order("name"),
-    supabase.from("ingredients").select("template_id").eq("org_id", orgId).not("template_id", "is", null),
+    supabase.from("ingredients").select("template_id, name").eq("org_id", orgId).is("archived_at", null),
     supabase.from("template_recipes").select("id, name, category").order("category").order("name"),
     supabase.from("template_recipe_items").select("template_recipe_id"),
     supabase.from("recipes").select("template_id").eq("org_id", orgId).not("template_id", "is", null),
   ]);
 
-  const have = new Set((mine ?? []).map((r) => r.template_id as string));
+  const have = new Set((mine ?? []).flatMap((r) => (r.template_id ? [r.template_id as string] : [])));
+  // Quem já cadastrou o mesmo nome à mão também "já tem": importar vincularia ao item existente, não criaria outro.
+  const haveNames = new Set((mine ?? []).map((r) => normalizeName(r.name as string)));
   const haveRecipes = new Set((myRecipes ?? []).map((r) => r.template_id as string));
-  const items: CatalogItem[] = (templates ?? []).map((t) => ({ ...t, imported: have.has(t.id) }));
+  const items: CatalogItem[] = (templates ?? []).map((t) => ({ ...t, imported: have.has(t.id) || haveNames.has(normalizeName(t.name)) }));
 
   const counts = new Map<string, number>();
   for (const r of tplItems ?? []) counts.set(r.template_recipe_id as string, (counts.get(r.template_recipe_id as string) ?? 0) + 1);

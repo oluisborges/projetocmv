@@ -428,6 +428,47 @@ describe("custos fixos e equipe", () => {
   });
 });
 
+describe("nomes de insumo não se repetem na marmitaria", () => {
+  const add = (org: string, name: string, price = 10) =>
+    q(`insert into public.ingredients (org_id, name, purchase_unit, purchase_qty, purchase_price) values ($1,$2,'kg',1,$3)`, [org, name, price]);
+
+  it("mesmo nome com maiúsculas, acento ou espaço diferente é recusado; marca diferente pode", async () => {
+    await add(ids.orgA, "Macarrão Parafuso");
+    await expect(add(ids.orgA, "macarrao parafuso")).rejects.toThrow(/duplicate key|unique/i);
+    await expect(add(ids.orgA, "  MACARRÃO   PARAFUSO ")).rejects.toThrow(/duplicate key|unique/i);
+    await add(ids.orgA, "Macarrão Parafuso Barilla"); // marca: outro insumo
+    await add(ids.orgA, "Macarrão Parafuso Renata");
+  });
+
+  it("outra marmitaria pode ter o mesmo nome", async () => {
+    await add(ids.orgB, "Macarrão Parafuso");
+  });
+
+  it("insumo arquivado não bloqueia o nome", async () => {
+    await add(ids.orgA, "Lentilha Vermelha");
+    await q(`update public.ingredients set archived_at = now() where org_id = $1 and name = 'Lentilha Vermelha'`, [ids.orgA]);
+    await add(ids.orgA, "lentilha vermelha");
+  });
+
+  it("importar do catálogo vincula ao insumo que o cliente já tinha, mantendo o preço dele", async () => {
+    const [t] = await q(
+      `insert into public.template_ingredients (name, purchase_unit, purchase_qty, reference_price) values ('Farinha de Mandioca','kg',1,7) returning id`,
+    );
+    await add(ids.orgA, "farinha de mandioca", 12.5);
+    await as(ids.ownerA, "dono-a@marmita.com", () => q(`select public.import_template($1, array[$2]::uuid[], '{}')`, [ids.orgA, t.id]));
+    const rows = await q(`select purchase_price, template_id from public.ingredients where org_id = $1 and archived_at is null and lower(name) = 'farinha de mandioca'`, [ids.orgA]);
+    expect(rows).toHaveLength(1);
+    expect(Number(rows[0].purchase_price)).toBe(12.5);
+    expect(rows[0].template_id).toBe(t.id);
+  });
+
+  it("o catálogo-modelo também não repete nomes (nem com acento diferente)", async () => {
+    await expect(
+      q(`insert into public.template_ingredients (name, purchase_unit, purchase_qty) values ('FARINHA DE MANDIOCA','kg',1)`),
+    ).rejects.toThrow(/duplicate key|unique/i);
+  });
+});
+
 describe("ajustes opcionais e campos de ficha", () => {
   it("margem de segurança e outras taxas têm limites; padrão 10% e 0%", async () => {
     const [row] = await q(`select safety_margin_pct, other_pct from public.unit_settings where unit_id = $1`, [ids.unitA]);
