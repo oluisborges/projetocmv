@@ -247,6 +247,24 @@ describe("catálogo-modelo", () => {
     ).rejects.toThrow(/sem permissão/);
   });
 
+  it("o preço de cada cliente é só dele: mudar em uma marmitaria não mexe na outra nem no catálogo", async () => {
+    await as(ids.ownerA, "dono-a@marmita.com", () => q(`select public.import_template($1, '{}', array[$2]::uuid[])`, [ids.orgA, tplRecipe]));
+    await as(ids.ownerB, "dono-b@marmita.com", () => q(`select public.import_template($1, '{}', array[$2]::uuid[])`, [ids.orgB, tplRecipe]));
+
+    await as(ids.ownerA, "dono-a@marmita.com", () =>
+      q(`update public.ingredients set purchase_price = 23.5 where org_id = $1 and name = 'Frango (peito)'`, [ids.orgA]),
+    );
+
+    const price = async (org: string) => Number((await q(`select purchase_price from public.ingredients where org_id = $1 and name = 'Frango (peito)'`, [org]))[0].purchase_price);
+    expect(await price(ids.orgA)).toBe(23.5);
+    expect(await price(ids.orgB)).toBe(16); // continua como o catálogo entregou: só ponto de partida
+    const [tpl] = await q(`select reference_price from public.template_ingredients where name = 'Frango (peito)'`);
+    expect(Number(tpl.reference_price)).toBe(16); // o catálogo não é alterado por nenhum cliente
+
+    await as(ids.ownerB, "dono-b@marmita.com", () => q(`update public.ingredients set purchase_price = 18 where org_id = $1 and name = 'Frango (peito)'`, [ids.orgB]));
+    expect(await price(ids.orgA)).toBe(23.5); // e o preço do outro não volta atrás
+  });
+
   it("cliente não edita o catálogo-modelo", async () => {
     await expect(
       as(ids.ownerA, "dono-a@marmita.com", () => q(`insert into public.template_ingredients (name, purchase_unit, purchase_qty) values ('X','kg',1)`)),
