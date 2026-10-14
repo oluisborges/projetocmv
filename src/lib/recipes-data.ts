@@ -18,6 +18,9 @@ export type IngredientRecord = {
   cooking_yield: number;
   category: string | null;
   archived_at: string | null;
+  /** Quanto vem na compra e quanto se paga por isso (para editar o preço de dentro da ficha). */
+  purchase_qty: number;
+  purchase_price: number;
 };
 
 export type RecipeRecord = {
@@ -54,9 +57,9 @@ export async function loadIngredients(): Promise<IngredientRecord[]> {
   if (!orgId) return [];
   const supabase = await createClient();
   const data = await fetchAll((from, to) =>
-    supabase.from("ingredients").select("id, name, category, kind, purchase_unit, unit_cost, correction_factor, cooking_yield, archived_at").eq("org_id", orgId).order("id").range(from, to),
+    supabase.from("ingredients").select("id, name, category, kind, purchase_unit, purchase_qty, purchase_price, unit_cost, correction_factor, cooking_yield, archived_at").eq("org_id", orgId).order("id").range(from, to),
   );
-  return data.map((i) => ({ ...i, unit_cost: Number(i.unit_cost), correction_factor: Number(i.correction_factor), cooking_yield: Number(i.cooking_yield) })) as IngredientRecord[];
+  return data.map((i) => ({ ...i, unit_cost: Number(i.unit_cost), correction_factor: Number(i.correction_factor), cooking_yield: Number(i.cooking_yield), purchase_qty: Number(i.purchase_qty), purchase_price: Number(i.purchase_price) })) as IngredientRecord[];
 }
 
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));

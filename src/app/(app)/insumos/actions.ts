@@ -111,6 +111,79 @@ async function findSameName(supabase: Awaited<ReturnType<typeof createClient>>, 
 const duplicateMessage = (existing: string, typed: string) =>
   `Você já tem "${existing}". Use o que já existe. Se for outra marca, coloque a marca no nome (por exemplo, "${typed.trim()} Tio João").`;
 
+/** Como o insumo se comporta no fogo (para quem cria um insumo de dentro da ficha, sem abrir o cadastro completo). */
+const COOKING_CHOICES: Record<string, number> = { none: 1, grows: 2.5, shrinks: 0.75 };
+
+export type InlineIngredient = {
+  id: string;
+  name: string;
+  kind: "insumo" | "embalagem";
+  category: string | null;
+  purchase_unit: string;
+  purchase_qty: number;
+  purchase_price: number;
+  unit_cost: number;
+  correction_factor: number;
+  cooking_yield: number;
+};
+
+/**
+ * Cria um insumo/embalagem direto da ficha. Ele vai para a lista geral de Insumos como qualquer outro
+ * (mesma regra de nome repetido) e já volta pronto para entrar na ficha.
+ */
+export async function createIngredientInline(input: {
+  name: string;
+  kind: string;
+  qty: string;
+  unit: string;
+  price: string;
+  cooking: string;
+}): Promise<{ ok: true; ingredient: InlineIngredient } | { ok: false; error: string }> {
+  const { orgId, canWrite } = await requireMember();
+  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+
+  const fd = new FormData();
+  fd.set("name", input.name);
+  fd.set("kind", input.kind);
+  fd.set("purchase_unit", input.unit);
+  fd.set("purchase_qty", input.qty);
+  fd.set("purchase_price", input.price);
+  fd.set("correction_factor", "1");
+  fd.set("cooking_yield", String(COOKING_CHOICES[input.cooking] ?? 1));
+  const read = readIngredientForm(fd);
+  if (!read.ok) return { ok: false, error: read.error };
+
+  const supabase = await createClient();
+  const same = await findSameName(supabase, orgId, read.value.name);
+  if (same) return { ok: false, error: duplicateMessage(same, read.value.name) };
+
+  const { data, error } = await supabase
+    .from("ingredients")
+    .insert({ ...read.value, org_id: orgId })
+    .select("id, name, kind, category, purchase_unit, purchase_qty, purchase_price, unit_cost, correction_factor, cooking_yield")
+    .single();
+  if (error?.code === "23505") return { ok: false, error: duplicateMessage(read.value.name, read.value.name) };
+  if (error || !data) return { ok: false, error: "Não foi possível criar o item." };
+
+  recordSnapshot();
+  revalidatePath("/insumos");
+  return {
+    ok: true,
+    ingredient: {
+      id: data.id,
+      name: data.name,
+      kind: data.kind === "embalagem" ? "embalagem" : "insumo",
+      category: data.category,
+      purchase_unit: data.purchase_unit,
+      purchase_qty: Number(data.purchase_qty),
+      purchase_price: Number(data.purchase_price),
+      unit_cost: Number(data.unit_cost),
+      correction_factor: Number(data.correction_factor),
+      cooking_yield: Number(data.cooking_yield),
+    },
+  };
+}
+
 export async function createIngredient(_prev: FormState, formData: FormData): Promise<FormState> {
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return fail(NO_PERMISSION);

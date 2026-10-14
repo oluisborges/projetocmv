@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { D, baseUnitOf, fromBaseQty, grossQty, toBaseQty, unitsFor, type PurchaseUnit } from "@/lib/calc";
 import { Hint } from "@/components/hint";
-import { formatBRL, formatNumber, parseDecimal, UNIT_LABEL } from "@/lib/format";
+import { formatBRL, formatNumber, formatPurchaseSize, parseDecimal, UNIT_LABEL } from "@/lib/format";
 import { computeRecipe } from "@/lib/recipe-cost";
+import { createIngredientInline, updateIngredientPrice } from "../../insumos/actions";
 import { addRecipeItem, removeRecipeItem, updateRecipeDetails, updateRecipeItemQty, updateRecipeSettings } from "../actions";
 
 export type EditorIngredient = {
@@ -20,6 +21,11 @@ export type EditorIngredient = {
   cooking_yield: number;
   category: string | null;
   archived: boolean;
+  /** Quanto vem na compra e quanto se paga (editável de dentro da ficha). */
+  purchase_qty: number;
+  purchase_price: number;
+  /** Em quantas fichas este insumo é usado. */
+  usedIn: number;
 };
 
 /** Categorias que quase sempre mudam de peso ao cozinhar: se o rendimento ficou em 1, provavelmente foi esquecido. */
@@ -82,6 +88,7 @@ function ItemRow({
   yieldFactor,
   onChange,
   onRemove,
+  onPriceSaved,
 }: {
   item: EditorItem;
   ingredient: EditorIngredient;
@@ -92,10 +99,15 @@ function ItemRow({
   yieldFactor: number;
   onChange: (qty: number, unit: PurchaseUnit) => void;
   onRemove: () => void;
+  /** O preço do insumo mudou aqui dentro: vale para o insumo geral (e para todas as fichas que o usam). */
+  onPriceSaved: (price: number) => void;
 }) {
   const shown = (qty: number, unit: PurchaseUnit) => fmt(fromBaseQty(qty, unit).toNumber());
   const [text, setText] = useState(shown(item.netQty, item.unit));
   const [error, setError] = useState<string>();
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [priceText, setPriceText] = useState(fmt(ingredient.purchase_price));
+  const [priceBusy, setPriceBusy] = useState(false);
   const cost = D(ingredient.unit_cost).mul(grossQty(D(item.netQty).div(yieldFactor), ingredient.correction_factor)).toNumber();
 
   async function save(nextText: string, unit: PurchaseUnit) {
@@ -116,6 +128,16 @@ function ItemRow({
     void save(next, unit);
   }
 
+  async function savePrice() {
+    setPriceBusy(true);
+    const result = await updateIngredientPrice(ingredient.id, priceText);
+    setPriceBusy(false);
+    if (!result.ok) return setError(result.error);
+    setError(undefined);
+    setEditingPrice(false);
+    onPriceSaved(result.price);
+  }
+
   return (
     <li className="flex flex-col gap-1 py-3">
       <div className="flex items-center gap-2">
@@ -124,6 +146,14 @@ function ItemRow({
           <p className="text-xs text-muted">
             {ingredient.unit_cost <= 0 ? <span className="text-warning">sem preço</span> : formatBRL(cost)}
             {ingredient.archived ? " · arquivado" : ""}
+            {canWrite ? (
+              <>
+                {" · "}
+                <button type="button" onClick={() => setEditingPrice((v) => !v)} className="font-semibold text-primary underline">
+                  {ingredient.unit_cost <= 0 ? "informar preço" : "mudar preço"}
+                </button>
+              </>
+            ) : null}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -151,6 +181,26 @@ function ItemRow({
           </button>
         ) : null}
       </div>
+      {editingPrice ? (
+        <div className="mt-1 flex flex-col gap-2 rounded-xl bg-background p-3">
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Quanto você paga por {formatPurchaseSize(ingredient.purchase_qty, ingredient.purchase_unit)} (R$)
+            <input value={priceText} onChange={(e) => setPriceText(e.target.value)} inputMode="decimal" className={`${inputClass} h-11`} />
+          </label>
+          <p className="text-xs text-muted">
+            Este é o mesmo insumo da lista de Insumos: o novo preço vale
+            {ingredient.usedIn > 1 ? ` para as ${ingredient.usedIn} fichas que o usam.` : " em toda parte."}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => setEditingPrice(false)} className="h-11 rounded-xl border border-border text-sm font-semibold">
+              Cancelar
+            </button>
+            <button type="button" onClick={savePrice} disabled={priceBusy} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
+              {priceBusy ? "Salvando…" : "Salvar preço"}
+            </button>
+          </div>
+        </div>
+      ) : null}
       {error ? (
         <p role="alert" className="text-xs text-danger">
           {error}
@@ -168,8 +218,80 @@ function ItemRow({
   );
 }
 
+/** Formulário curto para criar um insumo/embalagem sem sair da ficha. Ele entra na lista geral de Insumos. */
+function NewIngredientForm({ kind, onCreated, onCancel }: { kind: "insumo" | "embalagem"; onCreated: (ing: EditorIngredient) => void; onCancel: () => void }) {
+  const isPack = kind === "embalagem";
+  const [name, setName] = useState("");
+  const [qty, setQty] = useState(isPack ? "100" : "1");
+  const [unit, setUnit] = useState<PurchaseUnit>(isPack ? "un" : "kg");
+  const [price, setPrice] = useState("");
+  const [cooking, setCooking] = useState("none");
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+
+  async function create() {
+    setBusy(true);
+    const result = await createIngredientInline({ name, kind, qty, unit, price, cooking });
+    setBusy(false);
+    if (!result.ok) return setError(result.error);
+    onCreated({ ...result.ingredient, archived: false, usedIn: 0 });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 card border-primary p-3">
+      <p className="text-sm font-semibold">{isPack ? "Nova embalagem" : "Novo insumo"}</p>
+      <label className="flex flex-col gap-1.5 text-sm font-medium">
+        Nome
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={isPack ? "Ex.: Bandeja 750 ml" : "Ex.: Frango sassami"} className={inputClass} />
+      </label>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Quanto vem na compra
+          <input value={qty} onChange={(e) => setQty(e.target.value)} inputMode="decimal" className={`${inputClass} text-right`} />
+        </label>
+        <select value={unit} onChange={(e) => setUnit(e.target.value as PurchaseUnit)} aria-label="Unidade da compra" className="h-12 card px-2 text-base outline-none focus:border-primary">
+          {(["kg", "g", "l", "ml", "un"] as PurchaseUnit[]).map((u) => (
+            <option key={u} value={u}>
+              {u === "l" ? "litro" : u === "un" ? "unidade" : u}
+            </option>
+          ))}
+        </select>
+      </div>
+      <label className="flex flex-col gap-1.5 text-sm font-medium">
+        Quanto você paga por isso (R$)
+        <input value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" placeholder="Ex.: 14,50" className={inputClass} />
+      </label>
+      {isPack ? null : (
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Ao cozinhar, o peso...
+          <select value={cooking} onChange={(e) => setCooking(e.target.value)} className="h-12 card px-3 text-base outline-none focus:border-primary">
+            <option value="none">Não muda (verduras, molhos, queijos)</option>
+            <option value="grows">Aumenta (arroz, feijão, massa)</option>
+            <option value="shrinks">Diminui (carnes, frango)</option>
+          </select>
+        </label>
+      )}
+      <p className="text-xs text-muted">Ele também aparece na sua lista de Insumos, onde dá para ajustar o resto (perdas, categoria).</p>
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+      <div className="grid grid-cols-2 gap-2">
+        <button type="button" onClick={onCancel} className="h-11 rounded-xl border border-border text-sm font-semibold">
+          Cancelar
+        </button>
+        <button type="button" onClick={create} disabled={busy} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
+          {busy ? "Criando…" : "Criar e usar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AddItem({
   recipeId,
+  kind,
   options,
   defaultQty,
   label,
@@ -177,8 +299,10 @@ function AddItem({
   title,
   lockUnit,
   onAdded,
+  onCreated,
 }: {
   recipeId: string;
+  kind: "insumo" | "embalagem";
   options: EditorIngredient[];
   defaultQty: string;
   /** Texto de orientação dentro da lista ("Escolha o ingrediente"): não é uma opção, some ao escolher. */
@@ -189,6 +313,8 @@ function AddItem({
   title: string;
   lockUnit: boolean;
   onAdded: (item: EditorItem) => void;
+  /** Um insumo novo foi criado aqui dentro: entra na lista da ficha e na lista geral. */
+  onCreated: (ing: EditorIngredient) => void;
 }) {
   const [ingredientId, setIngredientId] = useState("");
   const [qty, setQty] = useState(defaultQty);
@@ -196,14 +322,26 @@ function AddItem({
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  // O insumo recém-criado ainda não está em `options` neste instante; guardo para o botão "Adicionar" já funcionar.
+  const [fresh, setFresh] = useState<EditorIngredient | null>(null);
 
-  const selected = options.find((o) => o.id === ingredientId);
+  const selected = options.find((o) => o.id === ingredientId) ?? (fresh && fresh.id === ingredientId ? fresh : undefined);
   const unitOptions: PurchaseUnit[] = selected ? (lockUnit ? [baseOf(selected)] : unitsFor(baseOf(selected))) : ["g"];
 
   function choose(id: string) {
     setIngredientId(id);
     const ing = options.find((o) => o.id === id);
     if (ing) setUnit(baseOf(ing) === "g" ? "g" : baseOf(ing) === "ml" ? "ml" : "un");
+  }
+
+  function created(ing: EditorIngredient) {
+    onCreated(ing);
+    setFresh(ing);
+    setIngredientId(ing.id);
+    setUnit(baseOf(ing) === "g" ? "g" : baseOf(ing) === "ml" ? "ml" : "un");
+    setCreating(false);
+    setError(undefined);
   }
 
   async function add() {
@@ -214,13 +352,10 @@ function AddItem({
     if (!result.ok) return setError(result.error);
     onAdded({ id: result.itemId, ingredientId, netQty: result.qty, unit: unit, scope: selected.kind === "embalagem" ? "portion" : "batch" });
     setIngredientId("");
+    setFresh(null);
     setQty(defaultQty);
     setError(undefined);
     setOpen(false);
-  }
-
-  if (options.length === 0) {
-    return <p className="text-sm text-muted">Todos os itens já estão na ficha. Cadastre mais em Insumos.</p>;
   }
 
   if (!open) {
@@ -233,25 +368,38 @@ function AddItem({
 
   return (
     <div className="flex flex-col gap-2 card p-3">
-      <label className="flex flex-col gap-1.5 text-sm font-medium">
-        {field}
-        <span className="relative">
-          <select value={ingredientId} onChange={(e) => choose(e.target.value)} className={`${inputClass} w-full appearance-none pr-10 ${ingredientId ? "" : "text-muted"}`}>
-            <option value="" disabled hidden>
-              {label}
-            </option>
-            {options.map((o) => (
-              <option key={o.id} value={o.id} className="text-foreground">
-                {o.name}
-                {o.unit_cost <= 0 ? " (sem preço)" : ""}
+      {options.length === 0 && !fresh ? (
+        <p className="text-sm text-muted">Todos os itens que você já cadastrou estão na ficha. Crie um novo abaixo.</p>
+      ) : (
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          {field}
+          <span className="relative">
+            <select value={ingredientId} onChange={(e) => choose(e.target.value)} className={`${inputClass} w-full appearance-none pr-10 ${ingredientId ? "" : "text-muted"}`}>
+              <option value="" disabled hidden>
+                {label}
               </option>
-            ))}
-          </select>
-          <span aria-hidden className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted">
-            ▾
+              {[...options, ...(fresh && !options.some((o) => o.id === fresh.id) ? [fresh] : [])].map((o) => (
+                <option key={o.id} value={o.id} className="text-foreground">
+                  {o.name}
+                  {o.unit_cost <= 0 ? " (sem preço)" : ""}
+                </option>
+              ))}
+            </select>
+            <span aria-hidden className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted">
+              ▾
+            </span>
           </span>
-        </span>
-      </label>
+        </label>
+      )}
+
+      {creating ? (
+        <NewIngredientForm kind={kind} onCreated={created} onCancel={() => setCreating(false)} />
+      ) : (
+        <button type="button" onClick={() => setCreating(true)} className="inline-flex min-h-11 items-center justify-start text-sm font-semibold text-primary underline">
+          {kind === "embalagem" ? "Não achou? Criar embalagem nova" : "Não achou? Criar insumo novo"}
+        </button>
+      )}
+
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <input value={qty} onChange={(e) => setQty(e.target.value)} inputMode="decimal" aria-label="Quantidade" placeholder="Quantidade" className={`${inputClass} text-right`} />
         <UnitSelect value={unit} options={unitOptions} onChange={setUnit} label="Unidade da quantidade" />
@@ -265,7 +413,7 @@ function AddItem({
         <button type="button" onClick={() => setOpen(false)} className="h-11 rounded-xl border border-border text-sm font-semibold">
           Cancelar
         </button>
-        <button type="button" onClick={add} disabled={busy} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
+        <button type="button" onClick={add} disabled={busy || creating} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
           {busy ? "Adicionando…" : "Adicionar"}
         </button>
       </div>
@@ -301,7 +449,8 @@ export function RecipeEditor({
   const [note, setNote] = useState(recipe.portionNote);
   const [status, setStatus] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
 
-  const byId = useMemo(() => new Map(ingredients.map((i) => [i.id, i])), [ingredients]);
+  const [ingList, setIngList] = useState(ingredients);
+  const byId = useMemo(() => new Map(ingList.map((i) => [i.id, i])), [ingList]);
 
   const view = useMemo(() => {
     const num = (s: string) => {
@@ -368,7 +517,13 @@ export function RecipeEditor({
   }
 
   const usedIds = new Set(items.map((i) => i.ingredientId));
-  const available = (kind: "insumo" | "embalagem") => ingredients.filter((i) => i.kind === kind && !i.archived && !usedIds.has(i.id));
+  const available = (kind: "insumo" | "embalagem") => ingList.filter((i) => i.kind === kind && !i.archived && !usedIds.has(i.id));
+
+  const ingredientCreated = (ing: EditorIngredient) => setIngList((prev) => [...prev, ing]);
+  const priceSaved = (id: string, price: number) =>
+    setIngList((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, purchase_price: price, unit_cost: D(price).div(toBaseQty(i.purchase_qty, i.purchase_unit as PurchaseUnit)).toNumber() } : i)),
+    );
 
   const removeItem = async (item: EditorItem) => {
     const result = await removeRecipeItem(item.id);
@@ -392,6 +547,7 @@ export function RecipeEditor({
             yieldFactor={isServing && scope === "batch" ? byId.get(item.ingredientId)!.cooking_yield : 1}
             onChange={(qty, unit) => setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, netQty: qty, unit } : i)))}
             onRemove={() => removeItem(item)}
+            onPriceSaved={(price) => priceSaved(item.ingredientId, price)}
           />
         ))}
       </ul>
@@ -464,7 +620,7 @@ export function RecipeEditor({
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Ingredientes de UMA unidade" : "Ingredientes do lote"}</h2>
         {renderItems("batch")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" field="Ingrediente" title="Adicionar ingrediente" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} kind="insumo" onCreated={ingredientCreated} options={available("insumo")} defaultQty="" label="Escolha o ingrediente" field="Ingrediente" title="Adicionar ingrediente" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
         <p className="text-xs text-muted">
           {isServing ? "Digite as gramas PRONTAS, do jeito que vai na embalagem (arroz já cozido, frango já grelhado)." : "Digite a quantidade do lote inteiro, já limpa. Dá para usar kg ou g."}
@@ -475,7 +631,7 @@ export function RecipeEditor({
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Embalagem</h2>
         {renderItems("portion")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} options={available("embalagem")} defaultQty="1" label="Escolha a embalagem" field="Embalagem" title="Adicionar embalagem" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} kind="embalagem" onCreated={ingredientCreated} options={available("embalagem")} defaultQty="1" label="Escolha a embalagem" field="Embalagem" title="Adicionar embalagem" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
       </section>
 

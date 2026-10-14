@@ -5,7 +5,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { isPurchaseUnit, baseUnitOf } from "@/lib/calc";
 import { requireMember } from "@/lib/auth";
 import { loadSafetyMargin } from "@/lib/pricing-data";
-import { loadIngredients, loadRecipe } from "@/lib/recipes-data";
+import { loadIngredients, loadRecipe, loadRecipes } from "@/lib/recipes-data";
 import { archiveRecipe, duplicateRecipe } from "../actions";
 import { RecipeEditor } from "./recipe-editor";
 
@@ -16,9 +16,13 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
   const { id } = await props.params;
   if (!z.uuid().safeParse(id).success) notFound();
 
-  const [loaded, ingredients, safetyMarginPct] = await Promise.all([loadRecipe(id), loadIngredients(), loadSafetyMargin(orgId)]);
+  const [loaded, ingredients, safetyMarginPct, all] = await Promise.all([loadRecipe(id), loadIngredients(), loadSafetyMargin(orgId), loadRecipes()]);
   if (!loaded) notFound();
   const { recipe, items } = loaded;
+
+  // Em quantas fichas cada insumo é usado (avisa antes de mudar o preço de algo que vale para várias).
+  const usedIn = new Map<string, Set<string>>();
+  for (const it of all.items) usedIn.set(it.ingredient_id, (usedIn.get(it.ingredient_id) ?? new Set()).add(it.recipe_id));
 
   return (
     <>
@@ -65,6 +69,9 @@ export default async function RecipePage(props: PageProps<"/fichas/[id]">) {
           cooking_yield: i.cooking_yield,
           category: i.category,
           archived: Boolean(i.archived_at),
+          purchase_qty: i.purchase_qty,
+          purchase_price: i.purchase_price,
+          usedIn: usedIn.get(i.id)?.size ?? 0,
         }))}
         canWrite={canWrite}
       />
