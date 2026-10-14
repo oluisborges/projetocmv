@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { D, baseUnitOf, fromBaseQty, grossQty, toBaseQty, unitsFor, type PurchaseUnit } from "@/lib/calc";
 import { Hint } from "@/components/hint";
 import { formatBRL, formatNumber, formatPurchaseSize, parseDecimal, UNIT_LABEL } from "@/lib/format";
@@ -44,6 +44,9 @@ export type EditorRecipe = {
   code: string;
   portionNote: string;
 };
+
+/** Para buscar sem se importar com acento, maiúscula ou espaço sobrando. */
+const norm = (t: string) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
 
 /** 1.5 -> "1,5". Até 4 casas, sem zeros sobrando. */
 const fmt = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(Number(n.toFixed(4))).replace(".", ","));
@@ -219,9 +222,9 @@ function ItemRow({
 }
 
 /** Formulário curto para criar um insumo/embalagem sem sair da ficha. Ele entra na lista geral de Insumos. */
-function NewIngredientForm({ kind, onCreated, onCancel }: { kind: "insumo" | "embalagem"; onCreated: (ing: EditorIngredient) => void; onCancel: () => void }) {
+function NewIngredientForm({ kind, initialName = "", onCreated, onCancel }: { kind: "insumo" | "embalagem"; initialName?: string; onCreated: (ing: EditorIngredient) => void; onCancel: () => void }) {
   const isPack = kind === "embalagem";
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
   const [qty, setQty] = useState(isPack ? "100" : "1");
   const [unit, setUnit] = useState<PurchaseUnit>(isPack ? "un" : "kg");
   const [price, setPrice] = useState("");
@@ -323,6 +326,10 @@ function AddItem({
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [query, setQuery] = useState("");
+  const [listOpen, setListOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const listId = useId();
   // O insumo recém-criado ainda não está em `options` neste instante; guardo para o botão "Adicionar" já funcionar.
   const [fresh, setFresh] = useState<EditorIngredient | null>(null);
 
@@ -331,9 +338,26 @@ function AddItem({
 
   function choose(id: string) {
     setIngredientId(id);
-    const ing = options.find((o) => o.id === id);
-    if (ing) setUnit(baseOf(ing) === "g" ? "g" : baseOf(ing) === "ml" ? "ml" : "un");
+    const ing = options.find((o) => o.id === id) ?? (fresh && fresh.id === id ? fresh : undefined);
+    if (ing) {
+      setUnit(baseOf(ing) === "g" ? "g" : baseOf(ing) === "ml" ? "ml" : "un");
+      setQuery(ing.name);
+    }
+    setListOpen(false);
+    setError(undefined);
   }
+
+  function startCreate() {
+    setNewName(query.trim());
+    setCreating(true);
+    setListOpen(false);
+  }
+
+  const allOptions = [...options, ...(fresh && !options.some((o) => o.id === fresh.id) ? [fresh] : [])];
+  const q = norm(query);
+  // Item já escolhido: ao focar de novo mostra a lista toda, sem filtrar pelo nome inteiro.
+  const matches = (selected && norm(selected.name) === q ? allOptions : allOptions.filter((o) => norm(o.name).includes(q))).slice(0, 50);
+  const exact = q !== "" && allOptions.some((o) => norm(o.name) === q);
 
   function created(ing: EditorIngredient) {
     onCreated(ing);
@@ -341,6 +365,7 @@ function AddItem({
     setIngredientId(ing.id);
     setUnit(baseOf(ing) === "g" ? "g" : baseOf(ing) === "ml" ? "ml" : "un");
     setCreating(false);
+    setQuery(ing.name);
     setError(undefined);
   }
 
@@ -352,6 +377,7 @@ function AddItem({
     if (!result.ok) return setError(result.error);
     onAdded({ id: result.itemId, ingredientId, netQty: result.qty, unit: unit, scope: selected.kind === "embalagem" ? "portion" : "batch" });
     setIngredientId("");
+    setQuery("");
     setFresh(null);
     setQty(defaultQty);
     setError(undefined);
@@ -368,37 +394,49 @@ function AddItem({
 
   return (
     <div className="flex flex-col gap-2 card p-3">
-      {options.length === 0 && !fresh ? (
-        <p className="text-sm text-muted">Todos os itens que você já cadastrou estão na ficha. Crie um novo abaixo.</p>
-      ) : (
-        <label className="flex flex-col gap-1.5 text-sm font-medium">
-          {field}
-          <span className="relative">
-            <select value={ingredientId} onChange={(e) => choose(e.target.value)} className={`${inputClass} w-full appearance-none pr-10 ${ingredientId ? "" : "text-muted"}`}>
-              <option value="" disabled hidden>
-                {label}
-              </option>
-              {[...options, ...(fresh && !options.some((o) => o.id === fresh.id) ? [fresh] : [])].map((o) => (
-                <option key={o.id} value={o.id} className="text-foreground">
+      <div className="relative flex flex-col gap-1.5 text-sm font-medium">
+        <label htmlFor={`${listId}-input`}>{field}</label>
+        <input
+          id={`${listId}-input`}
+          role="combobox"
+          aria-expanded={listOpen}
+          aria-controls={`${listId}-list`}
+          aria-autocomplete="list"
+          autoComplete="off"
+          value={query}
+          placeholder={label}
+          onFocus={() => setListOpen(true)}
+          onBlur={() => setTimeout(() => setListOpen(false), 120)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIngredientId("");
+            setListOpen(true);
+          }}
+          className={inputClass}
+        />
+        {listOpen && !creating && (matches.length > 0 || q !== "") ? (
+          <ul id={`${listId}-list`} role="listbox" className="max-h-64 overflow-y-auto card py-1">
+            {q !== "" && !exact ? (
+              <li role="option" aria-selected={false}>
+                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={startCreate} className="flex min-h-12 w-full items-center px-4 text-left font-semibold text-primary active:bg-tint">
+                  + {kind === "embalagem" ? "Criar embalagem" : "Criar insumo"} &quot;{query.trim()}&quot;
+                </button>
+              </li>
+            ) : null}
+            {matches.map((o) => (
+              <li key={o.id} role="option" aria-selected={o.id === ingredientId}>
+                <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => choose(o.id)} className="flex min-h-12 w-full items-center px-4 text-left font-normal active:bg-tint">
                   {o.name}
-                  {o.unit_cost <= 0 ? " (sem preço)" : ""}
-                </option>
-              ))}
-            </select>
-            <span aria-hidden className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted">
-              ▾
-            </span>
-          </span>
-        </label>
-      )}
+                  {o.unit_cost <= 0 ? <span className="ml-1 text-xs text-warning">(sem preço)</span> : null}
+                </button>
+              </li>
+            ))}
+            {matches.length === 0 && exact ? <li className="px-4 py-3 font-normal text-muted">Esse item já está na ficha.</li> : null}
+          </ul>
+        ) : null}
+      </div>
 
-      {creating ? (
-        <NewIngredientForm kind={kind} onCreated={created} onCancel={() => setCreating(false)} />
-      ) : (
-        <button type="button" onClick={() => setCreating(true)} className="inline-flex min-h-11 items-center justify-start text-sm font-semibold text-primary underline">
-          {kind === "embalagem" ? "Não achou? Criar embalagem nova" : "Não achou? Criar insumo novo"}
-        </button>
-      )}
+      {creating ? <NewIngredientForm kind={kind} initialName={newName} onCreated={created} onCancel={() => setCreating(false)} /> : null}
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <input value={qty} onChange={(e) => setQty(e.target.value)} inputMode="decimal" aria-label="Quantidade" placeholder="Quantidade" className={`${inputClass} text-right`} />
@@ -511,9 +549,21 @@ export function RecipeEditor({
     void saveSettings({ portionWeight: converted, weightUnit: next });
   }
 
-  async function finish() {
+  const emptyDialog = useRef<HTMLDialogElement>(null);
+
+  async function leave() {
     if (canWrite && !(await saveSettings())) return;
     router.push("/fichas");
+  }
+
+  const hasBatch = items.some((i) => i.scope === "batch" && byId.has(i.ingredientId));
+  const hasPack = items.some((i) => i.scope === "portion" && byId.has(i.ingredientId));
+  const missingText = !hasBatch && !hasPack ? "sem nenhum ingrediente e sem embalagem" : !hasBatch ? "sem nenhum ingrediente" : "sem nenhuma embalagem";
+
+  // Ficha sem ingrediente ou sem embalagem: confirma antes de concluir.
+  function finish() {
+    if (canWrite && (!hasBatch || !hasPack)) emptyDialog.current?.showModal();
+    else void leave();
   }
 
   const usedIds = new Set(items.map((i) => i.ingredientId));
@@ -690,8 +740,41 @@ export function RecipeEditor({
       )}
 
       <button type="button" onClick={finish} className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground">
-        Voltar às fichas
+        Concluído
       </button>
+
+      <dialog
+        ref={emptyDialog}
+        aria-labelledby="empty-recipe-title"
+        onClick={(e) => e.target === emptyDialog.current && emptyDialog.current?.close()}
+        className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-surface p-0 text-foreground shadow-xl backdrop:bg-black/50"
+      >
+        <div className="flex flex-col gap-4 p-5">
+          <div className="flex flex-col gap-1.5">
+            <h2 id="empty-recipe-title" className="text-lg font-extrabold">
+              Concluir assim mesmo?
+            </h2>
+            <p className="text-sm leading-relaxed text-muted">
+              Esta ficha está {missingText}. Sem isso, o custo do produto fica incompleto. Dá para voltar e completar depois.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => emptyDialog.current?.close()} className="h-12 card font-semibold">
+              Voltar e completar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                emptyDialog.current?.close();
+                void leave();
+              }}
+              className="h-12 rounded-xl bg-primary font-semibold text-white"
+            >
+              Concluir
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }
