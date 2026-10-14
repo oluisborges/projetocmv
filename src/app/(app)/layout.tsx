@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const orgName = active?.orgName;
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col">
+    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col" style={{ "--sticky-top": active?.viewingAs ? "7.75rem" : "4rem" } as React.CSSProperties}>
       {active?.viewingAs ? (
         <div role="status" className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-warning px-4 py-2 text-sm text-white">
           <p className="min-w-0 leading-tight">

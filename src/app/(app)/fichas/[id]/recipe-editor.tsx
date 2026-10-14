@@ -609,7 +609,7 @@ export function RecipeEditor({
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-live="polite" className="sticky top-16 z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <section aria-live="polite" className="sticky top-[var(--sticky-top)] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         {view.ok ? (
           <div className="flex flex-col gap-0.5">
             <p className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted">

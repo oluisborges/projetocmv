@@ -348,7 +348,7 @@ export function ComboEditor({ combo, initialGroups, recipes, weights, settings, 
 
   return (
     <div className="flex flex-col gap-5">
-      <section aria-live="polite" className="sticky top-16 z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <section aria-live="polite" className="sticky top-[var(--sticky-top)] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         {summary.empty ? (
           <p className="text-sm text-muted">Adicione as marmitas do combo para ver o preço e o lucro.</p>
         ) : (
