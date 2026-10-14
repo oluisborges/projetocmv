@@ -5,6 +5,7 @@ import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
 import { formatBRL } from "@/lib/format";
 import { savePeriod, setComboSoldQty, setSoldQty } from "./actions";
+import { Spinner } from "@/components/spinner";
 
 const money = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -111,7 +112,7 @@ export function SalesRow({
         </label>
       </div>
       <p role={state.kind === "error" ? "alert" : undefined} className="empty:hidden text-right text-xs">
-        {state.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
+        {state.kind === "saving" ? <span className="inline-flex items-center gap-1 text-muted"><Spinner className="size-3" />Salvando…</span> : null}
         {state.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}
         {state.kind === "error" ? <span className="text-danger">{state.message}</span> : null}
       </p>

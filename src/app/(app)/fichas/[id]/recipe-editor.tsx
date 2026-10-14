@@ -9,6 +9,7 @@ import { formatBRL, formatNumber, formatPurchaseSize, parseDecimal, UNIT_LABEL }
 import { computeRecipe } from "@/lib/recipe-cost";
 import { createIngredientInline, updateIngredientPrice } from "../../insumos/actions";
 import { addRecipeItem, removeRecipeItem, updateRecipeDetails, updateRecipeItemQty, updateRecipeSettings } from "../actions";
+import { PendingLabel, Spinner } from "@/components/spinner";
 
 export type EditorIngredient = {
   id: string;
@@ -199,7 +200,7 @@ function ItemRow({
               Cancelar
             </button>
             <button type="button" onClick={savePrice} disabled={priceBusy} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
-              {priceBusy ? "Salvando…" : "Salvar preço"}
+              {priceBusy ? <PendingLabel>Salvando…</PendingLabel> : "Salvar preço"}
             </button>
           </div>
         </div>
@@ -285,7 +286,7 @@ function NewIngredientForm({ kind, initialName = "", onCreated, onCancel }: { ki
           Cancelar
         </button>
         <button type="button" onClick={create} disabled={busy} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
-          {busy ? "Criando…" : "Criar e usar"}
+          {busy ? <PendingLabel>Criando…</PendingLabel> : "Criar e usar"}
         </button>
       </div>
     </div>
@@ -452,7 +453,7 @@ function AddItem({
           Cancelar
         </button>
         <button type="button" onClick={add} disabled={busy || creating} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
-          {busy ? "Adicionando…" : "Adicionar"}
+          {busy ? <PendingLabel>Adicionando…</PendingLabel> : "Adicionar"}
         </button>
       </div>
     </div>
@@ -604,7 +605,7 @@ export function RecipeEditor({
     ) : null;
 
   const savedChip =
-    status.kind === "saving" ? <span className="text-xs text-muted">Salvando…</span> : status.kind === "saved" ? <span className="text-xs text-success">Salvo ✓</span> : null;
+    status.kind === "saving" ? <span className="inline-flex items-center gap-1 text-xs text-muted"><Spinner className="size-3" />Salvando…</span> : status.kind === "saved" ? <span className="text-xs text-success">Salvo ✓</span> : null;
 
   return (
     <div className="flex flex-col gap-6">

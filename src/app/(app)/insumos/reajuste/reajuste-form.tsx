@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Hint } from "@/components/hint";
 import { parseDecimal } from "@/lib/format";
 import { adjustPrices, type FormState } from "../actions";
+import { PendingLabel } from "@/components/spinner";
 
 export function AdjustForm({ categories, total }: { categories: { name: string; count: number }[]; total: number }) {
   const [state, action, pending] = useActionState(adjustPrices, {} as FormState);
@@ -75,7 +76,7 @@ export function AdjustForm({ categories, total }: { categories: { name: string; 
         disabled={pending || affected === 0}
         className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground disabled:opacity-60"
       >
-        {pending ? "Reajustando…" : "Reajustar preços"}
+        {pending ? <PendingLabel>Reajustando…</PendingLabel> : "Reajustar preços"}
       </button>
     </form>
   );

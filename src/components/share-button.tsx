@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { PendingLabel, Spinner } from "@/components/spinner";
 
 type Card = { file: File; url: string };
 
@@ -83,7 +84,7 @@ export function ShareButton({ className, children }: { className?: string; child
               <img src={card.url} alt="Cartão com o seu lucro líquido e para onde vai cada R$ 100 que você vende" className="size-full object-contain" />
             ) : (
               <div className="flex size-full items-center justify-center p-6 text-center text-sm text-muted">
-                {state === "error" ? "Não consegui gerar a imagem agora. Feche e tente de novo." : <span className="animate-pulse">Montando o seu cartão…</span>}
+                {state === "error" ? "Não consegui gerar a imagem agora. Feche e tente de novo." : <span className="flex flex-col items-center gap-3"><Spinner className="size-8 text-primary" />Montando o seu cartão…</span>}
               </div>
             )}
           </div>
@@ -93,7 +94,7 @@ export function ShareButton({ className, children }: { className?: string; child
           <div className="flex flex-col gap-2">
             {canShare ? (
               <button type="button" onClick={share} disabled={state !== "ready"} className="h-12 rounded-xl bg-primary text-base font-bold text-primary-foreground disabled:opacity-50">
-                Compartilhar
+                {state === "loading" ? <PendingLabel>Montando…</PendingLabel> : "Compartilhar"}
               </button>
             ) : null}
             <button
@@ -102,7 +103,7 @@ export function ShareButton({ className, children }: { className?: string; child
               disabled={state !== "ready"}
               className={`h-12 rounded-xl text-base font-bold disabled:opacity-50 ${canShare ? "border border-border bg-surface" : "bg-primary text-primary-foreground"}`}
             >
-              Baixar imagem
+              {state === "loading" ? <PendingLabel>Montando…</PendingLabel> : "Baixar imagem"}
             </button>
           </div>
         </div>

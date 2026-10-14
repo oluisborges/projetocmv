@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { signOut } from "@/app/(app)/actions";
 import { getSession } from "@/lib/auth";
 import { PasswordForm } from "./password-form";
+import { SubmitButton } from "@/components/submit-button";
 
 export const metadata = { title: "Criar minha senha" };
 
@@ -34,9 +35,9 @@ export default async function ChangePasswordPage() {
 
       {forced ? (
         <form action={signOut} className="text-center">
-          <button type="submit" className="h-11 text-sm font-semibold text-muted underline">
+          <SubmitButton pendingLabel="Saindo…" className="h-11 text-sm font-semibold text-muted underline">
             Sair
-          </button>
+          </SubmitButton>
         </form>
       ) : null}
     </main>

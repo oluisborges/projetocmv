@@ -6,6 +6,7 @@ import { formatBRL, formatNumber } from "@/lib/format";
 import { computeRecipe, recipeCostSettings, type CostItem } from "@/lib/recipe-cost";
 import { loadArchivedRecipes, loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { restoreRecipe } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export const metadata = { title: "Fichas técnicas" };
 
@@ -85,9 +86,9 @@ export default async function RecipesPage() {
                 {canWrite ? (
                   <form action={restoreRecipe}>
                     <input type="hidden" name="id" value={a.id} />
-                    <button type="submit" className="h-11 shrink-0 px-2 text-sm font-semibold text-primary">
+                    <SubmitButton pendingLabel="Restaurando…" className="h-11 shrink-0 px-2 text-sm font-semibold text-primary">
                       Restaurar
-                    </button>
+                    </SubmitButton>
                   </form>
                 ) : null}
               </li>

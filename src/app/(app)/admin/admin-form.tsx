@@ -2,6 +2,7 @@
 
 import { useActionState, useRef } from "react";
 import type { AdminState } from "./actions";
+import { PendingLabel } from "@/components/spinner";
 
 type Props = {
   action: (prev: AdminState, formData: FormData) => Promise<AdminState>;
@@ -36,7 +37,7 @@ export function AdminForm({ action, submitLabel, children }: Props) {
         disabled={pending}
         className="h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60"
       >
-        {pending ? "Salvando…" : submitLabel}
+        {pending ? <PendingLabel>Salvando…</PendingLabel> : submitLabel}
       </button>
     </form>
   );

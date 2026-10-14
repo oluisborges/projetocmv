@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { viewAsOrganization } from "../actions";
 import { addMember, createOrganization, resetPassword } from "./actions";
 import { AdminForm, Field } from "./admin-form";
+import { SubmitButton } from "@/components/submit-button";
 
 export const metadata = { title: "Painel Shogun" };
 
@@ -57,9 +58,9 @@ export default async function AdminPage() {
                 <div className="flex shrink-0 flex-col items-stretch gap-2">
                   <form action={viewAsOrganization}>
                     <input type="hidden" name="orgId" value={org.id} />
-                    <button type="submit" className="h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
+                    <SubmitButton pendingLabel="Abrindo…" className="h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
                       Ver como esta marmitaria
-                    </button>
+                    </SubmitButton>
                   </form>
                   <Link href={`/admin/uso/${org.id}`} className="flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-primary">
                     Histórico de uso

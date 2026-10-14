@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useRef, useSyncExternalStore } from "react";
+import { PendingLabel } from "@/components/spinner";
 
 const subscribe = () => () => {};
 /** false no servidor e no primeiro render, true depois que a página carregou no navegador. */
@@ -58,7 +59,7 @@ export function ActionForm({
         disabled={pending || !hydrated}
         className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
       >
-        {pending ? "Salvando…" : submitLabel}
+        {pending ? <PendingLabel>Salvando…</PendingLabel> : submitLabel}
       </button>
     </form>
   );

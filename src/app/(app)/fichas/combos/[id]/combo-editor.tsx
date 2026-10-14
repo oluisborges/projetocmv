@@ -10,6 +10,7 @@ import type { ComboGroupRow, ComboOptionRow, RecipeCostInfo } from "@/lib/combos
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { analyzePrice, type PricingSettings } from "@/lib/pricing-view";
 import { addGroup, addOption, deleteGroup, removeOption, renameCombo, updateGroup, updateOption } from "../actions";
+import { PendingLabel } from "@/components/spinner";
 
 const inputClass = "h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
 const small = "tabular h-11 card px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
@@ -67,7 +68,7 @@ function AddOption({ group, recipes, onAdded, disabled }: { group: ComboGroupRow
           </span>
         </span>
         <button type="button" onClick={add} disabled={busy || disabled} className="h-12 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-          {busy ? "…" : "Adicionar"}
+          {busy ? <PendingLabel>Adicionando…</PendingLabel> : "Adicionar"}
         </button>
       </div>
       {error ? (

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { daysSince, formatAge, formatPurchaseSize, STALE_DAYS } from "@/lib/format";
 import { updateIngredientPrice } from "./actions";
+import { Spinner } from "@/components/spinner";
 
 export type IngredientRow = {
   id: string;
@@ -93,7 +94,7 @@ function PriceRow({ item, canWrite }: { item: IngredientRow; canWrite: boolean }
 
       <p role={status === "error" ? "alert" : undefined} className="min-h-4 text-right text-xs">
         {status === "saving" ? (
-          <span className="text-muted">Salvando…</span>
+          <span className="inline-flex items-center gap-1 text-muted"><Spinner className="size-3" />Salvando…</span>
         ) : status === "saved" ? (
           <span className="text-success">Salvo ✓</span>
         ) : status === "error" ? (

@@ -7,6 +7,7 @@ import { MarginBadge } from "@/components/margin-badge";
 import { formatBRL, parseDecimal } from "@/lib/format";
 import { analyzePrice, type PricingSettings } from "@/lib/pricing-view";
 import { setRecipePrice } from "./actions";
+import { Spinner } from "@/components/spinner";
 
 export type PricingRowData = {
   id: string;
@@ -99,7 +100,7 @@ function Row({ row, settings, feePct, canWrite, configured }: { row: PricingRowD
       ) : null}
 
       <p role={state.kind === "error" ? "alert" : undefined} className="empty:hidden text-right text-xs">
-        {state.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
+        {state.kind === "saving" ? <span className="inline-flex items-center gap-1 text-muted"><Spinner className="size-3" />Salvando…</span> : null}
         {state.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}
         {state.kind === "error" ? <span className="text-danger">{state.message}</span> : null}
       </p>

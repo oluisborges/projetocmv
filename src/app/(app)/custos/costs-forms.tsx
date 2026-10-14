@@ -5,6 +5,7 @@ import { ActionForm, SelectField, TextField } from "@/components/forms";
 import { ConfirmButton } from "@/components/confirm-button";
 import { Hint } from "@/components/hint";
 import { formatBRL } from "@/lib/format";
+import { Spinner } from "@/components/spinner";
 import {
   addFixedCost,
   addStaff,
@@ -95,7 +96,7 @@ export function FixedCostRow({ cost, canWrite }: { cost: { id: string; name: str
         ) : null}
       </div>
       <p role={state.kind === "error" ? "alert" : undefined} className="empty:hidden text-right text-xs">
-        {state.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
+        {state.kind === "saving" ? <span className="inline-flex items-center gap-1 text-muted"><Spinner className="size-3" />Salvando…</span> : null}
         {state.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}
         {state.kind === "error" ? <span className="text-danger">{state.message}</span> : null}
       </p>
@@ -220,7 +221,7 @@ export function StaffRowView({
         </label>
       </div>
       <p role={state.kind === "error" ? "alert" : undefined} className="empty:hidden text-right text-xs">
-        {state.kind === "saving" ? <span className="text-muted">Salvando…</span> : null}
+        {state.kind === "saving" ? <span className="inline-flex items-center gap-1 text-muted"><Spinner className="size-3" />Salvando…</span> : null}
         {state.kind === "saved" ? <span className="text-success">Salvo ✓</span> : null}
         {state.kind === "error" ? <span className="text-danger">{state.message}</span> : null}
       </p>

@@ -7,6 +7,7 @@ import { MarginBadge } from "@/components/margin-badge";
 import { formatBRL, formatPct, parseDecimal } from "@/lib/format";
 import { analyzePrice, priceBreakdown, type PricingSettings } from "@/lib/pricing-view";
 import { setRecipePrice } from "../actions";
+import { PendingLabel } from "@/components/spinner";
 
 type Channel = { id: string; name: string; fee_pct: number };
 
@@ -126,7 +127,7 @@ export function Simulator({
 
         {canWrite ? (
           <button type="button" onClick={save} disabled={!(price > 0) || state.kind === "saving"} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
-            {state.kind === "saving" ? "Salvando…" : saved === price ? "Este é o preço atual" : "Definir como preço do produto"}
+            {state.kind === "saving" ? <PendingLabel>Salvando…</PendingLabel> : saved === price ? "Este é o preço atual" : "Definir como preço do produto"}
           </button>
         ) : null}
         <p role={state.kind === "error" ? "alert" : undefined} className="min-h-4 text-center text-xs">

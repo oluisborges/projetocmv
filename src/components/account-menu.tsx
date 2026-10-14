@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { SubmitButton } from "@/components/submit-button";
 
 /** Menu da conta no cabeçalho: tira o "Sair" (botão de risco) do lugar nobre e reúne o que é de uso raro. */
 export function AccountMenu({ isAdmin, signOutAction }: { isAdmin: boolean; signOutAction: () => Promise<void> }) {
@@ -45,9 +46,9 @@ export function AccountMenu({ isAdmin, signOutAction }: { isAdmin: boolean; sign
           Como seus dados são tratados
         </Link>
         <form action={signOutAction} className="border-t border-border pt-1">
-          <button type="submit" className={`${item} w-full text-danger`}>
+          <SubmitButton pendingLabel="Saindo…" className={`${item} w-full text-danger`}>
             Sair da conta
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </details>

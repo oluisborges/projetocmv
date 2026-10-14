@@ -1,6 +1,23 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
+import { useFormStatus } from "react-dom";
+import { PendingLabel } from "./spinner";
+
+/** Dentro do formulário: enquanto a ação roda, trava, mostra a rodinha e mantém a janela aberta até terminar. */
+function ConfirmSubmit({ label, destructive, onDone }: { label: string; destructive: boolean; onDone: () => void }) {
+  const { pending } = useFormStatus();
+  const was = useRef(false);
+  useEffect(() => {
+    if (was.current && !pending) onDone();
+    was.current = pending;
+  }, [pending, onDone]);
+  return (
+    <button type="submit" disabled={pending} aria-busy={pending} className={`h-12 rounded-xl font-semibold text-white disabled:opacity-70 ${destructive ? "bg-danger" : "bg-primary"}`}>
+      {pending ? <PendingLabel>Aguarde…</PendingLabel> : label}
+    </button>
+  );
+}
 
 /**
  * Botão que abre uma janela de confirmação antes de enviar o formulário em que está.
@@ -47,13 +64,7 @@ export function ConfirmButton({
             <button type="button" onClick={() => dialog.current?.close()} className="h-12 card font-semibold">
               Cancelar
             </button>
-            <button
-              type="submit"
-              onClick={() => dialog.current?.close()}
-              className={`h-12 rounded-xl font-semibold text-white ${destructive ? "bg-danger" : "bg-primary"}`}
-            >
-              {confirmLabel}
-            </button>
+            <ConfirmSubmit label={confirmLabel} destructive={destructive} onDone={() => dialog.current?.close()} />
           </div>
         </div>
       </dialog>

@@ -9,6 +9,7 @@ import { formatBRL, formatNumber } from "@/lib/format";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { restoreCombo } from "./actions";
 import { NewComboForm } from "./new-combo-form";
+import { SubmitButton } from "@/components/submit-button";
 
 export const metadata = { title: "Combos" };
 
@@ -102,9 +103,9 @@ export default async function CombosPage() {
                 <span className="min-w-0 truncate text-sm">{c.name}</span>
                 <form action={restoreCombo}>
                   <input type="hidden" name="id" value={c.id} />
-                  <button type="submit" className="h-11 px-3 text-sm font-semibold text-primary">
+                  <SubmitButton pendingLabel="Restaurando…" className="h-11 px-3 text-sm font-semibold text-primary">
                     Restaurar
-                  </button>
+                  </SubmitButton>
                 </form>
               </li>
             ))}

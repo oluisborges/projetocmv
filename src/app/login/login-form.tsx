@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { signIn, type LoginState } from "./actions";
+import { PendingLabel } from "@/components/spinner";
 
 const initial: LoginState = {};
 
@@ -54,7 +55,7 @@ export function LoginForm() {
         disabled={pending}
         className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
       >
-        {pending ? "Entrando…" : "Entrar"}
+        {pending ? <PendingLabel>Entrando…</PendingLabel> : "Entrar"}
       </button>
     </form>
   );

@@ -5,6 +5,7 @@ import { ActivityTracker } from "@/components/activity-tracker";
 import { BottomNav } from "@/components/bottom-nav";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { exitViewAs, signOut } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await requireUser();
@@ -20,9 +21,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span className="block truncate text-base font-extrabold">{active.orgName}</span>
           </p>
           <form action={exitViewAs}>
-            <button type="submit" className="h-11 shrink-0 rounded-xl bg-white px-4 text-sm font-bold text-warning">
+            <SubmitButton pendingLabel="Saindo…" className="h-11 shrink-0 rounded-xl bg-white px-4 text-sm font-bold text-warning">
               Sair
-            </button>
+            </SubmitButton>
           </form>
         </div>
       ) : null}
