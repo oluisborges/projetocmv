@@ -799,3 +799,57 @@ describe("correções da revisão de produto (Fase 8)", () => {
     ).rejects.toThrow(/permission denied/i);
   });
 });
+
+describe("combos", () => {
+  let comboId: string;
+  let recipeA: string;
+  let groupFixed: string;
+  let groupChoice: string;
+
+  beforeAll(async () => {
+    const [r] = await q(`insert into public.recipes (org_id, name, portions, mode) values ($1, 'Marmita do combo', 1, 'serving') returning id`, [ids.orgA]);
+    recipeA = r.id as string;
+    const [c] = await as(ids.ownerA, "dono-a@marmita.com", () => q(`insert into public.combos (org_id, name) values ($1, 'Kit 5') returning id`, [ids.orgA]));
+    comboId = c.id as string;
+    const [g1] = await q(`insert into public.combo_groups (org_id, combo_id, name, kind) values ($1,$2,'Fixas','fixed') returning id`, [ids.orgA, comboId]);
+    const [g2] = await q(`insert into public.combo_groups (org_id, combo_id, name, kind, pick_qty, unit_price) values ($1,$2,'Escolha','choice',5,23.5) returning id`, [ids.orgA, comboId]);
+    groupFixed = g1.id as string;
+    groupChoice = g2.id as string;
+  });
+
+  it("grupo fixo exige quantidade e preço por marmita; grupo de escolha não aceita em cada opção", async () => {
+    await expect(q(`insert into public.combo_group_options (org_id, group_id, recipe_id) values ($1,$2,$3)`, [ids.orgA, groupFixed, recipeA])).rejects.toThrow(/grupo fixo/i);
+    await q(`insert into public.combo_group_options (org_id, group_id, recipe_id, qty, unit_price) values ($1,$2,$3,5,23.5)`, [ids.orgA, groupFixed, recipeA]);
+    await expect(
+      q(`insert into public.combo_group_options (org_id, group_id, recipe_id, qty, unit_price) values ($1,$2,$3,1,10)`, [ids.orgA, groupChoice, recipeA]),
+    ).rejects.toThrow(/grupo de escolha/i);
+    await q(`insert into public.combo_group_options (org_id, group_id, recipe_id) values ($1,$2,$3)`, [ids.orgA, groupChoice, recipeA]);
+  });
+
+  it("o tipo do grupo exige os campos certos (escolha com quantidade e preço; fixo sem)", async () => {
+    await expect(q(`insert into public.combo_groups (org_id, combo_id, name, kind) values ($1,$2,'X','choice')`, [ids.orgA, comboId])).rejects.toThrow(/check constraint/i);
+    await expect(q(`insert into public.combo_groups (org_id, combo_id, name, kind, pick_qty, unit_price) values ($1,$2,'X','fixed',3,10)`, [ids.orgA, comboId])).rejects.toThrow(/check constraint/i);
+  });
+
+  it("nome de combo ativo não repete na marmitaria (nem com maiúsculas), mas outra marmitaria pode", async () => {
+    await expect(q(`insert into public.combos (org_id, name) values ($1, 'kit  5')`, [ids.orgA])).rejects.toThrow(/duplicate key|unique/i);
+    await q(`insert into public.combos (org_id, name) values ($1, 'Kit 5')`, [ids.orgB]);
+  });
+
+  it("combos só ligam marmitas da própria marmitaria; viewer lê mas não grava; outra marmitaria não vê", async () => {
+    const [rb] = await q(`insert into public.recipes (org_id, name, portions, mode) values ($1, 'Marmita B', 1, 'serving') returning id`, [ids.orgB]);
+    await expect(q(`insert into public.combo_group_options (org_id, group_id, recipe_id, qty, unit_price) values ($1,$2,$3,1,10)`, [ids.orgA, groupFixed, rb.id])).rejects.toThrow(/foreign key/i);
+
+    expect(await as(ids.viewerA, "viewer-a@marmita.com", () => q(`select id from public.combos where org_id = $1`, [ids.orgA]))).toHaveLength(1);
+    await expect(as(ids.viewerA, "viewer-a@marmita.com", () => q(`insert into public.combos (org_id, name) values ($1, 'Intruso')`, [ids.orgA]))).rejects.toThrow(/row-level security/i);
+    expect(await as(ids.ownerB, "dono-b@marmita.com", () => q(`select id from public.combos where org_id = $1`, [ids.orgA]))).toHaveLength(0);
+  });
+
+  it("alterações no combo entram no histórico de uso do admin", async () => {
+    await as(ids.ownerA, "dono-a@marmita.com", () => q(`update public.combo_groups set unit_price = 22 where id = $1`, [groupChoice]));
+    const rows = await as(ids.admin, "admin@shogun.com", () =>
+      q(`select summary from public.activity_log where org_id = $1 and summary like 'Combo "Kit 5"%'`, [ids.orgA]),
+    );
+    expect(rows.length).toBeGreaterThan(0);
+  });
+});

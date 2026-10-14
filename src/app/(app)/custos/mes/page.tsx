@@ -2,6 +2,8 @@ import Link from "next/link";
 import { CostsTabs } from "@/components/costs-tabs";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
+import { summarizeCombo } from "@/lib/combo-view";
+import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
 import { loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { normalizeSnapshot, summarizeSamples } from "@/lib/history-view";
@@ -43,6 +45,12 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
   const { data: salesRows } = period
     ? await supabase.from("period_sales").select("recipe_id, qty_sold").eq("period_id", period.id)
     : { data: [] as { recipe_id: string; qty_sold: number }[] };
+  const [combos, weights, { data: comboSalesRows }] = await Promise.all([
+    loadCombos(orgId, { active: true }),
+    loadSalesWeights(ctx.unit.id),
+    period ? supabase.from("period_combo_sales").select("combo_id, qty_sold").eq("period_id", period.id) : Promise.resolve({ data: [] as { combo_id: string; qty_sold: number }[] }),
+  ]);
+  const comboQty = new Map((comboSalesRows ?? []).map((r) => [r.combo_id as string, Number(r.qty_sold)]));
 
   // Mês que já passou e tem registro: usa os custos e a equipe daquele mês (os mesmos números do Histórico), não os de hoje.
   const { data: snapRow } = month < now ? await supabase.from("month_snapshots").select("data").eq("unit_id", ctx.unit.id).eq("month", month).maybeSingle() : { data: null };
@@ -62,12 +70,24 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     return { id: r.id, name: r.name, cost, qty: qtyByRecipe.get(r.id) ?? 0 };
   });
 
+  // Combos: o custo de cada um sai das marmitas dele (as de escolha, pela média das vendas).
+  const recipeCosts = new Map(dishes.map((d) => [d.id, { cost: d.cost }]));
+  const feePct = ctx.channels[0]?.fee_pct ?? 0;
+  const comboRows = combos.map((c) => {
+    const s = summarizeCombo(c, recipeCosts, weights, ctx.settings, feePct);
+    return { id: c.id, name: c.name, cost: s.cost > 0 ? s.cost : null, units: s.units, qty: comboQty.get(c.id) ?? 0 };
+  });
+  const looseUnits = dishes.reduce((n, d) => n + d.qty, 0);
+
   const revenue = Number(period?.revenue ?? 0);
   const purchases = Number(period?.purchases ?? 0);
   const summary = summarizeMonth({
     revenue,
     purchases,
-    sales: dishes.map((d) => ({ recipeId: d.id, qty: d.qty, cost: d.cost })),
+    sales: [
+      ...dishes.map((d) => ({ recipeId: d.id, qty: d.qty, cost: d.cost })),
+      ...comboRows.map((c) => ({ recipeId: c.id, qty: c.qty, cost: c.cost, unitsPerSale: c.units })),
+    ],
     staff: series
       ? [{ area: "cozinha" as const, monthlySalary: series.average.staffTotal, chargesPct: 0 }]
       : staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
@@ -119,7 +139,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          2. Unidades vendidas ({formatNumber(summary.soldUnits, 0)})
+          2. Marmitas vendidas avulsas ({formatNumber(looseUnits, 0)})
         </h2>
         {dishes.length === 0 ? (
           <p className="text-sm text-muted">
@@ -134,7 +154,19 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
         )}
       </section>
 
-      {/* resultado depois dos dois passos de preenchimento */}
+      {comboRows.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">3. Combos vendidos ({formatNumber(comboRows.reduce((n, c) => n + c.qty, 0), 0)})</h2>
+          <ul className="divide-y divide-border card px-4">
+            {comboRows.map((c) => (
+              <SalesRow key={`${c.id}-${month}`} month={month} recipe={{ id: c.id, name: c.name, cost: c.cost }} initialQty={c.qty} canWrite={canWrite} combo />
+            ))}
+          </ul>
+          <p className="text-xs text-muted">Os combos entram no custo esperado do mês com as marmitas que cada um leva.</p>
+        </section>
+      ) : null}
+
+      {/* resultado depois dos passos de preenchimento */}
       {hasData ? (
         <section aria-live="polite" className="flex flex-col gap-3 card p-4">
           <dl className="grid grid-cols-2 gap-3 text-sm">

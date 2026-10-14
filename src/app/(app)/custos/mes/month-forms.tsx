@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
 import { formatBRL } from "@/lib/format";
-import { savePeriod, setSoldQty } from "./actions";
+import { savePeriod, setComboSoldQty, setSoldQty } from "./actions";
 
 const money = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -39,11 +39,14 @@ export function SalesRow({
   recipe,
   initialQty,
   canWrite,
+  combo = false,
 }: {
   month: string;
   recipe: { id: string; name: string; cost: number | null };
   initialQty: number;
   canWrite: boolean;
+  /** `true`: a linha é de um combo (usa a venda de combos). */
+  combo?: boolean;
 }) {
   const [saved, setSaved] = useState(initialQty);
   const [text, setText] = useState(initialQty > 0 ? String(initialQty) : "");
@@ -55,7 +58,7 @@ export function SalesRow({
     if (current === saved) return;
     const mine = ++latest.current;
     setState({ kind: "saving" });
-    const result = await setSoldQty(month, recipe.id, text);
+    const result = combo ? await setComboSoldQty(month, recipe.id, text) : await setSoldQty(month, recipe.id, text);
     if (mine !== latest.current) return;
     if (result.ok) {
       setSaved(result.qty);
@@ -85,7 +88,7 @@ export function SalesRow({
           </p>
         </div>
         <label className="flex shrink-0 items-center gap-1.5">
-          <span className="sr-only">Unidades vendidas de {recipe.name}</span>
+          <span className="sr-only">{combo ? "Combos vendidos" : "Unidades vendidas"} de {recipe.name}</span>
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -104,7 +107,7 @@ export function SalesRow({
             aria-invalid={state.kind === "error"}
             className="tabular h-11 w-24 card px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           />
-          <span className="text-sm text-muted">un</span>
+          <span className="text-sm text-muted">{combo ? "combos" : "un"}</span>
         </label>
       </div>
       <p role={state.kind === "error" ? "alert" : undefined} className="empty:hidden text-right text-xs">

@@ -1,6 +1,13 @@
 import { D, cmo, cmvDeviation, cmvReal, cmvTheoretical, type StaffMember } from "@/lib/calc";
 
-export type MonthSale = { recipeId: string; qty: number; /** custo por porção da ficha; `null` se a ficha está incompleta */ cost: number | null };
+export type MonthSale = {
+  recipeId: string;
+  qty: number;
+  /** custo por porção da ficha (ou do combo inteiro); `null` se está incompleto */
+  cost: number | null;
+  /** Quantas marmitas cada venda leva (combo de 10 = 10). Padrão 1. */
+  unitsPerSale?: number;
+};
 
 export type MonthSummary = {
   revenue: number;
@@ -32,7 +39,7 @@ export function summarizeMonth(input: { revenue: number; purchases: number; sale
 
   const costed = input.sales.filter((s) => s.qty > 0 && s.cost !== null);
   const salesWithoutCost = input.sales.filter((s) => s.qty > 0 && s.cost === null).length;
-  const soldUnits = input.sales.reduce((s, x) => s + (x.qty > 0 ? x.qty : 0), 0);
+  const soldUnits = input.sales.reduce((s, x) => s + (x.qty > 0 ? x.qty * (x.unitsPerSale ?? 1) : 0), 0);
 
   const real = hasRevenue && purchases > 0 ? cmvReal({ purchases, revenue }) : null;
   const theoretical = costed.length > 0 ? cmvTheoretical(costed.map((s) => ({ costPerPortion: s.cost as number, qtySold: s.qty })), hasRevenue ? revenue : 0) : null;

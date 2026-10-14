@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FichasTabs } from "@/components/fichas-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadSafetyMargin } from "@/lib/pricing-data";
 import { formatBRL, formatNumber } from "@/lib/format";
@@ -27,6 +28,8 @@ export default async function RecipesPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Fichas técnicas</h1>
         <p className="text-muted">A receita de cada produto, com o custo por porção sempre atualizado.</p>
       </section>
+
+      <FichasTabs active="marmitas" />
 
       {canWrite ? (
         <Link href="/fichas/nova" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">

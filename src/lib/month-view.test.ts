@@ -102,3 +102,20 @@ describe("meses", () => {
     expect(monthLabel("2027-03-01")).toBe("março de 2027");
   });
 });
+
+describe("combos nas vendas do mês", () => {
+  it("um combo de 10 marmitas conta 10 unidades e entra no custo esperado pelo custo do combo inteiro", () => {
+    const r = summarizeMonth({
+      revenue: 10000,
+      purchases: 3000,
+      sales: [
+        { recipeId: "avulsa", qty: 20, cost: 8 }, // 20 marmitas avulsas a R$ 8 = 160
+        { recipeId: "kit10", qty: 30, cost: 80, unitsPerSale: 10 }, // 30 kits de R$ 80 = 2.400
+      ],
+      staff: [],
+    });
+    expect(r.soldUnits).toBe(20 + 300);
+    expect(r.theoreticalCost).toBeCloseTo(2560, 6);
+    expect(r.cmvTheoreticalPct).toBeCloseTo(0.256, 6);
+  });
+});

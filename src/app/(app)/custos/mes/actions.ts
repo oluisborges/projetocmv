@@ -54,6 +54,35 @@ export async function savePeriod(_prev: FormState, formData: FormData): Promise<
   return { ok: "Salvo." };
 }
 
+export async function setComboSoldQty(month: string, comboId: string, rawQty: string): Promise<{ ok: true; qty: number } | { ok: false; error: string }> {
+  const { orgId, canWrite } = await requireMember();
+  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+
+  const start = monthStart(month);
+  const id = z.uuid().safeParse(comboId);
+  const text = rawQty.trim() === "" ? "0" : parseDecimal(rawQty);
+  const qty = text === null ? NaN : Number(text);
+  if (!start || !id.success) return { ok: false, error: "Dados inválidos." };
+  if (!Number.isFinite(qty) || qty < 0 || qty > 10_000_000) return { ok: false, error: "Digite quantos combos vendeu, como 40." };
+  if (!Number.isInteger(qty)) return { ok: false, error: "Digite um número inteiro de combos (sem vírgula)." };
+
+  const unit = await activeUnit(orgId);
+  if (!unit) return { ok: false, error: "Sua marmitaria ainda não tem unidade cadastrada." };
+  const periodId = await ensurePeriod(orgId, unit.id, start);
+  if (!periodId) return { ok: false, error: "Não foi possível abrir o mês." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("period_combo_sales")
+    .upsert({ period_id: periodId, combo_id: id.data, org_id: orgId, qty_sold: Math.round(qty) }, { onConflict: "period_id,combo_id" })
+    .select("qty_sold")
+    .maybeSingle();
+  if (error || !data) return { ok: false, error: "Não foi possível salvar." };
+
+  revalidatePath("/custos/mes");
+  return { ok: true, qty: Number(data.qty_sold) };
+}
+
 export async function setSoldQty(month: string, recipeId: string, rawQty: string): Promise<{ ok: true; qty: number } | { ok: false; error: string }> {
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };

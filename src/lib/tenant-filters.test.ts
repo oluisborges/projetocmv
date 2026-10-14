@@ -21,6 +21,10 @@ const TABLES = [
   "month_snapshots",
   "ingredient_price_history",
   "activity_log",
+  "combos",
+  "combo_groups",
+  "combo_group_options",
+  "period_combo_sales",
 ];
 const SCOPE = /org_id|unit_id|period_id|recipe_id|ingredient_id/;
 
