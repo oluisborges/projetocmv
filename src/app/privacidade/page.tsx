@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-1 pl-5 leading-relaxed">
           <li>Seu e-mail, seu nome e a senha (guardada de forma criptografada; nem a equipe consegue ler).</li>
           <li>Os dados do seu negócio que você digita: insumos e preços, fichas técnicas, custos fixos, equipe, faturamento, compras e vendas do mês.</li>
-          <li>Um histórico de uso: quando você entra, quais telas abre e o que altera (por exemplo, o preço de um insumo), com data e hora. Serve para a Shogun dar suporte e acompanhar se o sistema está ajudando; quem usa a sua conta não vê esse histórico, só a equipe da Shogun.</li>
+          <li>Um histórico de uso: quando você entra, quais telas abre e o que altera (por exemplo, o preço de um insumo), com data e hora. Serve para a equipe do Precificaí (Grupo Shogun) dar suporte e acompanhar se o sistema está ajudando; quem usa a sua conta não vê esse histórico, só a equipe do Grupo Shogun.</li>
         </ul>
       </section>
 

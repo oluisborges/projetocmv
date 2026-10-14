@@ -61,7 +61,7 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
               + Novo insumo
             </Link>
             <Link href="/insumos/catalogo" className={`${button} ${secondary}`}>
-              Catálogo Shogun
+              Catálogo de insumos
             </Link>
           </div>
           <Link href="/insumos/reajuste" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
@@ -72,7 +72,7 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
 
       {items.length === 0 ? (
         <div className="flex flex-col gap-3 card p-5">
-          <h2 className="text-lg font-bold">Comece pelo catálogo da Shogun</h2>
+          <h2 className="text-lg font-bold">Comece pelo catálogo de insumos</h2>
           <p className="text-sm text-muted">
             Escolha os insumos e embalagens que você usa e só preencha o preço de cada um. Dá muito menos trabalho do que cadastrar do zero.
           </p>

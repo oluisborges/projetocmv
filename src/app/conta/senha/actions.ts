@@ -13,7 +13,7 @@ const schema = z.object({
   confirm: z.string(),
 });
 
-/** Cada pessoa cria a própria senha. A senha provisória que a Shogun passou deixa de valer. */
+/** Cada pessoa cria a própria senha. A senha provisória que o Grupo Shogun passou deixa de valer. */
 export async function changePassword(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
   const session = await getSession(); // não passa por requireUser: esta é a tela que resolve a troca obrigatória
   if (!session) redirect("/login");

@@ -29,7 +29,7 @@ export function ShareButton({ className, children }: { className?: string; child
       const res = await fetch("/painel/cartao", { cache: "no-store" });
       if (!res.ok) throw new Error(String(res.status));
       const blob = await res.blob();
-      const file = new File([blob], "meu-resultado-grupo-shogun.png", { type: "image/png" });
+      const file = new File([blob], "meu-resultado-precificai.png", { type: "image/png" });
       setCard({ file, url: URL.createObjectURL(blob) });
       setCanShare(Boolean(navigator.canShare?.({ files: [file] })));
       setState("ready");
@@ -49,7 +49,7 @@ export function ShareButton({ className, children }: { className?: string; child
   async function share() {
     if (!card) return;
     try {
-      await navigator.share({ files: [card.file], title: "Meu resultado", text: "Calculado com Shogun Precificação, do Grupo Shogun." });
+      await navigator.share({ files: [card.file], title: "Meu resultado", text: "Calculado com o Precificaí." });
     } catch (e) {
       // Fechar a janela de compartilhar não é erro; qualquer outro problema cai no download.
       if (!(e instanceof DOMException && e.name === "AbortError")) download();

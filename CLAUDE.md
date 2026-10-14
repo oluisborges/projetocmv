@@ -1,4 +1,4 @@
-# Shogun Precificação
+# Precificaí (por Grupo Shogun)
 
 Plataforma web mobile-first para donos de marmitarias congeladas (clientes do Grupo Shogun) controlarem custo e preço: insumos, fichas técnicas, precificação, CMV, CMO, custos fixos/ponto de equilíbrio e dashboard. O plano completo está em `PLAN.md` — leia antes de mexer em modelo de dados ou fórmulas.
 

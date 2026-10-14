@@ -299,7 +299,7 @@ export async function importFromCatalog(_prev: FormState, formData: FormData): P
     const parts = [ids.data.length > 0 ? `${ids.data.length} insumo(s)` : null, recipeIds.data.length > 0 ? `${recipeIds.data.length} ficha(s) pronta(s)` : null].filter(Boolean);
     const session = await getSession();
     if (session && parts.length > 0) {
-      await supabase.from("activity_log").insert({ org_id: orgId, user_id: session.userId, by_admin: session.isPlatformAdmin, kind: "change", summary: `Importou do catálogo da Shogun: ${parts.join(" e ")}` });
+      await supabase.from("activity_log").insert({ org_id: orgId, user_id: session.userId, by_admin: session.isPlatformAdmin, kind: "change", summary: `Importou do catálogo de insumos: ${parts.join(" e ")}` });
     }
   }
   if (error) return fail("Não foi possível importar.");

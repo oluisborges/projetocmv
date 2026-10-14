@@ -1,50 +1,37 @@
-// Gera os arquivos de marca (PNG) a partir das logos originais enviadas pela Shogun.
-// Uso: node scripts/make-brand-assets.mjs <capacete.webp> <logo-empilhada.webp> <logo-vertical.webp>
-// Os originais não ficam no repositório; só os PNGs gerados em public/brand e src/app.
+// Gera os PNGs da marca Precificaí a partir dos SVGs em public/brand (que vêm do design system).
+// Uso: node scripts/make-brand-assets.mjs
 import sharp from "sharp";
-import { mkdirSync } from "node:fs";
+import { copyFileSync, readFileSync } from "node:fs";
 
-const [helmetSrc, stackedSrc, verticalSrc] = process.argv.slice(2);
-if (!helmetSrc || !stackedSrc || !verticalSrc) {
-  console.error("Uso: node scripts/make-brand-assets.mjs <capacete> <logo-empilhada> <logo-vertical>");
-  process.exit(1);
-}
+const TEAL = "#0F766E";
+const svg = (name) => readFileSync(`public/brand/${name}.svg`);
+const png = (buf, size, file, opts = {}) => sharp(buf, { density: 384 }).resize(size).png(opts).toFile(file).then(() => console.log("ok", file));
 
-const WHITE = { r: 255, g: 255, b: 255, alpha: 1 };
-mkdirSync("public/brand", { recursive: true });
+// Ícones do app (Android/iOS/aba do navegador): o tile arredondado do design system.
+await png(svg("icone-app-teal"), { width: 192, height: 192 }, "public/brand/icon-192.png");
+await png(svg("icone-app-teal"), { width: 512, height: 512 }, "public/brand/icon-512.png");
+await png(svg("icone-app-teal"), { width: 512, height: 512 }, "src/app/icon.png");
 
-const trimmed = async (src) => sharp(src).trim({ background: "#ffffff", threshold: 12 }).png().toBuffer();
+// iOS não aceita transparência: tile cheio, o próprio iOS arredonda.
+const tile = await sharp(svg("icone-app-teal"), { density: 384 }).resize(144, 144).png().toBuffer();
+await sharp({ create: { width: 180, height: 180, channels: 4, background: TEAL } })
+  .composite([{ input: tile, gravity: "center" }])
+  .png()
+  .toFile("src/app/apple-icon.png");
+console.log("ok src/app/apple-icon.png");
 
-// Capacete: ícone do app, favicon, atalho na tela inicial do celular.
-const helmet = await trimmed(helmetSrc);
-const hm = await sharp(helmet).metadata();
-console.log("capacete recortado:", hm.width, "x", hm.height, "alpha:", hm.hasAlpha);
+// Maskable: fundo teal até a borda e símbolo na zona segura (o Android recorta em círculo).
+const inner = await sharp(svg("icone-app-teal"), { density: 384 }).resize(380, 380).png().toBuffer();
+await sharp({ create: { width: 512, height: 512, channels: 4, background: TEAL } })
+  .composite([{ input: inner, gravity: "center" }])
+  .png()
+  .toFile("public/brand/icon-maskable-512.png");
+console.log("ok public/brand/icon-maskable-512.png");
 
-/** Capacete centralizado num quadrado branco, com `pad` de margem (0.08 = 8% de cada lado). */
-const place = async (size, pad, file) => {
-  const input = await sharp(helmet).resize({ width: Math.round(size * (1 - pad * 2)), height: Math.round(size * (1 - pad * 2)), fit: "inside" }).toBuffer();
-  await sharp({ create: { width: size, height: size, channels: 4, background: WHITE } })
-    .composite([{ input, gravity: "center" }])
-    .png()
-    .toFile(file);
-  console.log("ok", file);
-};
+// Logo em PNG: o gerador de imagem do cartão compartilhável lê do disco.
+await png(svg("logo-horizontal"), { width: 1200 }, "public/brand/logo-horizontal.png");
+await png(svg("logo-powered-by-shogun"), { width: 1200 }, "public/brand/logo-powered-by-shogun.png");
 
-await place(512, 0.08, "src/app/icon.png");
-await place(180, 0.1, "src/app/apple-icon.png");
-await place(192, 0.08, "public/brand/icon-192.png");
-await place(512, 0.08, "public/brand/icon-512.png");
-await place(512, 0.22, "public/brand/icon-maskable-512.png"); // margem maior: o Android recorta em círculo
-
-// Capacete sem fundo branco quadrado, para o topo do app (altura pequena, nítido em tela retina).
-await sharp(helmet).resize({ height: 160 }).png().toFile("public/brand/helmet.png");
-console.log("ok public/brand/helmet.png");
-
-// Logo completa (capacete + SHOGUN GRUPO) para a tela de login.
-const stacked = await trimmed(stackedSrc);
-await sharp(stacked).resize({ width: 560 }).png().toFile("public/brand/logo-stacked.png");
-console.log("ok public/brand/logo-stacked.png");
-
-const vertical = await trimmed(verticalSrc);
-await sharp(vertical).resize({ height: 640 }).png().toFile("public/brand/wordmark-vertical.png");
-console.log("ok public/brand/wordmark-vertical.png");
+// Aba do navegador: o SVG pequeno e reforçado do design system.
+copyFileSync("public/brand/favicon.svg", "src/app/icon.svg");
+console.log("ok src/app/icon.svg");

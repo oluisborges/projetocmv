@@ -21,11 +21,11 @@ export default async function ChangePasswordPage() {
       )}
 
       <header className="flex flex-col items-center gap-4 text-center">
-        <Image src="/brand/helmet.png" alt="" width={149} height={160} priority className="h-16 w-auto" />
+        <Image src="/brand/simbolo.svg" alt="Precificaí" width={120} height={128} priority className="h-16 w-auto" />
         <h1 className="text-2xl font-extrabold tracking-tight">{forced ? "Crie a sua senha" : "Trocar minha senha"}</h1>
         <p className="text-muted">
           {forced
-            ? "A senha que a Shogun passou é provisória. Crie uma senha só sua para continuar: só você vai saber."
+            ? "A senha que o Grupo Shogun passou é provisória. Crie uma senha só sua para continuar: só você vai saber."
             : "Escolha uma senha nova. Ela vale a partir de agora."}
         </p>
       </header>

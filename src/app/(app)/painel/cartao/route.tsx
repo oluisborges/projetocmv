@@ -13,7 +13,7 @@ export async function GET() {
   if (!data?.panel) return new Response("Defina o preço de pelo menos um produto para gerar o cartão.", { status: 404 });
 
   // O logo vem do arquivo do projeto (nada de buscar na internet pelo endereço da requisição).
-  const logo = await readFile(join(process.cwd(), "public/brand/logo-stacked.png"))
+  const logo = await readFile(join(process.cwd(), "public/brand/logo-powered-by-shogun.png"))
     .then((b) => `data:image/png;base64,${b.toString("base64")}`)
     .catch(() => null);
 

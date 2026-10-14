@@ -27,7 +27,7 @@ export default async function CombosPage() {
     return (
       <>
         {header}
-        <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
+        <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com o suporte do Precificaí.</p>
       </>
     );
   }

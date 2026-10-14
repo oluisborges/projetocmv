@@ -4,7 +4,7 @@ import { shareCardImage } from "./share-card";
 
 describe("cartão de compartilhar", () => {
   it("gera uma imagem PNG 1080×1350 com os dados", async () => {
-    const logo = `data:image/png;base64,${readFileSync("public/brand/logo-stacked.png").toString("base64")}`;
+    const logo = `data:image/png;base64,${readFileSync("public/brand/logo-powered-by-shogun.png").toString("base64")}`;
     const res = shareCardImage({
       orgName: "Marmitaria da Ação & Café",
       month: "outubro de 2026",

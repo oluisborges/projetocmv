@@ -6,7 +6,7 @@ const EXACT: Record<string, string> = {
   "/painel/historico": "Abriu o Histórico do painel",
   "/insumos": "Abriu Insumos",
   "/insumos/novo": "Abriu o cadastro de novo insumo",
-  "/insumos/catalogo": "Abriu o catálogo da Shogun",
+  "/insumos/catalogo": "Abriu o catálogo de insumos",
   "/insumos/reajuste": "Abriu o reajuste de preços em lote",
   "/fichas": "Abriu Fichas",
   "/fichas/nova": "Abriu a criação de ficha",

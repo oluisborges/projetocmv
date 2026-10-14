@@ -19,7 +19,7 @@ const FILTERS = [
 const KIND_STYLE: Record<string, { label: string; className: string }> = {
   login: { label: "Entrada", className: "bg-primary text-primary-foreground" },
   view: { label: "Tela", className: "bg-border text-foreground" },
-  change: { label: "Alteração", className: "bg-accent text-accent-foreground" },
+  change: { label: "Alteração", className: "bg-tint text-brand-deep" },
 };
 
 const day = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: TZ });

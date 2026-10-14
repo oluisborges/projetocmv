@@ -15,7 +15,7 @@ export default async function PricingPage() {
     return (
       <>
         <h1 className="text-2xl font-extrabold tracking-tight">Preços</h1>
-        <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com a Shogun.</p>
+        <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com o suporte do Precificaí.</p>
       </>
     );
   }

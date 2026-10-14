@@ -14,13 +14,13 @@ export default function ForgotPasswordPage() {
       </Link>
 
       <header className="flex flex-col items-center gap-4 text-center">
-        <Image src="/brand/helmet.png" alt="" width={149} height={160} priority className="h-16 w-auto" />
+        <Image src="/brand/simbolo.svg" alt="Precificaí" width={120} height={128} priority className="h-16 w-auto" />
         <h1 className="text-2xl font-extrabold tracking-tight">Esqueceu a senha?</h1>
       </header>
 
       <section className="flex flex-col gap-4 card p-5">
         <p className="leading-relaxed">
-          Por segurança, a senha é trocada pela equipe da Shogun. <strong>Mande uma mensagem no grupo de WhatsApp do Grupo Shogun</strong> pedindo uma nova senha.
+          Por segurança, a senha é trocada pela equipe do Grupo Shogun. <strong>Mande uma mensagem no grupo de WhatsApp do Grupo Shogun</strong> pedindo uma nova senha.
         </p>
         <p className="text-sm text-muted">
           Informe no pedido o e-mail que você usa para entrar. A equipe confirma que é você e passa uma <strong>senha provisória</strong>. No primeiro acesso, o app

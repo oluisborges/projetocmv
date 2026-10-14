@@ -1,20 +1,21 @@
 @import "tailwindcss";
 
-/* Marca Grupo Shogun: verde escuro #1C3B33 (lado esquerdo do capacete), verde limão #9ACD3A (lado direito),
-   cinza #797D7D (as letras SG). Interface só em tema claro, de propósito: o uso é no celular, em cozinha, com muita luz. */
+/* Marca Precificaí (design system): verde-petróleo #0F766E, verde-limão #9ACB39 só como detalhe (nunca texto nem botão),
+   tinta #0F172A. Interface só em tema claro, de propósito: o uso é no celular, em cozinha, com muita luz. */
 :root {
-  --background: #f5f7f3;
-  --foreground: #17231f;
+  --background: #fafaf9;
+  --foreground: #0f172a;
   --surface: #ffffff;
-  --border: #dfe5df;
-  /* O cinza da marca (#797D7D) não tem contraste suficiente para texto pequeno; este é um tom mais escuro da mesma família. */
-  --muted: #5b6360;
-  --brand-gray: #797d7d;
-  --primary: #1c3b33;
+  --border: #e2e8f0;
+  --muted: #475569;
+  --brand-gray: #64748b;
+  --primary: #0f766e;
   --primary-foreground: #ffffff;
-  --accent: #9acd3a;
-  --accent-foreground: #1c3b33;
-  --success: #166534;
+  --brand-deep: #0b4d4b;
+  --tint: #e6f4f1;
+  --accent: #9acb39;
+  --accent-foreground: #0b4d4b;
+  --success: #15803d;
   --warning: #92400e;
   --danger: #b91c1c;
 }
@@ -27,6 +28,8 @@
   --color-muted: var(--muted);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-brand-deep: var(--brand-deep);
+  --color-tint: var(--tint);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-brand-gray: var(--brand-gray);
@@ -43,13 +46,13 @@
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow:
-    0 1px 2px rgb(28 59 51 / 0.04),
-    0 10px 28px -14px rgb(28 59 51 / 0.16);
+    0 1px 2px rgb(15 23 42 / 0.06),
+    0 10px 28px -14px rgb(15 23 42 / 0.14);
 }
 
 body {
   background:
-    radial-gradient(60rem 22rem at 50% -8rem, rgb(154 205 58 / 0.14), transparent 70%),
+    radial-gradient(60rem 22rem at 50% -8rem, rgb(15 118 110 / 0.07), transparent 70%),
     var(--background);
   background-attachment: fixed;
   color: var(--foreground);
@@ -62,6 +65,9 @@ h2,
 h3 {
   font-family: var(--font-heading), system-ui, sans-serif;
 }
+
+/* O design system usa Poppins até o peso 700. */
+.font-extrabold { font-weight: 700; }
 
 /* Números alinhados em colunas (preços, percentuais). */
 .tabular {

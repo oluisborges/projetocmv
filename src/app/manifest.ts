@@ -4,14 +4,14 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Shogun Precificação",
-    short_name: "Shogun",
-    description: "Custo, margem e preço certo do que você vende",
+    name: "Precificaí",
+    short_name: "Precificaí",
+    description: "Descubra quanto você ganha em cada produto: custo, margem e preço certo.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#f5f7f3",
-    theme_color: "#1c3b33",
+    background_color: "#fafaf9",
+    theme_color: "#0f766e",
     lang: "pt-BR",
     icons: [
       { src: "/brand/icon-192.png", sizes: "192x192", type: "image/png" },

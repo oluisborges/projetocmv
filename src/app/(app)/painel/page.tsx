@@ -19,7 +19,7 @@ export default async function PainelPage() {
         <p className="text-muted">Como está o seu negócio, em números simples.</p>
       </section>
       <PainelTabs active="resumo" showHistory={showHistory} />
-      {data ? <PainelView data={data} /> : <p className="card p-4 text-sm">Sua marmitaria ainda não tem unidade cadastrada. Fale com a Shogun.</p>}
+      {data ? <PainelView data={data} /> : <p className="card p-4 text-sm">Sua marmitaria ainda não tem unidade cadastrada. Fale com o suporte do Precificaí.</p>}
       <BrandFooter />
     </>
   );

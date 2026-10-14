@@ -4,8 +4,7 @@ import Image from "next/image";
 export function BrandFooter() {
   return (
     <footer className="mt-4 flex flex-col items-center gap-1.5 pt-2 text-center">
-      <Image src="/brand/logo-stacked.png" alt="Grupo Shogun" width={560} height={359} className="h-14 w-auto opacity-90" />
-      <p className="text-xs text-muted">Shogun Precificação · uma ferramenta do Grupo Shogun</p>
+      <Image src="/brand/logo-powered-by-shogun.svg" alt="Precificaí, powered by Grupo Shogun" width={635} height={178} className="h-11 w-auto" />
     </footer>
   );
 }

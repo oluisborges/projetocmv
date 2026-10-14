@@ -5,7 +5,7 @@ import { normalizeName } from "@/lib/names";
 import { createClient } from "@/lib/supabase/server";
 import { CatalogPicker, type CatalogItem, type CatalogRecipe } from "./catalog-picker";
 
-export const metadata = { title: "Catálogo da Shogun" };
+export const metadata = { title: "Catálogo de insumos" };
 
 export default async function CatalogPage() {
   const { orgId, canWrite } = await requireMember();
@@ -36,7 +36,7 @@ export default async function CatalogPage() {
         ← Insumos
       </Link>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Catálogo da Shogun</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Catálogo de insumos</h1>
         <p className="text-muted">Marque o que você usa. Depois é só preencher o preço que você paga em cada item.</p>
         <p className="text-xs text-muted">Rendimentos e fatores de correção são valores médios de mercado: ajuste ao que você realmente usa.</p>
       </section>

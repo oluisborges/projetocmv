@@ -25,7 +25,7 @@ export default async function HomePage() {
         key: "ingredients",
         minutes: 5,
         title: "Cadastre seus insumos e preços",
-        detail: data.ingredientCount === 0 ? "Comece pelo catálogo da Shogun: é só marcar o que você usa." : `${pricedIng} de ${data.ingredientCount} com preço preenchido`,
+        detail: data.ingredientCount === 0 ? "Comece pelo catálogo de insumos: é só marcar o que você usa." : `${pricedIng} de ${data.ingredientCount} com preço preenchido`,
         href: data.ingredientCount === 0 ? "/insumos/catalogo" : "/insumos",
         cta: data.ingredientCount === 0 ? "Escolher do catálogo" : "Preencher preços",
         done: data.ingredientCount > 0 && data.noPriceCount === 0,
@@ -163,7 +163,7 @@ export default async function HomePage() {
       </section>
 
       {!member && !session.isPlatformAdmin ? (
-        <p className="card p-4 text-sm">Sua conta ainda não está ligada a nenhuma marmitaria. Fale com a Shogun.</p>
+        <p className="card p-4 text-sm">Sua conta ainda não está ligada a nenhuma marmitaria. Fale com o suporte do Precificaí.</p>
       ) : null}
 
       {allDone ? (

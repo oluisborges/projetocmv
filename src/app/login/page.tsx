@@ -6,11 +6,11 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-7 px-4 py-10">
       <header className="flex flex-col items-center gap-6 text-center">
-        <Image src="/brand/logo-stacked.png" alt="Grupo Shogun" width={560} height={358} priority className="h-auto w-48 drop-shadow-sm" />
+        <Image src="/brand/logo-horizontal.svg" alt="Precificaí" width={635} height={128} priority className="h-auto w-56" />
         <div className="flex flex-col gap-2">
           <span aria-hidden className="mx-auto h-1 w-12 rounded-full bg-accent" />
           <h1 className="text-3xl font-extrabold tracking-tight">Quanto você ganha em cada produto?</h1>
-          <p className="text-muted">Entre com o e-mail e a senha que a Shogun passou para você.</p>
+          <p className="text-muted">Entre com o e-mail e a senha que o Grupo Shogun passou para você.</p>
         </div>
       </header>
       <div className="card p-5">

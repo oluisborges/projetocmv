@@ -1,20 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 
 const body = Inter({ variable: "--font-body", subsets: ["latin"] });
-const heading = Plus_Jakarta_Sans({ variable: "--font-heading", subsets: ["latin"], weight: ["600", "700", "800"] });
+const heading = Poppins({ variable: "--font-heading", subsets: ["latin"], weight: ["500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "Shogun Precificação",
-  description: "Custo, margem e preço certo do que você vende",
+  title: { default: "Precificaí", template: "%s · Precificaí" },
+  description: "Descubra quanto você ganha em cada produto: custo, margem e preço certo.",
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1c3b33",
+  themeColor: "#0f766e",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

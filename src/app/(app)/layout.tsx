@@ -26,15 +26,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       ) : null}
-      <header className={`sticky z-10 flex h-16 items-center justify-between gap-3 bg-primary px-4 text-primary-foreground shadow-md ${active?.viewingAs ? "top-[3.75rem]" : "top-0"}`}>
+      <header className={`sticky z-10 flex h-16 items-center justify-between gap-3 bg-brand-deep px-4 text-primary-foreground shadow-md ${active?.viewingAs ? "top-[3.75rem]" : "top-0"}`}>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-accent" />
         <Link href="/" className="flex min-w-0 items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-            <Image src="/brand/helmet.png" alt="Grupo Shogun" width={149} height={160} priority className="h-8 w-auto" />
-          </span>
-          <span className="flex min-w-0 flex-col leading-tight">
-            <span className="truncate font-[family-name:var(--font-heading)] text-base font-extrabold">{orgName ?? "Shogun Precificação"}</span>
-            {orgName ? <span className="text-xs font-medium text-accent">Shogun Precificação</span> : null}
+          <span className="flex min-w-0 flex-col gap-1 leading-none">
+            <Image src="/brand/logo-horizontal-escuro.svg" alt="Precificaí" width={635} height={128} priority className="h-6 w-auto self-start" />
+            {orgName ? <span className="truncate text-xs font-medium text-white/80">{orgName}</span> : null}
           </span>
         </Link>
         {/* Em "ver como", a barra é a da marmitaria: sem menu de conta nem atalhos de admin; a saída é o botão da faixa laranja. */}
