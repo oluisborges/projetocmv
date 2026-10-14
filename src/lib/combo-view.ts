@@ -1,4 +1,4 @@
-import { comboCost, comboPrice, comboUnits, type ComboGroup } from "@/lib/calc";
+import { comboCost, comboPrice, comboPriceRange, comboUnits, type ComboGroup } from "@/lib/calc";
 import { analyzePrice, type PriceAnalysis, type PricingSettings } from "@/lib/pricing-view";
 
 /** O mínimo que o combo precisa saber de uma ficha. */
@@ -30,6 +30,9 @@ export function toCalcGroups(combo: ComboShape, recipes: Map<string, ComboRecipe
 export type ComboSummary = {
   units: number;
   price: number;
+  /** Menor e maior preço possíveis (diferem quando as opções de um grupo de escolha têm preços diferentes). */
+  priceMin: number;
+  priceMax: number;
   cost: number;
   costMin: number;
   costMax: number;
@@ -54,11 +57,14 @@ export function summarizeCombo(
   const groups = toCalcGroups(combo, recipes, weights);
   const units = comboUnits(groups);
   const price = comboPrice(groups).toNumber();
+  const range = comboPriceRange(groups);
   const c = comboCost(groups);
   const cost = c.cost.toNumber();
   return {
     units,
     price,
+    priceMin: range.min.toNumber(),
+    priceMax: range.max.toNumber(),
     cost,
     costMin: c.min.toNumber(),
     costMax: c.max.toNumber(),

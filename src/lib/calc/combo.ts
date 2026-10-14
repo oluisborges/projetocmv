@@ -15,12 +15,41 @@ export type ComboGroup =
   | { kind: "fixed"; options: ComboOption[] }
   | { kind: "choice"; pickQty: number; unitPrice: Num; options: ComboOption[] };
 
-/** Preço do combo: soma do que cada marmita sai dentro dele. */
+/** Preço de uma opção de grupo de escolha: o próprio, ou o do grupo quando não tem. */
+const optionPrice = (g: Extract<ComboGroup, { kind: "choice" }>, o: ComboOption) => D(o.unitPrice ?? g.unitPrice);
+
+/**
+ * Preço esperado do combo: soma do que cada marmita sai dentro dele. Em grupo de escolha com preços diferentes,
+ * é a média dos preços pesada pelas vendas (mesmo critério do custo; sem vendas, média simples).
+ */
 export function comboPrice(groups: ComboGroup[]): Decimal {
   return groups.reduce((total, g) => {
     if (g.kind === "fixed") return g.options.reduce((s, o) => s.plus(D(o.unitPrice ?? 0).mul(o.qty ?? 0)), total);
-    return total.plus(D(g.unitPrice).mul(g.pickQty));
+    if (g.options.length === 0) return total.plus(D(g.unitPrice).mul(g.pickQty));
+    const weighted = g.options.some((o) => D(o.weight ?? 0).gt(0));
+    const weights = g.options.map((o) => (weighted ? D(o.weight ?? 0) : D(1)));
+    const totalWeight = weights.reduce((s, w) => s.plus(w), D(0));
+    const avg = g.options.reduce((s, o, i) => s.plus(optionPrice(g, o).mul(weights[i])), D(0)).div(totalWeight);
+    return total.plus(avg.mul(g.pickQty));
   }, D(0));
+}
+
+/** Menor e maior preço possíveis do combo (o cliente escolhendo sempre a opção mais barata / mais cara). */
+export function comboPriceRange(groups: ComboGroup[]): { min: Decimal; max: Decimal } {
+  let min = D(0);
+  let max = D(0);
+  for (const g of groups) {
+    if (g.kind === "fixed") {
+      const part = g.options.reduce((s, o) => s.plus(D(o.unitPrice ?? 0).mul(o.qty ?? 0)), D(0));
+      min = min.plus(part);
+      max = max.plus(part);
+      continue;
+    }
+    const prices = g.options.length === 0 ? [D(g.unitPrice)] : g.options.map((o) => optionPrice(g, o));
+    min = min.plus(prices.reduce((a, b) => (b.lt(a) ? b : a)).mul(g.pickQty));
+    max = max.plus(prices.reduce((a, b) => (b.gt(a) ? b : a)).mul(g.pickQty));
+  }
+  return { min, max };
 }
 
 /** Quantas marmitas vêm no combo. */

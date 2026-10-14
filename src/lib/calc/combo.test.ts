@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comboCost, comboPrice, comboUnits, type ComboGroup } from "./combo";
+import { comboCost, comboPrice, comboPriceRange, comboUnits, type ComboGroup } from "./combo";
 
 describe("combo fixo (kit de uma marmita só)", () => {
   // Carne moída low carb: custa R$ 11,73; kits com preço por unidade caindo (planilha da Hibiscus).
@@ -82,5 +82,29 @@ describe("combo misto", () => {
     expect(comboPrice([]).toNumber()).toBe(0);
     expect(comboUnits([])).toBe(0);
     expect(comboCost([]).cost.toNumber()).toBe(0);
+  });
+});
+
+describe("grupo de escolha com preço diferente por marmita", () => {
+  // Combo de 5: sabor A a R$ 20 e sabor B a R$ 19 (a cliente escolhe os 5 entre os dois).
+  const combo5: ComboGroup[] = [{ kind: "choice", pickQty: 5, unitPrice: 20, options: [{ cost: 9, unitPrice: 20 }, { cost: 8, unitPrice: 19 }] }];
+
+  it("sem vendas, o preço esperado é a média simples e a faixa vai de 5×B a 5×A", () => {
+    expect(comboPrice(combo5).toNumber()).toBeCloseTo(97.5, 10);
+    const r = comboPriceRange(combo5);
+    expect(r.min.toNumber()).toBe(95);
+    expect(r.max.toNumber()).toBe(100);
+  });
+
+  it("com vendas, a média pende para o que mais sai (A vende 3× mais)", () => {
+    const g: ComboGroup[] = [{ kind: "choice", pickQty: 5, unitPrice: 20, options: [{ cost: 9, unitPrice: 20, weight: 30 }, { cost: 8, unitPrice: 19, weight: 10 }] }];
+    expect(comboPrice(g).toNumber()).toBeCloseTo(5 * 19.75, 10);
+  });
+
+  it("opção sem preço próprio usa o preço do grupo", () => {
+    const g: ComboGroup[] = [{ kind: "choice", pickQty: 10, unitPrice: 19, options: [{ cost: 9 }, { cost: 8, unitPrice: 18 }] }];
+    expect(comboPrice(g).toNumber()).toBeCloseTo(185, 10);
+    expect(comboPriceRange(g).min.toNumber()).toBe(180);
+    expect(comboPriceRange(g).max.toNumber()).toBe(190);
   });
 });

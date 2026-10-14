@@ -823,7 +823,9 @@ describe("combos", () => {
     await expect(
       q(`insert into public.combo_group_options (org_id, group_id, recipe_id, qty, unit_price) values ($1,$2,$3,1,10)`, [ids.orgA, groupChoice, recipeA]),
     ).rejects.toThrow(/grupo de escolha/i);
-    await q(`insert into public.combo_group_options (org_id, group_id, recipe_id) values ($1,$2,$3)`, [ids.orgA, groupChoice, recipeA]);
+    // em grupo de escolha cada marmita pode ter preço próprio (opcional), só a quantidade não
+    await q(`insert into public.combo_group_options (org_id, group_id, recipe_id, unit_price) values ($1,$2,$3,22)`, [ids.orgA, groupChoice, recipeA]);
+    await q(`update public.combo_group_options set unit_price = null where group_id = $1`, [groupChoice]);
   });
 
   it("o tipo do grupo exige os campos certos (escolha com quantidade e preço; fixo sem)", async () => {

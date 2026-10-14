@@ -212,21 +212,29 @@ export async function updateOption(input: { optionId: string; qty?: string; unit
   const id = z.uuid().safeParse(input.optionId);
   if (!id.success) return { ok: false, error: "Marmita inválida." };
 
-  const patch: { qty?: number; unit_price?: number } = {};
+  const patch: { qty?: number; unit_price?: number | null } = {};
+  let patchNull = false;
   if (input.qty !== undefined) {
     const q = wholeNumber(input.qty);
     if (q === null) return { ok: false, error: "Digite quantas unidades (um número inteiro, como 5)." };
     patch.qty = q;
   }
-  if (input.unitPrice !== undefined) {
-    const p = money(input.unitPrice);
-    if (p === null) return { ok: false, error: "Digite quanto cada uma sai no combo, como 23,50." };
-    patch.unit_price = p;
-  }
-  if (Object.keys(patch).length === 0) return { ok: false, error: "Nada para salvar." };
-
   const supabase = await createClient();
-  const { data, error } = await supabase.from("combo_group_options").update(patch).eq("id", id.data).eq("org_id", orgId).select("qty, unit_price").maybeSingle();
+  if (input.unitPrice !== undefined) {
+    // Em grupo de escolha o preço da opção é opcional: vazio volta a valer o preço do grupo.
+    const { data: opt } = await supabase.from("combo_group_options").select("group_id").eq("id", id.data).eq("org_id", orgId).maybeSingle();
+    const { data: grp } = opt ? await supabase.from("combo_groups").select("kind").eq("id", opt.group_id).eq("org_id", orgId).maybeSingle() : { data: null };
+    if (grp?.kind === "choice" && input.unitPrice.trim() === "") {
+      patchNull = true;
+    } else {
+      const p = money(input.unitPrice);
+      if (p === null) return { ok: false, error: "Digite quanto cada uma sai no combo, como 23,50." };
+      patch.unit_price = p;
+    }
+  }
+  if (Object.keys(patch).length === 0 && !patchNull) return { ok: false, error: "Nada para salvar." };
+
+  const { data, error } = await supabase.from("combo_group_options").update(patchNull ? { ...patch, unit_price: null } : patch).eq("id", id.data).eq("org_id", orgId).select("qty, unit_price").maybeSingle();
   if (error || !data) return { ok: false, error: GENERIC };
   revalidatePath("/fichas/combos");
   return { ok: true, qty: data.qty, unit_price: data.unit_price === null ? null : Number(data.unit_price) };

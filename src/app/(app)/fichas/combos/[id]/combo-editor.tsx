@@ -80,6 +80,68 @@ function AddOption({ group, recipes, onAdded, disabled }: { group: ComboGroupRow
   );
 }
 
+/** Linha de uma marmita num grupo de ESCOLHA: preço próprio opcional (vazio = o preço do grupo). */
+function ChoiceOptionRow({
+  option,
+  recipe,
+  groupPrice,
+  canWrite,
+  onChange,
+  onRemove,
+}: {
+  option: ComboOptionRow;
+  recipe: RecipeCostInfo | undefined;
+  groupPrice: number | null;
+  canWrite: boolean;
+  onChange: (o: ComboOptionRow) => void;
+  onRemove: () => void;
+}) {
+  const shown = (v: number | null) => (v === null ? "" : money.format(v));
+  const [price, setPrice] = useState(shown(option.unit_price));
+  const [error, setError] = useState<string>();
+
+  async function save(value: string) {
+    const result = await updateOption({ optionId: option.id, unitPrice: value });
+    if (!result.ok) return setError(result.error);
+    setError(undefined);
+    setPrice(shown(result.unit_price));
+    onChange({ ...option, unit_price: result.unit_price });
+  }
+
+  return (
+    <li className="flex flex-col gap-1.5 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{recipe?.name ?? "Marmita arquivada"}</p>
+          <p className="text-xs text-muted">{recipe?.cost == null ? <span className="text-warning">sem custo</span> : `custa ${formatBRL(recipe.cost)}`}</p>
+        </div>
+        {canWrite ? (
+          <button type="button" onClick={onRemove} aria-label="Remover opção" className="flex size-11 shrink-0 items-center justify-center rounded-xl text-xl text-muted active:bg-background">
+            ×
+          </button>
+        ) : null}
+      </div>
+      <label className="flex items-center justify-between gap-3 text-xs font-medium text-muted">
+        Sai por (R$)
+        <input
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          onBlur={() => price.trim() !== shown(option.unit_price) && void save(price)}
+          inputMode="decimal"
+          disabled={!canWrite}
+          placeholder={groupPrice === null ? "" : `${money.format(groupPrice)} (do grupo)`}
+          className={`${small} w-40`}
+        />
+      </label>
+      {error ? (
+        <p role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      ) : null}
+    </li>
+  );
+}
+
 /** Linha de uma marmita num grupo FIXO: quantas unidades e quanto cada uma sai dentro do combo. */
 function FixedOptionRow({ option, recipe, canWrite, onChange, onRemove }: { option: ComboOptionRow; recipe: RecipeCostInfo | undefined; canWrite: boolean; onChange: (o: ComboOptionRow) => void; onRemove: () => void }) {
   const [qty, setQty] = useState(String(option.qty ?? 1));
@@ -196,7 +258,7 @@ function GroupCard({ group, recipes, canWrite, onChange, onDelete }: { group: Co
             <input value={pick} onChange={(e) => setPick(e.target.value)} onBlur={() => pick.trim() !== String(group.pick_qty ?? 1) && void save({ pickQty: pick })} inputMode="numeric" disabled={!canWrite} className={small} />
           </label>
           <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-            Cada uma sai por (R$)
+            Preço de cada uma (R$)
             <input value={price} onChange={(e) => setPrice(e.target.value)} onBlur={() => price.trim() !== money.format(group.unit_price ?? 0) && void save({ unitPrice: price })} inputMode="decimal" disabled={!canWrite} className={small} />
           </label>
         </div>
@@ -206,19 +268,15 @@ function GroupCard({ group, recipes, canWrite, onChange, onDelete }: { group: Co
         <ul className="divide-y divide-border rounded-xl border border-border px-3">
           {group.options.map((o) =>
             choice ? (
-              <li key={o.id} className="flex items-center justify-between gap-2 py-2.5">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{byId.get(o.recipe_id)?.name ?? "Marmita arquivada"}</p>
-                  <p className="text-xs text-muted">
-                    {byId.get(o.recipe_id)?.cost == null ? <span className="text-warning">sem custo</span> : `custa ${formatBRL(byId.get(o.recipe_id)!.cost!)}`}
-                  </p>
-                </div>
-                {canWrite ? (
-                  <button type="button" onClick={() => void dropOption(o)} aria-label="Remover opção" className="flex size-11 shrink-0 items-center justify-center rounded-xl text-xl text-muted active:bg-background">
-                    ×
-                  </button>
-                ) : null}
-              </li>
+              <ChoiceOptionRow
+                key={o.id}
+                option={o}
+                recipe={byId.get(o.recipe_id)}
+                groupPrice={group.unit_price}
+                canWrite={canWrite}
+                onChange={(next) => onChange({ ...group, options: group.options.map((x) => (x.id === next.id ? next : x)) })}
+                onRemove={() => void dropOption(o)}
+              />
             ) : (
               <FixedOptionRow
                 key={o.id}
@@ -311,6 +369,11 @@ export function ComboEditor({ combo, initialGroups, recipes, weights, settings, 
                 </Hint>
               ) : null}
             </p>
+            {summary.priceMax - summary.priceMin > 0.005 ? (
+              <p className="tabular text-xs text-muted">
+                Varia de {formatBRL(summary.priceMin)} a {formatBRL(summary.priceMax)}, conforme o que o cliente escolhe. O valor grande é a média, dando mais peso ao que mais vende.
+              </p>
+            ) : null}
             {at ? (
               <p className="tabular text-xs text-muted">
                 Depois de tudo, {at.net >= 0 ? "sobra" : "falta"} <strong className="text-foreground">{formatBRL(Math.abs(at.net))}</strong> por combo
@@ -363,7 +426,7 @@ export function ComboEditor({ combo, initialGroups, recipes, weights, settings, 
             </button>
             <button type="button" onClick={() => void newGroup("choice")} className="flex flex-col items-start gap-0.5 rounded-xl border border-border px-4 py-3 text-left active:bg-background">
               <span className="font-semibold">O cliente escolhe</span>
-              <span className="text-xs text-muted">Por exemplo, &quot;escolha 10 entre estes sabores&quot;, com o mesmo preço para cada marmita.</span>
+              <span className="text-xs text-muted">Por exemplo, &quot;escolha 10 entre estes sabores&quot;, com o preço de cada marmita (pode ser igual ou diferente por sabor).</span>
             </button>
             <button type="button" onClick={() => setAdding(false)} className="h-11 text-sm font-semibold text-muted">
               Cancelar
