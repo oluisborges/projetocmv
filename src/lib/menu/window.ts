@@ -31,11 +31,11 @@ export function shouldChain(input: { phase: "history" | "done"; pending: number;
 
 /**
  * A importação parou no meio? Tem trabalho (carga do histórico ou fila), a conexão está ativa, ninguém está rodando agora
- * e o último ciclo foi há mais de 90 s. Quem abre as telas do cardápio "cutuca" essas conexões para elas continuarem.
+ * e o último ciclo foi há mais de 45 s (um ciclo em andamento tem trava). Quem abre as telas do cardápio "cutuca" essas conexões para elas continuarem.
  */
 export function needsKick(c: { status: string; phase: "history" | "done"; pending_orders: number; locked_until: string | null; last_sync_at: string | null }, now: Date = new Date()): boolean {
   if (c.status !== "connected") return false;
   if (c.phase !== "history" && c.pending_orders <= 0) return false;
   if (c.locked_until && Date.parse(c.locked_until) > now.getTime()) return false;
-  return !c.last_sync_at || now.getTime() - Date.parse(c.last_sync_at) > 90_000;
+  return !c.last_sync_at || now.getTime() - Date.parse(c.last_sync_at) > 45_000;
 }

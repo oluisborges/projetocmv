@@ -3,9 +3,23 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireMember } from "@/lib/auth";
+import { isImporting, loadMenuStatus } from "@/lib/menu-data";
+import { kickStalled } from "@/lib/menu/server/kick";
 import { createClient } from "@/lib/supabase/server";
 
 export type LinkResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Batimento da tela enquanto o cardápio importa: devolve o andamento e, se a importação parou no meio, retoma.
+ * A marmitaria vem da sessão; só mexe nas conexões dela.
+ */
+export async function resumeMenuImport(): Promise<{ importing: boolean; pending: number }> {
+  const { orgId } = await requireMember();
+  const status = await loadMenuStatus(orgId);
+  const importing = isImporting(status);
+  if (importing) await kickStalled(status);
+  return { importing, pending: status.reduce((n, c) => n + c.pending_orders, 0) };
+}
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 

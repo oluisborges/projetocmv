@@ -16,7 +16,8 @@ import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { createClient } from "@/lib/supabase/server";
 import { PeriodForm, SalesRow } from "./month-forms";
-import { MenuProfitCard, MenuSalesCard } from "@/components/menu-cards";
+import { MenuProfitCard } from "@/components/menu-cards";
+import { MenuSalesCard } from "@/components/menu-sales-card";
 
 export const metadata = { title: "Resultado do mês" };
 
@@ -155,7 +156,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
-      {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} importing={isImporting(menuStatus)} /> : null}
+      {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} importing={isImporting(menuStatus)} pending={menuStatus.reduce((n, c) => n + c.pending_orders, 0)} /> : null}
 
       {canWrite ? (
         <section className="flex flex-col gap-3">

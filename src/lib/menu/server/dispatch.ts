@@ -8,15 +8,21 @@ import "server-only";
 export async function dispatchRun(origin: string, connectionId: string, depth = 0): Promise<boolean> {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
-  try {
-    const res = await fetch(`${origin}/api/menu/run/${connectionId}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${secret}`, "x-chain-depth": String(depth) },
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    });
-    return res.status === 202;
-  } catch {
-    return false;
+  // duas tentativas: uma falha passageira de rede não pode quebrar a corrente de ciclos
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch(`${origin}/api/menu/run/${connectionId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${secret}`, "x-chain-depth": String(depth) },
+        cache: "no-store",
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (res.status === 202) return true;
+      console.warn(JSON.stringify({ menu: "dispatch", connectionId, depth, attempt, status: res.status }));
+    } catch (e) {
+      console.warn(JSON.stringify({ menu: "dispatch", connectionId, depth, attempt, error: e instanceof Error ? e.message : String(e) }));
+    }
+    await new Promise((r) => setTimeout(r, 1000));
   }
+  return false;
 }

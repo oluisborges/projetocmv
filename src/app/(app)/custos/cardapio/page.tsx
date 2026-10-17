@@ -11,6 +11,7 @@ import { menuLookbackStart } from "@/lib/menu/window";
 import { currentMonthStart, monthBounds } from "@/lib/month-view";
 import { activeUnit } from "@/lib/pricing-data";
 import { loadRecipes } from "@/lib/recipes-data";
+import { ImportProgress } from "@/components/import-progress";
 import type { TargetOption } from "./link-row";
 import { LinksBrowser, type LinkItem } from "./links-browser";
 
@@ -100,12 +101,7 @@ export default async function MenuLinksPage() {
     <>
       {header}
 
-      {importing ? (
-        <p role="status" className="rounded-xl bg-warning/10 p-3 text-sm">
-          <strong>Ainda importando seus pedidos</strong>
-          {pendingOrders > 0 ? ` (faltam ${pendingOrders})` : ""}. As vendas mais recentes podem aparecer como “sem vendas” até terminar. Isso continua sozinho; volte daqui a pouco.
-        </p>
-      ) : null}
+      <ImportProgress initialImporting={importing} initialPending={pendingOrders} />
 
       <section className="flex flex-col gap-2 card p-4">
         {products.length === 0 ? (

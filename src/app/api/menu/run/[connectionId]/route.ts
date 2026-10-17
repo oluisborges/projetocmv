@@ -29,7 +29,9 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ connec
   after(async () => {
     const r = await runConnection(db, connectionId, Date.now() + BUDGET_MS);
     // se este ciclo morrer antes daqui, a retomada vem do "kick" (telas abertas) e do cron diário
-    if (shouldChain({ phase: r.phase, pending: r.pending, progressed: r.progressed, error: Boolean(r.error), depth })) await dispatchRun(origin, connectionId, depth + 1);
+    const chain = shouldChain({ phase: r.phase, pending: r.pending, progressed: r.progressed, error: Boolean(r.error), depth });
+    console.log(JSON.stringify({ menu: "cycle", connectionId, depth, saved: r.ordersSaved, pending: r.pending, phase: r.phase, progressed: r.progressed, error: r.error ?? null, chain }));
+    if (chain) await dispatchRun(origin, connectionId, depth + 1);
   });
   return NextResponse.json({ ok: true }, { status: 202 });
 }
