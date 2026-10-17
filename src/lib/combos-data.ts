@@ -1,5 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { loadMenuRecipeSales } from "@/lib/menu-data";
+import { currentMonthStart, lastMonths, monthBounds } from "@/lib/month-view";
 import { loadCurrentPrices } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
@@ -75,13 +77,19 @@ export async function loadRecipeCosts(orgId: string, unitId: string, safetyMargi
   });
 }
 
-/** Vendas dos últimos meses informados (até 3) por ficha avulsa: os pesos da média do custo nos grupos de escolha. */
+/**
+ * Vendas dos últimos meses (até 3) por ficha: os pesos da média do custo nos grupos de escolha e das médias do painel.
+ * Soma o que o dono digitou (marmitas avulsas) com o que o cardápio vendeu (mês atual + 2 anteriores).
+ */
 export async function loadSalesWeights(unitId: string): Promise<Map<string, number>> {
   const supabase = await createClient();
-  const { data: periods } = await supabase.from("periods").select("id").eq("unit_id", unitId).gt("revenue", 0).order("month", { ascending: false }).limit(3);
   const weights = new Map<string, number>();
-  if (!periods || periods.length === 0) return weights;
-  const { data: sales } = await supabase.from("period_sales").select("recipe_id, qty_sold").in("period_id", periods.map((p) => p.id as string));
-  for (const s of sales ?? []) weights.set(s.recipe_id as string, (weights.get(s.recipe_id as string) ?? 0) + Number(s.qty_sold));
+  const { data: periods } = await supabase.from("periods").select("id").eq("unit_id", unitId).gt("revenue", 0).order("month", { ascending: false }).limit(3);
+  if (periods && periods.length > 0) {
+    const { data: sales } = await supabase.from("period_sales").select("recipe_id, qty_sold").in("period_id", periods.map((p) => p.id as string));
+    for (const s of sales ?? []) weights.set(s.recipe_id as string, (weights.get(s.recipe_id as string) ?? 0) + Number(s.qty_sold));
+  }
+  const since = monthBounds(lastMonths(currentMonthStart(), 3)[2]).start;
+  for (const [recipeId, s] of await loadMenuRecipeSales(unitId, since, new Date())) weights.set(recipeId, (weights.get(recipeId) ?? 0) + s.units);
   return weights;
 }

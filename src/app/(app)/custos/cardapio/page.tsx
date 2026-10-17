@@ -70,15 +70,15 @@ export default async function MenuLinksPage() {
   // os mais vendidos primeiro (no mês, depois no período todo); sem venda, por nome
   const sorted = [...products].sort(
     (a, b) =>
-      (soldBy.get(b.id)?.revenue ?? 0) - (soldBy.get(a.id)?.revenue ?? 0) ||
-      (soldInRange.get(b.id)?.revenue ?? 0) - (soldInRange.get(a.id)?.revenue ?? 0) ||
+      (soldBy.get(b.id)?.net ?? 0) - (soldBy.get(a.id)?.net ?? 0) ||
+      (soldInRange.get(b.id)?.net ?? 0) - (soldInRange.get(a.id)?.net ?? 0) ||
       a.name.localeCompare(b.name, "pt-BR"),
   );
 
   const pendingCount = products.filter((p) => targetOf(p) === "").length;
-  const totalRevenue = menu.sales.reduce((s, x) => s + x.revenue, 0);
+  const totalRevenue = menu.sales.reduce((s, x) => s + x.net, 0);
   const linkedIds = new Set(products.filter((p) => targetOf(p) !== "").map((p) => p.id));
-  const linkedRevenue = menu.sales.filter((s) => linkedIds.has(s.product_id)).reduce((s, x) => s + x.revenue, 0);
+  const linkedRevenue = menu.sales.filter((s) => linkedIds.has(s.product_id)).reduce((s, x) => s + x.net, 0);
   const coverage = totalRevenue > 0 ? linkedRevenue / totalRevenue : null;
 
   const items: LinkItem[] = sorted.map((p) => {
@@ -91,8 +91,8 @@ export default async function MenuLinksPage() {
       kind: p.kind,
       target: targetOf(p),
       units: p.units_per_sale,
-      sold: sold ? { qty: sold.qty, revenue: sold.revenue } : null,
-      soldRange: inRange ? { qty: inRange.qty, revenue: inRange.revenue } : null,
+      sold: sold ? { qty: sold.qty, revenue: sold.net } : null,
+      soldRange: inRange ? { qty: inRange.qty, revenue: inRange.net } : null,
       suggestion: sug ? { value: sug.id, label: label.get(sug.id) ?? sug.name } : null,
     };
   });
@@ -127,6 +127,14 @@ export default async function MenuLinksPage() {
           </p>
         )}
       </section>
+
+      <p className="text-xs text-muted">
+        Os valores aqui já são o que os clientes realmente pagaram, com a parte do cupom de cada pedido descontada. O CardápioWeb e a Prefiro cobram mensalidade fixa, sem porcentagem por pedido: cadastre a mensalidade em{" "}
+        <Link href="/custos" className="font-semibold text-primary">
+          Custos fixos
+        </Link>
+        .
+      </p>
 
       {products.length > 0 ? <LinksBrowser items={items} recipes={recipeOptions} combos={comboOptions} canWrite={canWrite} /> : null}
     </>

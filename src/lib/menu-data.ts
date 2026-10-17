@@ -20,7 +20,11 @@ export const hasMenuConnection = cache(async (orgId: string): Promise<boolean> =
 
 export type MenuMonthData = {
   orders: number;
+  /** O que os clientes pagaram (total dos pedidos, já com cupom, entrega e taxas). */
   revenue: number;
+  /** Cupons e descontos dados nos pedidos. */
+  discount: number;
+  /** Vendas por produto; `net` é o valor pago pelo produto já com a parte do cupom do pedido. */
   sales: MenuProductSales[];
 };
 
@@ -37,16 +41,40 @@ export async function loadMenuRange(unitId: string, start: Date, end: Date): Pro
     supabase.rpc("menu_month_orders", { p_unit: unitId, p_start: start.toISOString(), p_end: end.toISOString() }),
     supabase.rpc("menu_month_lines", { p_unit: unitId, p_start: start.toISOString(), p_end: end.toISOString() }),
   ]);
-  const t = (totals as { orders: number | string; revenue: number | string }[] | null)?.[0];
+  const t = (totals as { orders: number | string; revenue: number | string; discount: number | string }[] | null)?.[0];
   return {
     orders: Number(t?.orders ?? 0),
     revenue: Number(t?.revenue ?? 0),
-    sales: ((lines as { product_id: string; qty: number | string; revenue: number | string }[] | null) ?? []).map((l) => ({
+    discount: Number(t?.discount ?? 0),
+    sales: ((lines as { product_id: string; qty: number | string; revenue: number | string; net_revenue: number | string }[] | null) ?? []).map((l) => ({
       product_id: l.product_id,
       qty: Number(l.qty),
       revenue: Number(l.revenue),
+      net: Number(l.net_revenue),
     })),
   };
+}
+
+export type MenuRecipeSales = { units: number; gross: number; net: number };
+
+/** Marmitas vendidas por ficha no intervalo, com o valor pago (já descontado o cupom). Base do preço médio vendido e dos pesos das médias. */
+export async function loadMenuRecipeSales(unitId: string, start: Date, end: Date): Promise<Map<string, MenuRecipeSales>> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("menu_recipe_sales", { p_unit: unitId, p_start: start.toISOString(), p_end: end.toISOString() });
+  return new Map(
+    ((data as { recipe_id: string; units: number | string; gross: number | string; net: number | string }[] | null) ?? []).map((r) => [
+      r.recipe_id,
+      { units: Number(r.units), gross: Number(r.gross), net: Number(r.net) },
+    ]),
+  );
+}
+
+/** Quanto, em média, cada marmita foi paga no cardápio nos últimos 30 dias (já com o cupom). Só fichas com venda no período. */
+export async function loadMenuAveragePrices(unitId: string, now: Date = new Date()): Promise<Map<string, { price: number; units: number }>> {
+  const sales = await loadMenuRecipeSales(unitId, new Date(now.getTime() - 30 * 86_400_000), now);
+  const out = new Map<string, { price: number; units: number }>();
+  for (const [recipeId, s] of sales) if (s.units > 0 && s.net > 0) out.set(recipeId, { price: s.net / s.units, units: s.units });
+  return out;
 }
 
 /** Todos os produtos já vistos no cardápio da marmitaria, com o vínculo atual. */

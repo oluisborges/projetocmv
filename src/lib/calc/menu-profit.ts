@@ -82,7 +82,8 @@ export function summarizeMenuMonth(lines: MenuLine[], variablePct: Num = 0): Men
 export const MIN_ESTIMATE_COVERAGE = 0.5;
 
 export type OutsideEstimate =
-  | { ok: true; contribution: Decimal; pct: Decimal }
+  /** `source`: "mix" = calculado com as quantidades por ficha e os preços cadastrados; "menu" = mesma margem do cardápio. */
+  | { ok: true; contribution: Decimal; pct: Decimal; source: "mix" | "menu" }
   | { ok: false; reason: "no-outside-revenue" | "no-margin" | "low-coverage" };
 
 /**
@@ -93,7 +94,58 @@ export function estimateOutside(outsideRevenue: Num, menu: Pick<MenuMonth, "cont
   if (D(outsideRevenue).lte(0)) return { ok: false, reason: "no-outside-revenue" };
   if (menu.contributionPct === null) return { ok: false, reason: "no-margin" };
   if (menu.coverage === null || menu.coverage.lt(MIN_ESTIMATE_COVERAGE)) return { ok: false, reason: "low-coverage" };
-  return { ok: true, contribution: toCents(D(outsideRevenue).mul(menu.contributionPct)), pct: menu.contributionPct };
+  return { ok: true, contribution: toCents(D(outsideRevenue).mul(menu.contributionPct)), pct: menu.contributionPct, source: "menu" };
+}
+
+/** Uma ficha vendida por fora do cardápio: quantas unidades, o preço que o dono cadastrou e o custo da ficha (nulos = não conta). */
+export type OutsideDish = { qty: Num; price: Num | null; cost: Num | null };
+
+export type OutsideMix = {
+  /** Quantidade × preço cadastrado, só das fichas com preço. */
+  revenue: Decimal;
+  /** Receita das fichas que têm preço E custo: a base da margem. */
+  costedRevenue: Decimal;
+  contribution: Decimal;
+  /** Contribuição ÷ receita com custo; `null` se não há base. */
+  pct: Decimal | null;
+};
+
+/** Venda por fora com quantidades por ficha: o valor vem do preço que o dono cadastrou no sistema (não do cardápio). */
+export function summarizeOutsideMix(dishes: OutsideDish[], variablePct: Num = 0): OutsideMix {
+  let revenue = D(0);
+  let costedRevenue = D(0);
+  let cost = D(0);
+  for (const d of dishes) {
+    const qty = D(d.qty);
+    if (qty.lte(0) || d.price === null || D(d.price).lte(0)) continue;
+    const r = qty.mul(d.price);
+    revenue = revenue.plus(r);
+    if (d.cost !== null) {
+      costedRevenue = costedRevenue.plus(r);
+      cost = cost.plus(qty.mul(d.cost));
+    }
+  }
+  const contribution = costedRevenue.minus(cost).minus(costedRevenue.mul(variablePct));
+  return { revenue, costedRevenue, contribution, pct: costedRevenue.isZero() ? null : contribution.div(costedRevenue) };
+}
+
+/**
+ * Lucro da venda por fora. Se o dono informou as quantidades por ficha, vale o mix dele (preço cadastrado × custo da ficha);
+ * senão, a margem do cardápio. O valor vendido é o que ele digitou; sem valor digitado, o das quantidades × preços cadastrados.
+ */
+export function estimateOutsideSales(input: {
+  typedRevenue: Num;
+  dishes: OutsideDish[];
+  menu: Pick<MenuMonth, "contributionPct" | "coverage">;
+  variablePct: Num;
+}): { revenue: Decimal; fromDishes: boolean; estimate: OutsideEstimate } {
+  const mix = summarizeOutsideMix(input.dishes, input.variablePct);
+  const typed = D(input.typedRevenue);
+  const revenue = typed.gt(0) ? typed : mix.revenue;
+  const fromDishes = typed.lte(0) && mix.revenue.gt(0);
+  if (revenue.lte(0)) return { revenue, fromDishes, estimate: { ok: false, reason: "no-outside-revenue" } };
+  if (mix.pct !== null) return { revenue, fromDishes, estimate: { ok: true, contribution: toCents(revenue.mul(mix.pct)), pct: mix.pct, source: "mix" } };
+  return { revenue, fromDishes, estimate: estimateOutside(revenue, input.menu) };
 }
 
 export type MonthTotals = {

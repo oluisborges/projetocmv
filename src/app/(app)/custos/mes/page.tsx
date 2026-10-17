@@ -11,7 +11,7 @@ import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { normalizeSnapshot, summarizeSamples } from "@/lib/history-view";
 import { currentMonthStart, lastMonths, monthBounds, monthLabel, monthStart, summarizeMonth } from "@/lib/month-view";
-import { loadPricingContext } from "@/lib/pricing-data";
+import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { createClient } from "@/lib/supabase/server";
@@ -41,11 +41,12 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
   }
 
   const supabase = await createClient();
-  const [{ data: period }, staff, ingredients, { recipes, items }] = await Promise.all([
+  const [{ data: period }, staff, ingredients, { recipes, items }, prices] = await Promise.all([
     supabase.from("periods").select("id, revenue, purchases").eq("unit_id", ctx.unit.id).eq("month", month).maybeSingle(),
     loadStaff(ctx.unit.id),
     loadIngredients(),
     loadRecipes(),
+    loadCurrentPrices(ctx.unit.id), // preço que o dono cadastrou: vale para a venda por fora
   ]);
   const { data: salesRows } = period
     ? await supabase.from("period_sales").select("recipe_id, qty_sold").eq("period_id", period.id)
@@ -91,17 +92,25 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
   const menuStatus = connected ? await loadMenuStatus(orgId) : [];
   await kickStalled(menuStatus); // importação parada? quem abre esta tela a retoma
   const menuOn = usesMenu(connected, menuData?.orders ?? 0);
+  // Os cardápios (CardápioWeb e Prefiro) cobram mensalidade fixa, não % por pedido: aqui só entram os impostos e as outras taxas.
+  // A mensalidade é um custo fixo e entra em Custos fixos.
+  const menuVariablePct = ctx.settings.taxPct + (ctx.settings.otherPct ?? 0);
   const menuView = menuOn
     ? buildMenuMonth({
         products: await loadMenuProducts(orgId),
         sales: menuData!.sales,
         recipes: new Map(dishes.map((d) => [d.id, { cost: d.cost }])),
         combos: new Map(comboRows.map((c) => [c.id, { cost: c.cost, units: c.units }])),
-        variablePct: ctx.settings.taxPct + feePct,
+        variablePct: menuVariablePct,
       })
     : null;
 
-  const outsideRevenue = Number(period?.revenue ?? 0);
+  // Venda por fora: vale o que o dono digitou; com quantidades por ficha, o lucro sai do preço que ele cadastrou e do custo da ficha.
+  const typedOutside = Number(period?.revenue ?? 0);
+  const profit = menuView
+    ? menuProfit(menuView, { typedRevenue: typedOutside, dishes: dishes.map((d) => ({ qty: d.qty, price: prices.get(d.id) ?? null, cost: d.cost })), variablePct: menuVariablePct })
+    : null;
+  const outsideRevenue = profit ? profit.outsideRevenue : typedOutside;
   const revenue = outsideRevenue + (menuOn ? menuData!.revenue : 0);
   const purchases = Number(period?.purchases ?? 0);
   const summary = summarizeMonth({
@@ -156,12 +165,12 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
-      {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} importing={isImporting(menuStatus)} pending={menuStatus.reduce((n, c) => n + c.pending_orders, 0)} /> : null}
+      {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} discount={menuData.discount} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} importing={isImporting(menuStatus)} pending={menuStatus.reduce((n, c) => n + c.pending_orders, 0)} /> : null}
 
       {canWrite ? (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{menuOn ? "1. Vendas por fora do cardápio e compras do mês" : "1. Faturamento e compras do mês"}</h2>
-          <PeriodForm month={month} revenue={outsideRevenue} purchases={purchases} outside={menuOn} />
+          <PeriodForm month={month} revenue={typedOutside} purchases={purchases} outside={menuOn} />
         </section>
       ) : null}
 
@@ -194,7 +203,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
         </section>
       ) : null}
 
-      {menuOn && menuView ? <MenuProfitCard summary={menuView.summary} outside={menuProfit(menuView, outsideRevenue).outside} outsideRevenue={outsideRevenue} /> : null}
+      {menuOn && menuView ? <MenuProfitCard summary={menuView.summary} outside={profit!.outside} outsideRevenue={outsideRevenue} outsideFromDishes={profit!.outsideFromDishes} fixedCosts={ctx.fixedTotal} partialMonth={month === now} /> : null}
 
       {/* resultado depois dos passos de preenchimento */}
       {hasData ? (

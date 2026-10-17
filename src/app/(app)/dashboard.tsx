@@ -3,6 +3,7 @@ import { MarginBadge } from "@/components/margin-badge";
 import { MenuProfitCard } from "@/components/menu-cards";
 import { formatBRL, formatPct } from "@/lib/format";
 import type { Dashboard } from "@/lib/dashboard-data";
+import { currentMonthStart } from "@/lib/month-view";
 
 const card = "flex flex-col gap-1 card p-4";
 
@@ -139,7 +140,14 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
       ) : null}
 
       {variant === "full" && data.menu ? (
-        <MenuProfitCard summary={data.menu.summary} outside={data.menu.outside} outsideRevenue={data.menu.outsideRevenue} />
+        <MenuProfitCard
+          summary={data.menu.summary}
+          outside={data.menu.outside}
+          outsideRevenue={data.menu.outsideRevenue}
+          outsideFromDishes={data.menu.outsideFromDishes}
+          fixedCosts={data.menu.fixedCosts}
+          partialMonth={data.month.start === currentMonthStart()}
+        />
       ) : null}
 
       {alerts.length > 0 ? (

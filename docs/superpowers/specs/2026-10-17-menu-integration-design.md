@@ -62,3 +62,12 @@ Credenciais ficam em `menu_credentials`, tabela com RLS ligada e **nenhuma polic
 - **Recuperação:** conexão sem conferir há mais de 14 dias volta a listar por janelas. Chamadas ao provedor têm timeout de 20 s. Chave recusada pausa só aquela conexão (status "erro"); o painel Shogun mostra "Atrasado" se passar de 30 h sem conferir.
 - **Banco:** as telas leem totais por funções `security definer` que checam a marmitaria uma vez por chamada (sem RLS linha a linha). Medido com 107 mil pedidos e 167 mil linhas: totais do mês em 2–11 ms; série de 13 meses em ~100 ms.
 - **Limites conhecidos:** plano Hobby da Vercel roda o cron em qualquer minuto da hora marcada (não exatamente 00:00) e é para uso não comercial; Supabase Free tem 500 MB e não tem backup diário. Pedido que for cancelado depois de fechado no CardápioWeb só é pego pelo webhook (a listagem do histórico traz só os fechados).
+
+## Cupom, preço e despesas (decisões de 18/10/2026)
+- **Cupom de desconto:** o desconto vale para o pedido inteiro, então cada linha leva a mesma fração: `valor pago = valor da linha × (1 − desconto ÷ soma das linhas do pedido)`. Não usamos o total do pedido nessa conta, porque ele não fecha com as linhas (a Prefiro soma a entrega; o CardápioWeb soma taxas fora das linhas). O lucro, a cobertura e o preço médio usam o valor pago. Exemplo: itens R$ 100, cupom R$ 10, uma dupla de R$ 60 sai a R$ 54.
+- **Venda por fora:** o preço vem do que o dono cadastrou (não do cardápio). Com quantidades por ficha, o lucro é `quantidade × (preço cadastrado − custo da ficha − impostos)`; sem quantidades, usa a margem do cardápio. Sem total digitado, o valor vendido é quantidade × preço cadastrado.
+- **Aviso de preço médio:** na Precificação, cada marmita mostra quanto saiu em média no cardápio nos últimos 30 dias (já com cupom). É só aviso (com botão "Usar este preço"); o preço que vale continua sendo o do dono.
+- **Taxas:** os cardápios cobram mensalidade fixa, não porcentagem por pedido. A conta do cardápio usa só impostos e "outras taxas"; a mensalidade é custo fixo (Custos fixos).
+- **Pesos das médias:** as marmitas vendidas pelo cardápio (mês atual + 2 anteriores) somam às digitadas nos pesos do painel e dos grupos de escolha dos combos.
+- **Despesas fixas:** "Sobra no mês" = lucro do cardápio + lucro da venda por fora − custos fixos e equipe do mês; mês em andamento avisa que as despesas são do mês inteiro.
+- **Fora do escopo:** insumos seguem manuais; histórico de meses fechados não é regravado.

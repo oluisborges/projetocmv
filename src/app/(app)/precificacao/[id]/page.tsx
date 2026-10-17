@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireMember } from "@/lib/auth";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, formatNumber } from "@/lib/format";
+import { hasMenuConnection, loadMenuAveragePrices } from "@/lib/menu-data";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipe } from "@/lib/recipes-data";
@@ -20,6 +21,7 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
   if (!ctx || !loaded) notFound();
 
   const prices = await loadCurrentPrices(ctx.unit.id);
+  const menuAverage = (await hasMenuConnection(orgId)) ? (await loadMenuAveragePrices(ctx.unit.id)).get(id) : undefined;
   const byId = new Map(ingredients.map((i) => [i.id, i]));
   const { recipe, items } = loaded;
 
@@ -47,6 +49,22 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
           <p className="text-sm text-warning">{view.missingPrices} insumo(s) sem preço: o custo e a margem estão incompletos.</p>
         ) : null}
       </section>
+
+      {menuAverage ? (
+        <p className="card p-4 text-sm">
+          No cardápio, esta marmita saiu a <strong className="tabular">{formatBRL(menuAverage.price)}</strong> em média nos últimos 30 dias ({formatNumber(menuAverage.units, 0)} unidades,
+          já descontado o cupom de cada pedido).
+          {prices.get(recipe.id) ? (
+            <>
+              {" "}
+              Seu preço cadastrado é <strong className="tabular">{formatBRL(prices.get(recipe.id)!)}</strong>.
+            </>
+          ) : (
+            " Você ainda não cadastrou um preço para ela."
+          )}{" "}
+          <span className="text-muted">É só um aviso: o preço que vale nas contas continua sendo o que você cadastrar.</span>
+        </p>
+      ) : null}
 
       {view.ok ? (
         <Simulator

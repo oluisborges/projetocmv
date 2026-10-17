@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireMember } from "@/lib/auth";
 import { computeRecipe, recipeCostSettings, type CostItem } from "@/lib/recipe-cost";
+import { hasMenuConnection, loadMenuAveragePrices } from "@/lib/menu-data";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { PricingList, type PricingRowData } from "./pricing-list";
@@ -22,6 +23,8 @@ export default async function PricingPage() {
 
   const [ingredients, { recipes, items }, prices] = await Promise.all([loadIngredients(), loadRecipes(), loadCurrentPrices(ctx.unit.id)]);
   const byId = new Map(ingredients.map((i) => [i.id, i]));
+  // Cardápio digital: quanto cada marmita está saindo (média paga, já com cupom). Só aviso; o preço é do dono.
+  const menuAverage = (await hasMenuConnection(orgId)) ? await loadMenuAveragePrices(ctx.unit.id) : new Map<string, { price: number; units: number }>();
 
   const rows: PricingRowData[] = recipes.map((r) => {
     const costItems: CostItem[] = items
@@ -34,6 +37,7 @@ export default async function PricingPage() {
       cost: view.ok ? view.cost.costPerPortion.toNumber() : null,
       missingPrices: view.ok ? view.missingPrices : 0,
       currentPrice: prices.get(r.id) ?? null,
+      menuAverage: menuAverage.get(r.id) ?? null,
     };
   });
 

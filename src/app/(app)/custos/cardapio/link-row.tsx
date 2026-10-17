@@ -64,7 +64,7 @@ export function LinkRow({ product, sold, soldRange = null, rangeLabel = "4 meses
           <p className="text-xs text-muted">
             {sold ? (
               <>
-                vendeu <strong className="tabular text-foreground">{formatNumber(sold.qty, 0)}</strong> este mês · {formatBRL(sold.revenue)}
+                vendeu <strong className="tabular text-foreground">{formatNumber(sold.qty, 0)}</strong> este mês · {formatBRL(sold.revenue)} pagos
               </>
             ) : (
               "sem vendas este mês"

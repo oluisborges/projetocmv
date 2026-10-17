@@ -16,6 +16,8 @@ export type PricingRowData = {
   cost: number | null;
   missingPrices: number;
   currentPrice: number | null;
+  /** Quanto, em média, cada marmita foi paga no cardápio nos últimos 30 dias (já com cupom). Só aviso: o preço continua sendo o do dono. */
+  menuAverage?: { price: number; units: number } | null;
 };
 
 type Channel = { id: string; name: string; fee_pct: number };
@@ -60,6 +62,32 @@ function Row({ row, settings, feePct, canWrite, configured }: { row: PricingRowD
         ) : (
           <p className="text-xs text-warning">Ficha incompleta: termine em Fichas para ver o preço.</p>
         )}
+        {row.menuAverage ? (
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            <span className="text-muted">
+              No cardápio saiu a <strong className="tabular text-foreground">{formatBRL(row.menuAverage.price)}</strong> em média (30 dias, já com cupom)
+              {saved && Math.abs(row.menuAverage.price - saved) / saved >= 0.03 ? (
+                <span className={row.menuAverage.price < saved ? "text-warning" : "text-success"}>
+                  {" "}
+                  · {formatBRL(Math.abs(row.menuAverage.price - saved))} {row.menuAverage.price < saved ? "abaixo" : "acima"} do seu preço
+                </span>
+              ) : null}
+            </span>
+            {canWrite && (!saved || Math.abs(row.menuAverage.price - saved) / saved >= 0.03) ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const v = priceFmt.format(row.menuAverage!.price);
+                  setText(v);
+                  void save(v);
+                }}
+                className="h-11 rounded-lg border border-border bg-surface px-3 font-semibold text-primary"
+              >
+                Usar este preço
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {analysis ? (

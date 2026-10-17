@@ -26,13 +26,13 @@ describe("visão do mês no cardápio", () => {
     combos,
     variablePct: 0.06,
     sales: [
-      { product_id: "p1", qty: 30, revenue: 597 },
-      { product_id: "p2", qty: 20, revenue: 458 },
-      { product_id: "p3", qty: 10, revenue: 400 },
-      { product_id: "p4", qty: 2, revenue: 380 },
-      { product_id: "p5", qty: 15, revenue: 90 },
-      { product_id: "p6", qty: 5, revenue: 120 },
-      { product_id: "p7", qty: 4, revenue: 80 },
+      { product_id: "p1", qty: 30, revenue: 597, net: 597 },
+      { product_id: "p2", qty: 20, revenue: 458, net: 458 },
+      { product_id: "p3", qty: 10, revenue: 400, net: 400 },
+      { product_id: "p4", qty: 2, revenue: 380, net: 380 },
+      { product_id: "p5", qty: 15, revenue: 90, net: 90 },
+      { product_id: "p6", qty: 5, revenue: 120, net: 120 },
+      { product_id: "p7", qty: 4, revenue: 80, net: 80 },
     ],
   });
 
@@ -53,8 +53,50 @@ describe("visão do mês no cardápio", () => {
   });
 
   it("estima a venda por fora com a margem do cardápio quando a cobertura é boa", () => {
-    const p = menuProfit(view, 5000);
+    const p = menuProfit(view, { typedRevenue: 5000, dishes: [], variablePct: 0.06 });
     expect(p.outside.ok).toBe(true);
+    if (p.outside.ok) expect(p.outside.source).toBe("menu");
+  });
+
+  it("com quantidades por ficha, a venda por fora usa o preço cadastrado e o custo da ficha", () => {
+    // 100 frango a R$ 19,90 (custo 8,50), 6% de impostos: sobram 19,90 - 8,50 - 1,194 = 10,206 por unidade
+    const p = menuProfit(view, { typedRevenue: 5000, dishes: [{ qty: 100, price: 19.9, cost: 8.5 }], variablePct: 0.06 });
+    expect(p.outside.ok).toBe(true);
+    if (p.outside.ok) {
+      expect(p.outside.source).toBe("mix");
+      expect(p.outside.pct.toDecimalPlaces(4).toNumber()).toBe(0.5129); // 10,206 / 19,90
+      expect(p.outside.contribution.toNumber()).toBe(2564.32); // 5000 × 51,29%
+    }
+    expect(p.outsideFromDishes).toBe(false); // o valor é o que ele digitou
+  });
+
+  it("sem valor digitado, a venda por fora vale quantidade × preço cadastrado", () => {
+    const p = menuProfit(view, { typedRevenue: 0, dishes: [{ qty: 100, price: 19.9, cost: 8.5 }, { qty: 10, price: null, cost: 9 }], variablePct: 0.06 });
+    expect(p.outsideRevenue).toBe(1990); // a ficha sem preço não entra
+    expect(p.outsideFromDishes).toBe(true);
+  });
+});
+
+describe("cupom de desconto (valor realmente pago)", () => {
+  it("o lucro usa o valor pago, não o valor da linha", () => {
+    // 10 marmitas a R$ 20 = R$ 200 na linha; o cupom do pedido tirou 10% => pagaram R$ 180. Custo 8,50 cada, sem impostos.
+    const gross = buildMenuMonth({
+      products: [{ id: "a", recipe_id: "r-frango", combo_id: null, units_per_sale: 1, ignored: false }],
+      recipes,
+      combos,
+      variablePct: 0,
+      sales: [{ product_id: "a", qty: 10, revenue: 200, net: 200 }],
+    });
+    const paid = buildMenuMonth({
+      products: [{ id: "a", recipe_id: "r-frango", combo_id: null, units_per_sale: 1, ignored: false }],
+      recipes,
+      combos,
+      variablePct: 0,
+      sales: [{ product_id: "a", qty: 10, revenue: 200, net: 180 }],
+    });
+    expect(gross.summary.contribution.toNumber()).toBe(115); // 200 - 85
+    expect(paid.summary.contribution.toNumber()).toBe(95); // 180 - 85
+    expect(paid.summary.contributionPct!.toDecimalPlaces(4).toNumber()).toBe(0.5278);
   });
 });
 

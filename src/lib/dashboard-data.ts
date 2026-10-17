@@ -3,12 +3,12 @@ import { saveMonthSnapshot } from "@/lib/snapshot-data";
 import type { MenuLine, MenuMonth, OutsideEstimate } from "@/lib/calc";
 import { summarizeCombo } from "@/lib/combo-view";
 import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
-import { hasMenuConnection, loadMenuMonth, loadMenuProducts } from "@/lib/menu-data";
+import { hasMenuConnection, loadMenuMonth, loadMenuProducts, loadMenuRecipeSales } from "@/lib/menu-data";
 import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { summarizeFixedCosts, type FixedCostSummary } from "@/lib/fixed-costs-view";
 import { summarizePanel, type PanelSummary } from "@/lib/panel-view";
 import { loadStaff } from "@/lib/costs-data";
-import { currentMonthStart, lastMonths, summarizeMonth, type MonthSummary } from "@/lib/month-view";
+import { currentMonthStart, lastMonths, monthBounds, summarizeMonth, type MonthSummary } from "@/lib/month-view";
 import { priceIncreaseAlerts, type PriceIncreaseAlert } from "@/lib/price-alerts";
 import { loadCurrentPrices, loadPricingContext, type PricingContext } from "@/lib/pricing-data";
 import { analyzePrice, type PriceAnalysis } from "@/lib/pricing-view";
@@ -41,7 +41,17 @@ export type Dashboard = {
   avgNetPct: number | null;
   month: MonthSummary & { start: string; hasData: boolean };
   /** Números do cardápio digital no mês do resumo (`null` sem cardápio conectado ou sem pedidos no mês). */
-  menu: { orders: number; revenue: number; summary: MenuMonth; outside: OutsideEstimate; outsideRevenue: number; unlinkedProducts: number } | null;
+  menu: {
+    orders: number;
+    revenue: number;
+    discount: number;
+    summary: MenuMonth;
+    outside: OutsideEstimate;
+    outsideRevenue: number;
+    outsideFromDishes: boolean;
+    fixedCosts: number;
+    unlinkedProducts: number;
+  } | null;
   staleCount: number;
   noPriceCount: number;
   increases: PriceIncreaseAlert[];
@@ -91,6 +101,12 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   const recentIds = new Set((recentPeriods ?? []).map((p) => p.id as string));
   const weights = new Map<string, number>();
   for (const r of allSales ?? []) if (recentIds.has(r.period_id as string)) weights.set(r.recipe_id as string, (weights.get(r.recipe_id as string) ?? 0) + Number(r.qty_sold));
+  // As marmitas vendidas pelo cardápio nos últimos 3 meses (mês atual + 2 anteriores) também pesam nas médias.
+  const menuConnected = await hasMenuConnection(orgId);
+  if (menuConnected) {
+    const since = monthBounds(lastMonths(now, 3)[2]).start;
+    for (const [recipeId, s] of await loadMenuRecipeSales(ctx.unit.id, since, new Date())) weights.set(recipeId, (weights.get(recipeId) ?? 0) + s.units);
+  }
 
   // Canal de referência: o de menor taxa (a lista já vem ordenada assim; é o mesmo em todas as telas).
   const cheapest = ctx.channels[0];
@@ -118,10 +134,10 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   const qty = new Map(salesRows.map((r) => [r.recipe_id as string, Number(r.qty_sold)]));
 
   // Cardápio digital: o faturamento digitado é só a venda de fora; o total é cardápio + digitado (veja Custos → Fechar o mês).
-  const outsideRevenue = Number(period?.revenue ?? 0);
+  const typedOutside = Number(period?.revenue ?? 0);
   let menu: Dashboard["menu"] = null;
   let menuLines: MenuLine[] = [];
-  if (await hasMenuConnection(orgId)) {
+  if (menuConnected) {
     const data = await loadMenuMonth(ctx.unit.id, monthStart);
     if (usesMenu(true, data.orders)) {
       const [products, combos, comboWeights] = await Promise.all([loadMenuProducts(orgId), loadCombos(orgId, { active: true }), loadSalesWeights(ctx.unit.id)]);
@@ -132,14 +148,27 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
           return [c.id, { cost: sc.cost > 0 ? sc.cost : null, units: sc.units }] as const;
         }),
       );
-      const view = buildMenuMonth({ products, sales: data.sales, recipes: recipeCosts, combos: comboTargets, variablePct: ctx.settings.taxPct + feePct });
-      menu = { orders: data.orders, revenue: data.revenue, summary: view.summary, outside: menuProfit(view, outsideRevenue).outside, outsideRevenue, unlinkedProducts: view.unlinkedProducts };
+      // Os cardápios cobram mensalidade fixa (custo fixo), não % por pedido: aqui só impostos e outras taxas.
+      const variablePct = ctx.settings.taxPct + (ctx.settings.otherPct ?? 0);
+      const view = buildMenuMonth({ products, sales: data.sales, recipes: recipeCosts, combos: comboTargets, variablePct });
+      const profit = menuProfit(view, { typedRevenue: typedOutside, dishes: dishes.map((d) => ({ qty: qty.get(d.id) ?? 0, price: d.price, cost: d.cost })), variablePct });
+      menu = {
+        orders: data.orders,
+        revenue: data.revenue,
+        discount: data.discount,
+        summary: view.summary,
+        outside: profit.outside,
+        outsideRevenue: profit.outsideRevenue,
+        outsideFromDishes: profit.outsideFromDishes,
+        fixedCosts: ctx.fixedTotal,
+        unlinkedProducts: view.unlinkedProducts,
+      };
       menuLines = view.lines;
     }
   }
 
   const summary = summarizeMonth({
-    revenue: outsideRevenue + (menu?.revenue ?? 0),
+    revenue: (menu ? menu.outsideRevenue : typedOutside) + (menu?.revenue ?? 0),
     purchases: Number(period?.purchases ?? 0),
     sales: [
       ...dishes.map((d) => ({ recipeId: d.id, qty: qty.get(d.id) ?? 0, cost: d.cost })),

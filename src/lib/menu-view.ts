@@ -1,4 +1,4 @@
-import { estimateOutside, summarizeMenuMonth, type MenuLine, type MenuMonth, type OutsideEstimate } from "@/lib/calc";
+import { estimateOutsideSales, summarizeMenuMonth, type MenuLine, type MenuMonth, type OutsideDish, type OutsideEstimate } from "@/lib/calc";
 
 /** Produto do cardápio com o vínculo que o dono fez. */
 export type MenuProductLink = {
@@ -9,8 +9,12 @@ export type MenuProductLink = {
   ignored: boolean;
 };
 
-/** Vendas do mês de um produto (já somadas pelo banco). */
-export type MenuProductSales = { product_id: string; qty: number; revenue: number };
+/**
+ * Vendas do mês de um produto (já somadas pelo banco). `revenue` é o valor da linha no cardápio; `net` é o valor realmente pago,
+ * depois de tirar a parte do cupom do pedido (o cupom vale para o pedido todo, então cada linha leva a mesma fração).
+ * O lucro e a cobertura usam `net`.
+ */
+export type MenuProductSales = { product_id: string; qty: number; revenue: number; net: number };
 
 /** Custo e marmitas de uma ficha ou combo, vindos das telas de Fichas/Combos. `cost` nulo = ficha incompleta. */
 export type LinkTarget = { cost: number | null; units?: number };
@@ -42,22 +46,22 @@ export function buildMenuMonth(input: {
     const p = byId.get(s.product_id);
     if (!p || s.qty <= 0) continue;
     if (p.ignored) {
-      lines.push({ status: "ignored", qty: s.qty, revenue: s.revenue });
+      lines.push({ status: "ignored", qty: s.qty, revenue: s.net });
     } else if (p.recipe_id) {
       const t = input.recipes.get(p.recipe_id);
       lines.push({
         status: "linked",
         qty: s.qty,
-        revenue: s.revenue,
+        revenue: s.net,
         costPerSale: t?.cost == null ? null : t.cost * p.units_per_sale,
         unitsPerSale: p.units_per_sale,
       });
     } else if (p.combo_id) {
       const t = input.combos.get(p.combo_id);
-      lines.push({ status: "linked", qty: s.qty, revenue: s.revenue, costPerSale: t?.cost ?? null, unitsPerSale: t?.units ?? 1 });
+      lines.push({ status: "linked", qty: s.qty, revenue: s.net, costPerSale: t?.cost ?? null, unitsPerSale: t?.units ?? 1 });
     } else {
       unlinkedProducts++;
-      lines.push({ status: "unlinked", qty: s.qty, revenue: s.revenue });
+      lines.push({ status: "unlinked", qty: s.qty, revenue: s.net });
     }
   }
   return { summary: summarizeMenuMonth(lines, input.variablePct), lines, unlinkedProducts };
@@ -65,10 +69,14 @@ export function buildMenuMonth(input: {
 
 /**
  * Resultado de um mês com cardápio: lucro real do cardápio e estimado da venda por fora.
- * `outsideRevenue` é o que o dono digitou (só a venda de fora).
+ * A venda por fora vale o que o dono digitou; com quantidades por ficha, o lucro vem do preço que ele cadastrou e do custo da ficha.
  */
-export function menuProfit(view: MenuMonthView, outsideRevenue: number): { menu: MenuMonth; outside: OutsideEstimate } {
-  return { menu: view.summary, outside: estimateOutside(outsideRevenue, view.summary) };
+export function menuProfit(
+  view: MenuMonthView,
+  outside: { typedRevenue: number; dishes: OutsideDish[]; variablePct: number },
+): { menu: MenuMonth; outside: OutsideEstimate; outsideRevenue: number; outsideFromDishes: boolean } {
+  const r = estimateOutsideSales({ typedRevenue: outside.typedRevenue, dishes: outside.dishes, menu: view.summary, variablePct: outside.variablePct });
+  return { menu: view.summary, outside: r.estimate, outsideRevenue: r.revenue.toNumber(), outsideFromDishes: r.fromDishes };
 }
 
 /**
