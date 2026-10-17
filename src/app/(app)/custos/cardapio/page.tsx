@@ -4,10 +4,11 @@ import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { loadCombos } from "@/lib/combos-data";
 import { formatPct } from "@/lib/format";
-import { hasMenuConnection, isImporting, loadMenuMonth, loadMenuProducts, loadMenuStatus } from "@/lib/menu-data";
+import { hasMenuConnection, isImporting, loadMenuMonth, loadMenuProducts, loadMenuRange, loadMenuStatus } from "@/lib/menu-data";
 import { kickStalled } from "@/lib/menu/server/kick";
 import { suggestLink } from "@/lib/menu/suggest";
-import { currentMonthStart } from "@/lib/month-view";
+import { menuLookbackStart } from "@/lib/menu/window";
+import { currentMonthStart, monthBounds } from "@/lib/month-view";
 import { activeUnit } from "@/lib/pricing-data";
 import { loadRecipes } from "@/lib/recipes-data";
 import type { TargetOption } from "./link-row";
@@ -42,11 +43,12 @@ export default async function MenuLinksPage() {
   }
 
   const month = currentMonthStart();
-  const [products, { recipes }, combos, menu, status] = await Promise.all([
+  const [products, { recipes }, combos, menu, menuRange, status] = await Promise.all([
     loadMenuProducts(orgId),
     loadRecipes(),
     loadCombos(orgId, { active: true }),
     loadMenuMonth(unit.id, month),
+    loadMenuRange(unit.id, menuLookbackStart(), monthBounds(month).end), // mês atual + 3 anteriores
     loadMenuStatus(orgId),
   ]);
   await kickStalled(status); // importação parada? quem abre esta tela a retoma
@@ -61,10 +63,16 @@ export default async function MenuLinksPage() {
   ];
   const label = new Map([...recipeOptions, ...comboOptions].map((o) => [o.value, o.label]));
   const soldBy = new Map(menu.sales.map((s) => [s.product_id, s]));
+  const soldInRange = new Map(menuRange.sales.map((s) => [s.product_id, s]));
 
   const targetOf = (p: (typeof products)[number]) => (p.ignored ? "ignore" : p.recipe_id ? `r:${p.recipe_id}` : p.combo_id ? `c:${p.combo_id}` : "");
-  // os mais vendidos no mês primeiro; sem venda, por nome
-  const sorted = [...products].sort((a, b) => (soldBy.get(b.id)?.revenue ?? 0) - (soldBy.get(a.id)?.revenue ?? 0) || a.name.localeCompare(b.name, "pt-BR"));
+  // os mais vendidos primeiro (no mês, depois no período todo); sem venda, por nome
+  const sorted = [...products].sort(
+    (a, b) =>
+      (soldBy.get(b.id)?.revenue ?? 0) - (soldBy.get(a.id)?.revenue ?? 0) ||
+      (soldInRange.get(b.id)?.revenue ?? 0) - (soldInRange.get(a.id)?.revenue ?? 0) ||
+      a.name.localeCompare(b.name, "pt-BR"),
+  );
 
   const pendingCount = products.filter((p) => targetOf(p) === "").length;
   const totalRevenue = menu.sales.reduce((s, x) => s + x.revenue, 0);
@@ -75,6 +83,7 @@ export default async function MenuLinksPage() {
   const items: LinkItem[] = sorted.map((p) => {
     const sug = targetOf(p) === "" ? suggestLink(p.name, candidates) : null;
     const sold = soldBy.get(p.id);
+    const inRange = soldInRange.get(p.id);
     return {
       id: p.id,
       name: p.name,
@@ -82,6 +91,7 @@ export default async function MenuLinksPage() {
       target: targetOf(p),
       units: p.units_per_sale,
       sold: sold ? { qty: sold.qty, revenue: sold.revenue } : null,
+      soldRange: inRange ? { qty: inRange.qty, revenue: inRange.revenue } : null,
       suggestion: sug ? { value: sug.id, label: label.get(sug.id) ?? sug.name } : null,
     };
   });

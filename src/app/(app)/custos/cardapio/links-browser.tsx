@@ -13,6 +13,8 @@ export type LinkItem = {
   target: string;
   units: number;
   sold: { qty: number; revenue: number } | null;
+  /** Vendas em todo o período importado (mês atual + 3 anteriores). */
+  soldRange: { qty: number; revenue: number } | null;
   suggestion: TargetOption | null;
 };
 
@@ -76,7 +78,7 @@ export function LinksBrowser({ items, recipes, combos, canWrite }: { items: Link
           [
             ["all", "Todos"],
             ["item", "Produtos"],
-            ["option", "Opções e adicionais"],
+            ["option", "Opções (complementos)"],
           ] as const
         ).map(([k, label]) => (
           <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)} className={chipClass(kind === k)}>
@@ -105,6 +107,7 @@ export function LinksBrowser({ items, recipes, combos, canWrite }: { items: Link
               key={i.id}
               product={{ id: i.id, name: i.name, kind: i.kind, target: i.target, units: i.units }}
               sold={i.sold}
+              soldRange={i.soldRange}
               recipes={recipes}
               combos={combos}
               suggestion={i.suggestion}

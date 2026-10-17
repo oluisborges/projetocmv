@@ -11,6 +11,9 @@ type Props = {
   product: { id: string; name: string; kind: "item" | "option"; target: string; units: number };
   /** O que o produto vendeu no mês em andamento (ajuda a decidir o que vincular primeiro). */
   sold: { qty: number; revenue: number } | null;
+  /** O que vendeu em todo o período importado (ex.: mês atual + 3 anteriores). */
+  soldRange?: { qty: number; revenue: number } | null;
+  rangeLabel?: string;
   recipes: TargetOption[];
   combos: TargetOption[];
   suggestion: TargetOption | null;
@@ -19,8 +22,17 @@ type Props = {
   onSaved?: () => void;
 };
 
+/** "Produto" = o que o cliente pede; "Opção" = complemento escolhido dentro de um produto (arroz extra, sabor, adicional). */
+export function KindBadge({ kind }: { kind: "item" | "option" }) {
+  return kind === "option" ? (
+    <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">Opção · complemento</span>
+  ) : (
+    <span className="rounded-md bg-border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted">Produto</span>
+  );
+}
+
 /** Uma linha da tela de vínculos: escolhe a ficha/combo e salva sozinha ao mudar. */
-export function LinkRow({ product, sold, recipes, combos, suggestion, canWrite, onSaved }: Props) {
+export function LinkRow({ product, sold, soldRange = null, rangeLabel = "4 meses", recipes, combos, suggestion, canWrite, onSaved }: Props) {
   const [target, setTarget] = useState(product.target);
   const [units, setUnits] = useState(String(product.units));
   const [state, setState] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
@@ -45,16 +57,24 @@ export function LinkRow({ product, sold, recipes, combos, suggestion, canWrite, 
     <li className="flex flex-col gap-2 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <KindBadge kind={product.kind} />
+          </p>
           <p className="line-clamp-2 font-medium leading-snug">{product.name}</p>
           <p className="text-xs text-muted">
-            {product.kind === "option" ? "adicional · " : ""}
             {sold ? (
               <>
-                vendeu <strong className="tabular text-foreground">{formatNumber(sold.qty, 0)}</strong> no mês · {formatBRL(sold.revenue)}
+                vendeu <strong className="tabular text-foreground">{formatNumber(sold.qty, 0)}</strong> este mês · {formatBRL(sold.revenue)}
               </>
             ) : (
-              "sem vendas neste mês"
+              "sem vendas este mês"
             )}
+            {soldRange ? (
+              <>
+                {" "}
+                · <strong className="tabular text-foreground">{formatNumber(soldRange.qty, 0)}</strong> em {rangeLabel}
+              </>
+            ) : null}
           </p>
         </div>
         {pending ? <span className="shrink-0 rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">sem vínculo</span> : null}

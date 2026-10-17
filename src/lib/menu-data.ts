@@ -27,6 +27,11 @@ export type MenuMonthData = {
 /** Pedidos, faturamento e vendas por produto de um mês ("YYYY-MM-01", horário de Brasília). */
 export async function loadMenuMonth(unitId: string, month: string): Promise<MenuMonthData> {
   const { start, end } = monthBounds(month);
+  return loadMenuRange(unitId, start, end);
+}
+
+/** O mesmo, para qualquer intervalo (ex.: os 4 meses importados). */
+export async function loadMenuRange(unitId: string, start: Date, end: Date): Promise<MenuMonthData> {
   const supabase = await createClient();
   const [{ data: totals }, { data: lines }] = await Promise.all([
     supabase.rpc("menu_month_orders", { p_unit: unitId, p_start: start.toISOString(), p_end: end.toISOString() }),
