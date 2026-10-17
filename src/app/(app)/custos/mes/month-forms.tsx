@@ -9,18 +9,18 @@ import { Spinner } from "@/components/spinner";
 
 const money = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export function PeriodForm({ month, revenue, purchases }: { month: string; revenue: number; purchases: number }) {
+export function PeriodForm({ month, revenue, purchases, outside = false }: { month: string; revenue: number; purchases: number; /** Cardápio conectado: o faturamento digitado é só o que vendeu por fora dele. */ outside?: boolean }) {
   return (
     <ActionForm action={savePeriod} submitLabel="Salvar o mês" key={month}>
       <input type="hidden" name="month" value={month} />
       <TextField
-        label="Quanto você faturou no mês (R$)"
+        label={outside ? "Quanto vendeu por fora do cardápio (R$)" : "Quanto você faturou no mês (R$)"}
         name="revenue"
         inputMode="decimal"
         required={false}
         defaultValue={revenue > 0 ? money.format(revenue) : ""}
         placeholder="Ex.: 60.000"
-        hint={<Hint>Tudo que entrou com as vendas dos produtos no mês.</Hint>}
+        hint={<Hint>{outside ? "Só o que entrou fora do cardápio digital (WhatsApp, balcão, feira…). O que vendeu pelo cardápio o app já puxa sozinho." : "Tudo que entrou com as vendas dos produtos no mês."}</Hint>}
       />
       <TextField
         label="Quanto você comprou de insumos (R$)"

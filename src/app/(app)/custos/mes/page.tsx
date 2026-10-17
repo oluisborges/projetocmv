@@ -5,6 +5,8 @@ import { requireMember } from "@/lib/auth";
 import { summarizeCombo } from "@/lib/combo-view";
 import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
 import { loadStaff } from "@/lib/costs-data";
+import { hasMenuConnection, loadMenuMonth, loadMenuProducts } from "@/lib/menu-data";
+import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { normalizeSnapshot, summarizeSamples } from "@/lib/history-view";
 import { currentMonthStart, lastMonths, monthBounds, monthLabel, monthStart, summarizeMonth } from "@/lib/month-view";
@@ -13,6 +15,7 @@ import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { createClient } from "@/lib/supabase/server";
 import { PeriodForm, SalesRow } from "./month-forms";
+import { MenuProfitCard, MenuSalesCard } from "@/components/menu-cards";
 
 export const metadata = { title: "Resultado do mês" };
 
@@ -79,7 +82,23 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
   });
   const looseUnits = dishes.reduce((n, d) => n + d.qty, 0);
 
-  const revenue = Number(period?.revenue ?? 0);
+  // Cardápio digital: o faturamento digitado passa a ser só a venda de fora; o total é cardápio + digitado.
+  // Mês sem pedidos (anterior à conexão) continua com o digitado como total.
+  const connected = await hasMenuConnection(orgId);
+  const menuData = connected ? await loadMenuMonth(ctx.unit.id, month) : null;
+  const menuOn = usesMenu(connected, menuData?.orders ?? 0);
+  const menuView = menuOn
+    ? buildMenuMonth({
+        products: await loadMenuProducts(orgId),
+        sales: menuData!.sales,
+        recipes: new Map(dishes.map((d) => [d.id, { cost: d.cost }])),
+        combos: new Map(comboRows.map((c) => [c.id, { cost: c.cost, units: c.units }])),
+        variablePct: ctx.settings.taxPct + feePct,
+      })
+    : null;
+
+  const outsideRevenue = Number(period?.revenue ?? 0);
+  const revenue = outsideRevenue + (menuOn ? menuData!.revenue : 0);
   const purchases = Number(period?.purchases ?? 0);
   const summary = summarizeMonth({
     revenue,
@@ -87,6 +106,9 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     sales: [
       ...dishes.map((d) => ({ recipeId: d.id, qty: d.qty, cost: d.cost })),
       ...comboRows.map((c) => ({ recipeId: c.id, qty: c.qty, cost: c.cost, unitsPerSale: c.units })),
+      ...(menuView?.lines ?? []).flatMap((l) =>
+        l.status === "linked" ? [{ recipeId: "menu", qty: Number(l.qty), cost: l.costPerSale == null ? null : Number(l.costPerSale), unitsPerSale: l.unitsPerSale }] : [],
+      ),
     ],
     staff: series
       ? [{ area: "cozinha" as const, monthlySalary: series.average.staffTotal, chargesPct: 0 }]
@@ -106,7 +128,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
         <p className="text-muted">Quanto você gastou no mês, comparado com o que deveria.</p>
       </section>
 
-      <CostsTabs active="month" />
+      <CostsTabs active="month" menu={connected} />
 
       <div>
         <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Mês</p>
@@ -130,16 +152,18 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
+      {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} /> : null}
+
       {canWrite ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">1. Faturamento e compras do mês</h2>
-          <PeriodForm month={month} revenue={revenue} purchases={purchases} />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{menuOn ? "1. Vendas por fora do cardápio e compras do mês" : "1. Faturamento e compras do mês"}</h2>
+          <PeriodForm month={month} revenue={outsideRevenue} purchases={purchases} outside={menuOn} />
         </section>
       ) : null}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          2. Marmitas vendidas avulsas ({formatNumber(looseUnits, 0)})
+          2. {menuOn ? "Marmitas vendidas por fora do cardápio" : "Marmitas vendidas avulsas"} ({formatNumber(looseUnits, 0)})
         </h2>
         {dishes.length === 0 ? (
           <p className="text-sm text-muted">
@@ -165,6 +189,8 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
           <p className="text-xs text-muted">Os combos entram no custo esperado do mês com as marmitas que cada um leva.</p>
         </section>
       ) : null}
+
+      {menuOn && menuView ? <MenuProfitCard summary={menuView.summary} outside={menuProfit(menuView, outsideRevenue).outside} outsideRevenue={outsideRevenue} /> : null}
 
       {/* resultado depois dos passos de preenchimento */}
       {hasData ? (

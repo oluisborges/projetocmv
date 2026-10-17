@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CostsTabs } from "@/components/costs-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
+import { hasMenuConnection } from "@/lib/menu-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
@@ -139,7 +140,7 @@ export default async function CostsPage() {
         <p className="text-muted">O que você paga todo mês, venda ou não venda.</p>
       </section>
 
-      <CostsTabs active="fixed" />
+      <CostsTabs active="fixed" menu={await hasMenuConnection(orgId)} />
 
       <section aria-live="polite" className="flex flex-col gap-2 rounded-2xl bg-primary p-5 text-primary-foreground">
         <p className="text-xs font-semibold uppercase tracking-wider opacity-90">Para não ter prejuízo, você precisa vender</p>

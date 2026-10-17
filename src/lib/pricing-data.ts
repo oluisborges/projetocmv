@@ -3,7 +3,11 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
-import { currentMonthStart } from "@/lib/month-view";
+import { comboUnits as calcComboUnits } from "@/lib/calc";
+import { toCalcGroups } from "@/lib/combo-view";
+import { loadCombos } from "@/lib/combos-data";
+import { hasMenuConnection, loadMenuMonthly } from "@/lib/menu-data";
+import { currentMonthStart, lastMonths } from "@/lib/month-view";
 import type { PricingSettings } from "@/lib/pricing-view";
 
 export type Channel = { id: string; name: string; fee_pct: number };
@@ -77,18 +81,41 @@ export async function loadSafetyMargin(orgId: string): Promise<number> {
  * Faturamento e unidades "de um mês normal": a média dos meses FECHADOS (até 12) em que o dono informou faturamento em
  * Resultado do mês, como na planilha de precificação. O mês em andamento fica de fora: um valor parcial derrubaria a média. Sem nenhum mês informado, vale o número digitado em Custos.
  */
-async function monthlyAverages(unitId: string): Promise<{ revenue: number; units: number | null; months: number } | null> {
+async function monthlyAverages(orgId: string, unitId: string): Promise<{ revenue: number; units: number | null; months: number } | null> {
   const supabase = await createClient();
-  const { data: periods } = await supabase.from("periods").select("id, revenue").eq("unit_id", unitId).gt("revenue", 0).lt("month", currentMonthStart()).order("month", { ascending: false }).limit(12);
-  if (!periods || periods.length === 0) return null;
-  const { data: sales } = await supabase.from("period_sales").select("period_id, qty_sold").in("period_id", periods.map((p) => p.id as string));
+  const current = currentMonthStart();
+  const { data: periods } = await supabase.from("periods").select("id, month, revenue").eq("unit_id", unitId).lt("month", current).order("month", { ascending: false }).limit(24); // folga: meses sem faturamento digitado não podem tirar a vez dos que têm
+  const { data: sales } = periods?.length ? await supabase.from("period_sales").select("period_id, qty_sold").in("period_id", periods.map((p) => p.id as string)) : { data: [] };
   const unitsByPeriod = new Map<string, number>();
   for (const s of sales ?? []) unitsByPeriod.set(s.period_id as string, (unitsByPeriod.get(s.period_id as string) ?? 0) + Number(s.qty_sold));
-  const withUnits = periods.filter((p) => (unitsByPeriod.get(p.id as string) ?? 0) > 0);
+
+  // Mês a mês: o que o dono digitou (venda por fora, quando há cardápio) + o que veio do cardápio digital.
+  const byMonth = new Map<string, { revenue: number; units: number }>();
+  for (const p of periods ?? []) byMonth.set(p.month as string, { revenue: Number(p.revenue), units: unitsByPeriod.get(p.id as string) ?? 0 });
+
+  if (await hasMenuConnection(orgId)) {
+    const oldest = lastMonths(current, 13).at(-1) ?? current;
+    const menu = await loadMenuMonthly(unitId, oldest);
+    // combos só entram na conta se o cardápio vendeu algum: evita uma consulta pesada em toda página para quem não usa
+    const soldCombos = [...menu.values()].some((m) => m.comboQty.size > 0);
+    const combos = soldCombos ? await loadCombos(orgId) : [];
+    const comboUnits = new Map(combos.map((c) => [c.id, calcComboUnits(toCalcGroups(c, new Map(), new Map()))]));
+    for (const m of menu.values()) {
+      if (m.month >= current || m.orders === 0) continue; // o mês em andamento fica de fora, como no digitado
+      const cur = byMonth.get(m.month) ?? { revenue: 0, units: 0 };
+      let units = m.recipeUnits;
+      for (const [comboId, qty] of m.comboQty) units += qty * (comboUnits.get(comboId) ?? 0);
+      byMonth.set(m.month, { revenue: cur.revenue + m.revenue, units: cur.units + units });
+    }
+  }
+
+  const months = [...byMonth.entries()].filter(([, v]) => v.revenue > 0).sort(([a], [b]) => (a < b ? 1 : -1)).slice(0, 12).map(([, v]) => v);
+  if (months.length === 0) return null;
+  const withUnits = months.filter((m) => m.units > 0);
   return {
-    revenue: periods.reduce((s, p) => s + Number(p.revenue), 0) / periods.length,
-    units: withUnits.length > 0 ? withUnits.reduce((s, p) => s + (unitsByPeriod.get(p.id as string) ?? 0), 0) / withUnits.length : null,
-    months: periods.length,
+    revenue: months.reduce((s, m) => s + m.revenue, 0) / months.length,
+    units: withUnits.length > 0 ? withUnits.reduce((s, m) => s + m.units, 0) / withUnits.length : null,
+    months: months.length,
   };
 }
 
@@ -113,7 +140,7 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
     ({ data: channels } = await supabase.from("sales_channels").select("id, name, fee_pct").eq("unit_id", unit.id).order("fee_pct").order("name"));
   }
 
-  const [fixedCosts, staff, history] = await Promise.all([loadFixedCosts(unit.id), loadStaff(unit.id), monthlyAverages(unit.id)]);
+  const [fixedCosts, staff, history] = await Promise.all([loadFixedCosts(unit.id), loadStaff(unit.id), monthlyAverages(orgId, unit.id)]);
   const manualRevenue = settingsRow?.monthly_revenue ? Number(settingsRow.monthly_revenue) : null;
   const manualUnits = settingsRow?.monthly_units ? Number(settingsRow.monthly_units) : null;
   const monthlyRevenue = history ? history.revenue : manualRevenue;

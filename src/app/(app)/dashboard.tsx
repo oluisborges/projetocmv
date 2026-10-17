@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MarginBadge } from "@/components/margin-badge";
+import { MenuProfitCard } from "@/components/menu-cards";
 import { formatBRL, formatPct } from "@/lib/format";
 import type { Dashboard } from "@/lib/dashboard-data";
 
@@ -135,6 +136,10 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
           href="/custos"
         />
       </div>
+      ) : null}
+
+      {variant === "full" && data.menu ? (
+        <MenuProfitCard summary={data.menu.summary} outside={data.menu.outside} outsideRevenue={data.menu.outsideRevenue} />
       ) : null}
 
       {alerts.length > 0 ? (

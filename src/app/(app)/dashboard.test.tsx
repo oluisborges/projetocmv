@@ -35,6 +35,7 @@ function build(over: Partial<Dashboard> = {}): Dashboard {
       channels: [{ id: "c1", name: "Venda direta", fee_pct: 0 }],
     },
     channelName: "Venda direta",
+    menu: null,
     dishes,
     ingredientCount: 20,
     recipeCount: 3,

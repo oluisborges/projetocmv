@@ -1,5 +1,10 @@
 import "server-only";
 import { saveMonthSnapshot } from "@/lib/snapshot-data";
+import type { MenuLine, MenuMonth, OutsideEstimate } from "@/lib/calc";
+import { summarizeCombo } from "@/lib/combo-view";
+import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
+import { hasMenuConnection, loadMenuMonth, loadMenuProducts } from "@/lib/menu-data";
+import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { summarizeFixedCosts, type FixedCostSummary } from "@/lib/fixed-costs-view";
 import { summarizePanel, type PanelSummary } from "@/lib/panel-view";
 import { loadStaff } from "@/lib/costs-data";
@@ -35,6 +40,8 @@ export type Dashboard = {
   /** Lucro líquido médio dos produtos com preço (fração), ou `null` se nenhuma tem preço. */
   avgNetPct: number | null;
   month: MonthSummary & { start: string; hasData: boolean };
+  /** Números do cardápio digital no mês do resumo (`null` sem cardápio conectado ou sem pedidos no mês). */
+  menu: { orders: number; revenue: number; summary: MenuMonth; outside: OutsideEstimate; outsideRevenue: number; unlinkedProducts: number } | null;
   staleCount: number;
   noPriceCount: number;
   increases: PriceIncreaseAlert[];
@@ -109,10 +116,37 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   const avgNetPct = priced.length > 0 && weightSum > 0 ? priced.reduce((s, d) => s + d.analysis!.at!.netPct * weightOf(d.id), 0) / weightSum : null;
 
   const qty = new Map(salesRows.map((r) => [r.recipe_id as string, Number(r.qty_sold)]));
+
+  // Cardápio digital: o faturamento digitado é só a venda de fora; o total é cardápio + digitado (veja Custos → Fechar o mês).
+  const outsideRevenue = Number(period?.revenue ?? 0);
+  let menu: Dashboard["menu"] = null;
+  let menuLines: MenuLine[] = [];
+  if (await hasMenuConnection(orgId)) {
+    const data = await loadMenuMonth(ctx.unit.id, monthStart);
+    if (usesMenu(true, data.orders)) {
+      const [products, combos, comboWeights] = await Promise.all([loadMenuProducts(orgId), loadCombos(orgId, { active: true }), loadSalesWeights(ctx.unit.id)]);
+      const recipeCosts = new Map(dishes.map((d) => [d.id, { cost: d.cost }]));
+      const comboTargets = new Map(
+        combos.map((c) => {
+          const sc = summarizeCombo(c, recipeCosts, comboWeights, ctx.settings, feePct);
+          return [c.id, { cost: sc.cost > 0 ? sc.cost : null, units: sc.units }] as const;
+        }),
+      );
+      const view = buildMenuMonth({ products, sales: data.sales, recipes: recipeCosts, combos: comboTargets, variablePct: ctx.settings.taxPct + feePct });
+      menu = { orders: data.orders, revenue: data.revenue, summary: view.summary, outside: menuProfit(view, outsideRevenue).outside, outsideRevenue, unlinkedProducts: view.unlinkedProducts };
+      menuLines = view.lines;
+    }
+  }
+
   const summary = summarizeMonth({
-    revenue: Number(period?.revenue ?? 0),
+    revenue: outsideRevenue + (menu?.revenue ?? 0),
     purchases: Number(period?.purchases ?? 0),
-    sales: dishes.map((d) => ({ recipeId: d.id, qty: qty.get(d.id) ?? 0, cost: d.cost })),
+    sales: [
+      ...dishes.map((d) => ({ recipeId: d.id, qty: qty.get(d.id) ?? 0, cost: d.cost })),
+      ...menuLines.flatMap((l) =>
+        l.status === "linked" ? [{ recipeId: "menu", qty: Number(l.qty), cost: l.costPerSale == null ? null : Number(l.costPerSale), unitsPerSale: l.unitsPerSale }] : [],
+      ),
+    ],
     staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
   });
 
@@ -169,6 +203,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
     belowTarget,
     avgNetPct,
     month: { ...summary, start: monthStart, hasData: summary.revenue > 0 || summary.purchases > 0 || summary.soldUnits > 0 },
+    menu,
     staleCount: activeIngs.filter((i) => Number(i.purchase_price) > 0 && new Date(i.price_updated_at).getTime() < staleBefore).length,
     noPriceCount: activeIngs.filter((i) => !(Number(i.purchase_price) > 0)).length,
     increases: priceIncreaseAlerts({
