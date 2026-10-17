@@ -29,7 +29,8 @@ Qualidade: 153 testes (cálculos, RLS/regras do banco em Postgres local, telas),
 3. **Regra de limite de login no firewall da Vercel** (camada extra; o limite do app já existe).
 4. **Revisar com a equipe de cozinha/nutrição** os fatores de correção, rendimentos e as 9 fichas-modelo (valores de partida; a coxa com osso pode contar a perda duas vezes).
 5. **Texto de privacidade**: o jurídico acrescenta razão social, CNPJ e contato do encarregado (LGPD).
-6. **Pós-MVP, com arquitetura pronta**: rendimento por item da ficha, tela "Minha conta" completa, Cardápio Web (importar itens e vendas), NF-e XML, estoque, painel agregado da Shogun, preço por canal, prévia das gramas das fichas-modelo antes de importar.
+6. **Integração com cardápio digital (CardápioWeb e Prefiro Delivery)**: construída (desenho em `docs/superpowers/specs/2026-10-17-menu-integration-design.md`). Falta validar com uma chave real de cliente piloto: formato do valor do item (se já inclui as opções) e o limite de histórico do CardápioWeb. Em produção: `SUPABASE_SERVICE_ROLE_KEY` e `CRON_SECRET` na Vercel (o cron `/api/menu/cron` roda 1×/dia à meia-noite de Brasília e despacha uma função por cliente; carga inicial = mês atual + 3 anteriores).
+7. **Pós-MVP, com arquitetura pronta**: rendimento por item da ficha, tela "Minha conta" completa, NF-e XML, estoque, painel agregado da Shogun, preço por canal, prévia das gramas das fichas-modelo antes de importar.
 
 ## Contexto
 O Grupo Shogun atende 30 marmitarias congeladas. O dono não sabe a margem real de cada marmita, precifica no "feeling" e abandona planilhas porque atualizar preço de insumo dá trabalho. Vamos construir uma plataforma web mobile-first (pt-BR, BRL) com insumos, fichas técnicas, precificação, CMV, CMO, custos fixos/ponto de equilíbrio e dashboard.
