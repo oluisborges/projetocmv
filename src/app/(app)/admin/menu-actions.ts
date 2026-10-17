@@ -40,16 +40,24 @@ export async function connectMenu(_prev: AdminState, formData: FormData): Promis
       provider: z.enum(["cardapioweb", "prefiro"]),
       apiKey: z.string().trim().min(4, "Cole a chave de API.").max(400),
       hash: z.string().trim().max(400).optional(),
+      storeCode: z.string().trim().max(60).optional(),
     })
     .safeParse({
       orgId: formData.get("orgId"),
       provider: formData.get("provider"),
       apiKey: formData.get("apiKey"),
       hash: formData.get("hash") || undefined,
+      storeCode: formData.get("storeCode") || undefined,
     });
   if (!parsed.success) return failure(parsed.error.issues[0]?.message && parsed.error.issues[0].message !== "Invalid input" ? parsed.error.issues[0].message : "Confira os campos e tente de novo.");
   const { orgId, provider, apiKey } = parsed.data;
 
+  // Cada cardápio pede a chave de API e mais um dado: o CardápioWeb, o código da loja; a Prefiro, a hash do estabelecimento.
+  let storeCode: string | null = null;
+  if (provider === "cardapioweb") {
+    storeCode = parsed.data.storeCode?.trim() || null;
+    if (!storeCode) return failure("Informe o código da loja no CardápioWeb.");
+  }
   let hash: string | null = null;
   if (provider === "prefiro") {
     hash = parseHash(parsed.data.hash ?? "");
@@ -80,12 +88,12 @@ export async function connectMenu(_prev: AdminState, formData: FormData): Promis
   const { data: existing } = await db.from("menu_connections").select("id").eq("unit_id", unit.id).eq("provider", provider).maybeSingle();
   let connectionId = existing?.id as string | undefined;
   if (connectionId) {
-    await db.from("menu_connections").update({ status: "connected", last_error: null, merchant_name: merchant, locked_until: null }).eq("id", connectionId);
+    await db.from("menu_connections").update({ status: "connected", last_error: null, merchant_name: merchant, store_code: storeCode, locked_until: null }).eq("id", connectionId);
   } else {
     const { data: created, error } = await db
       .from("menu_connections")
       // carga inicial: o mês atual e os 3 anteriores, inteiros
-      .insert({ org_id: orgId, unit_id: unit.id, provider, merchant_name: merchant, lookback_from: menuLookbackStart().toISOString() })
+      .insert({ org_id: orgId, unit_id: unit.id, provider, merchant_name: merchant, store_code: storeCode, lookback_from: menuLookbackStart().toISOString() })
       .select("id")
       .single();
     if (error || !created) return failure("Não foi possível criar a conexão.");
@@ -98,7 +106,7 @@ export async function connectMenu(_prev: AdminState, formData: FormData): Promis
     connection_id: connectionId,
     org_id: orgId,
     api_key: apiKey,
-    config: hash ? { hash } : {},
+    config: hash ? { hash } : storeCode ? { store_code: storeCode } : {},
     webhook_token: (cur?.webhook_token as string | undefined) ?? randomBytes(24).toString("hex"),
   });
   if (credError) return failure("Não foi possível guardar a chave.");
@@ -125,17 +133,18 @@ export async function syncMenuNow(_prev: AdminState, formData: FormData): Promis
   return { ok: r.phase === "history" ? `${r.ordersSaved} pedidos importados. A carga dos últimos 4 meses continua sozinha.` : `Em dia. ${r.ordersSaved} pedidos conferidos.` };
 }
 
-/** Desconecta: apaga a chave e a fila. Os pedidos e vínculos já importados ficam (ajudam se reconectar). */
-export async function disconnectMenu(_prev: AdminState, formData: FormData): Promise<AdminState> {
+/**
+ * Desconecta: apaga a chave e a fila. Os pedidos e vínculos já importados ficam (ajudam se reconectar).
+ * Usada pelo botão com confirmação (formulário simples, sem estado).
+ */
+export async function disconnectMenu(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = UUID.safeParse(formData.get("connectionId"));
-  if (!id.success) return failure("Conexão inválida.");
+  if (!id.success) return;
 
   const db = createAdminClient();
   await db.from("menu_credentials").delete().eq("connection_id", id.data);
   await db.from("menu_order_queue").delete().eq("connection_id", id.data);
-  const { error } = await db.from("menu_connections").update({ status: "error", last_error: "Desconectado. Conecte de novo para voltar a importar.", locked_until: null }).eq("id", id.data);
-  if (error) return failure("Não foi possível desconectar.");
+  await db.from("menu_connections").update({ status: "error", last_error: "Desconectado. Conecte de novo para voltar a importar.", locked_until: null }).eq("id", id.data);
   revalidatePath("/admin");
-  return { ok: "Desconectado." };
 }

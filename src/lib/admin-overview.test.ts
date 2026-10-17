@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { menuHealth, orgFlags, sortOrgs, worstMenuHealth, type MenuConnSummary } from "./admin-overview";
+import { attentionReasons, menuHealth, orgFlags, orgSeverity, sortOrgs, worstMenuHealth, type MenuConnSummary } from "./admin-overview";
 import { timeAgo } from "./relative-time";
 
 const now = new Date("2026-10-18T15:00:00Z");
@@ -66,4 +66,37 @@ describe("ordenação", () => {
   it("por nome", () => expect(names(sortOrgs(items, "name"))).toEqual(["Açaí & Cia", "Bela Marmita", "Casa da Vovó"]));
   it("acessou há menos tempo primeiro; quem nunca acessou por último", () => expect(names(sortOrgs(items, "recent"))).toEqual(["Bela Marmita", "Casa da Vovó", "Açaí & Cia"]));
   it("sumidos primeiro", () => expect(names(sortOrgs(items, "stale"))).toEqual(["Açaí & Cia", "Casa da Vovó", "Bela Marmita"]));
+});
+
+describe("gravidade e motivos de atenção", () => {
+  const ago = (iso: string | null) => timeAgo(iso, now);
+  const labelled = (over: Partial<MenuConnSummary> = {}) => ({ ...conn(over), providerLabel: "CardápioWeb" });
+
+  it("gravidade", () => {
+    expect(orgSeverity({ inactive: false, menuProblem: false, noMenu: true }, null)).toBe("ok");
+    expect(orgSeverity({ inactive: true, menuProblem: false, noMenu: true }, null)).toBe("attention");
+    expect(orgSeverity({ inactive: false, menuProblem: true, noMenu: false }, "late")).toBe("attention");
+    expect(orgSeverity({ inactive: false, menuProblem: true, noMenu: false }, "error")).toBe("critical");
+  });
+
+  it("tudo em ordem = sem motivos", () => {
+    expect(attentionReasons({ lastActivity: "2026-10-18T10:00:00Z", conns: [labelled()], now, ago })).toEqual([]);
+  });
+
+  it("do mais ao menos urgente: erro do cardápio, atraso, sumiço", () => {
+    const r = attentionReasons({
+      lastActivity: "2026-10-01T10:00:00Z",
+      conns: [labelled({ last_sync_at: "2026-10-15T10:00:00Z" }), labelled({ status: "error" })],
+      now,
+      ago,
+    });
+    expect(r.map((x) => x.key)).toEqual(["menu-error", "menu-late", "inactive"]);
+    expect(r[0].tab).toBe("menu");
+    expect(r[2].tab).toBe("users");
+    expect(r[2].text).toContain("há 17 dias");
+  });
+
+  it("nunca acessou", () => {
+    expect(attentionReasons({ lastActivity: null, conns: [], now, ago }).map((x) => x.key)).toEqual(["never"]);
+  });
 });
