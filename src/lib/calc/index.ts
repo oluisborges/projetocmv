@@ -6,3 +6,4 @@ export * from "./cmv";
 export * from "./cmo";
 export * from "./breakeven";
 export * from "./combo";
+export * from "./menu-profit";

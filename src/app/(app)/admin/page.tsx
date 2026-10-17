@@ -5,8 +5,11 @@ import { viewAsOrganization } from "../actions";
 import { addMember, createOrganization, resetPassword } from "./actions";
 import { AdminForm, Field } from "./admin-form";
 import { SubmitButton } from "@/components/submit-button";
+import { MenuSection, type MenuConnectionRow } from "./menu-section";
 
 export const metadata = { title: "Painel Shogun" };
+// "Sincronizar agora" roda dentro da própria ação do painel
+export const maxDuration = 60;
 
 const ROLE_LABEL: Record<string, string> = { owner: "Dono", manager: "Gerente", viewer: "Só leitura" };
 
@@ -14,11 +17,14 @@ export default async function AdminPage() {
   await requireAdmin();
   const admin = createAdminClient();
 
-  const [{ data: orgs }, { data: memberships }, { data: usersPage }] = await Promise.all([
+  const [{ data: orgs }, { data: memberships }, { data: usersPage }, { data: menuConns }, { data: menuCreds }] = await Promise.all([
     admin.from("organizations").select("id, name, slug, created_at").order("name"),
     admin.from("memberships").select("org_id, user_id, role"),
     admin.auth.admin.listUsers({ perPage: 1000 }),
+    admin.from("menu_connections").select("id, org_id, provider, status, phase, merchant_name, last_sync_at, last_error, orders_imported").order("created_at"),
+    admin.from("menu_credentials").select("connection_id, webhook_token"),
   ]);
+  const webhookTokens = new Map((menuCreds ?? []).map((c) => [c.connection_id as string, c.webhook_token as string]));
 
   const users = new Map((usersPage?.users ?? []).map((u) => [u.id, u]));
 
@@ -92,6 +98,13 @@ export default async function AdminPage() {
                   );
                 })}
               </ul>
+
+              <MenuSection
+                orgId={org.id}
+                connections={(menuConns ?? [])
+                  .filter((c) => c.org_id === org.id)
+                  .map((c) => ({ ...(c as Omit<MenuConnectionRow, "webhook_token">), webhook_token: webhookTokens.get(c.id as string) ?? null }))}
+              />
 
               <details>
                 <summary className="cursor-pointer text-sm font-semibold text-primary">Adicionar usuário</summary>
