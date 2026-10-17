@@ -7,7 +7,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const maxDuration = 60;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const BUDGET_MS = 50_000;
+// Orçamento menor que o limite da função (60 s): sobra tempo para gravar o estado e chamar o próximo ciclo antes de a Vercel encerrar.
+const BUDGET_MS = 40_000;
 
 /**
  * Roda UM ciclo de UMA conexão. Chamada pelo cron (`/api/menu/cron`) e por si mesma: se ainda sobra trabalho (carga do histórico
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ connec
   const origin = new URL(request.url).origin;
   after(async () => {
     const r = await runConnection(db, connectionId, Date.now() + BUDGET_MS);
+    // se este ciclo morrer antes daqui, a retomada vem do "kick" (telas abertas) e do cron diário
     if (shouldChain({ phase: r.phase, pending: r.pending, progressed: r.progressed, error: Boolean(r.error), depth })) await dispatchRun(origin, connectionId, depth + 1);
   });
   return NextResponse.json({ ok: true }, { status: 202 });

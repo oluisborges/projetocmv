@@ -41,7 +41,7 @@ type Creds = { api_key: string; config: { hash?: string } };
 type Fetched = { order: MappedOrder | null; gone: boolean } | null; // null = não encontrado
 
 const COLUMNS =
-  "id, org_id, unit_id, provider, status, phase, history_cursor, lookback_from, last_incremental_at, last_sync_at, last_error, merchant_name, orders_imported";
+  "id, org_id, unit_id, provider, status, phase, history_cursor, lookback_from, last_incremental_at, last_sync_at, last_error, merchant_name, orders_imported, pending_orders, locked_until";
 
 async function setState(db: SupabaseClient, id: string, patch: Record<string, unknown>) {
   await db.from("menu_connections").update(patch).eq("id", id);
@@ -88,7 +88,8 @@ async function drainQueue(db: SupabaseClient, conn: Connection, fetchOne: (id: s
       .select("order_id, attempts")
       .eq("connection_id", conn.id)
       .eq("state", "pending")
-      .order("created_at")
+      // janelas mais novas primeiro (entraram na fila por último): o mês atual é o que o dono mais quer ver
+      .order("created_at", { ascending: false })
       .limit(DETAIL_BATCH);
     if (!batch?.length) break;
 
@@ -305,11 +306,11 @@ export async function runConnection(db: SupabaseClient, connectionId: string, de
     if (!creds) throw new AuthError("Credenciais não encontradas. Conecte de novo.");
     const r = conn.provider === "cardapioweb" ? await syncCardapioweb(db, conn, creds, deadline, opts) : await syncPrefiro(db, conn, creds, deadline, opts);
     const { count } = await db.from("menu_orders").select("id", { count: "exact", head: true }).eq("connection_id", connectionId);
+    const { count: pending } = await db.from("menu_order_queue").select("order_id", { count: "exact", head: true }).eq("connection_id", connectionId).eq("state", "pending");
     await setState(db, connectionId, {
-      status: "connected", last_error: r.note ?? null, last_sync_at: new Date().toISOString(), locked_until: null, orders_imported: count ?? 0,
+      status: "connected", last_error: r.note ?? null, last_sync_at: new Date().toISOString(), locked_until: null, orders_imported: count ?? 0, pending_orders: pending ?? 0,
     });
     const after = await loadConnection(db, connectionId);
-    const { count: pending } = await db.from("menu_order_queue").select("order_id", { count: "exact", head: true }).eq("connection_id", connectionId).eq("state", "pending");
     return {
       connectionId,
       ordersSaved: r.saved,

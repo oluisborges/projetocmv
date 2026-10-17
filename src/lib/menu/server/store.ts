@@ -16,6 +16,8 @@ export type Connection = {
   last_error: string | null;
   merchant_name: string | null;
   orders_imported: number;
+  pending_orders: number;
+  locked_until: string | null;
 };
 
 const chunks = <T>(list: T[], size: number): T[][] => {

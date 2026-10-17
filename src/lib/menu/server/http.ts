@@ -48,7 +48,7 @@ export function cardapiowebClient(apiKey: string) {
       }
       if (res.status === 401 || res.status === 403) throw new AuthError("Chave recusada pelo CardápioWeb. Gere uma nova em Configurações → Integrações → API.");
       if (res.status === 429 && attempt === 0) {
-        await sleep(Math.min(20_000, Number(res.headers.get("retry-after") ?? 15) * 1000));
+        await sleep(Math.min(8_000, Number(res.headers.get("retry-after") ?? 15) * 1000));
         continue;
       }
       if (res.status === 404) return null;
@@ -108,7 +108,7 @@ export function prefiroClient(hash: string, apiKey: string) {
       if (res.status === 401 || res.status === 403) throw new AuthError("A Prefiro recusou a hash e a chave de API. Confira se copiou os dois sem espaços.");
       if (res.status === 429 && !waited) {
         waited = true;
-        await sleep(Math.min(20_000, Number(res.headers.get("retry-after") ?? 10) * 1000));
+        await sleep(Math.min(8_000, Number(res.headers.get("retry-after") ?? 10) * 1000));
         continue;
       }
       if (res.status >= 500) throw new TransientError(`HTTP ${res.status}`);

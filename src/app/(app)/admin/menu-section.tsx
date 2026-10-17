@@ -13,6 +13,7 @@ export type MenuConnectionRow = {
   last_sync_at: string | null;
   last_error: string | null;
   orders_imported: number;
+  pending_orders: number;
   webhook_token: string | null;
 };
 
@@ -42,7 +43,7 @@ export async function MenuSection({ orgId, connections }: { orgId: string; conne
               </span>
             </div>
             <p className="text-xs text-muted">
-              {c.orders_imported} pedidos importados · última sincronização {c.last_sync_at ? fmt.format(new Date(c.last_sync_at)) : "ainda não houve"}
+              {c.orders_imported} pedidos importados{c.pending_orders > 0 ? ` (faltam ${c.pending_orders})` : ""} · última sincronização {c.last_sync_at ? fmt.format(new Date(c.last_sync_at)) : "ainda não houve"}
             </p>
             {c.last_error ? (
               <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-xs text-danger">

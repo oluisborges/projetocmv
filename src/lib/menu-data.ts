@@ -84,3 +84,37 @@ export async function loadMenuMonthly(unitId: string, fromMonth: string): Promis
   }
   return out;
 }
+
+export type MenuStatus = {
+  id: string;
+  provider: "cardapioweb" | "prefiro";
+  status: "connected" | "error";
+  phase: "history" | "done";
+  pending_orders: number;
+  locked_until: string | null;
+  last_sync_at: string | null;
+  orders_imported: number;
+};
+
+/** Situação da importação de cada cardápio conectado (o dono vê o andamento; a fila em si é interna). */
+export async function loadMenuStatus(orgId: string): Promise<MenuStatus[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("menu_connections")
+    .select("id, provider, status, phase, pending_orders, locked_until, last_sync_at, orders_imported")
+    .eq("org_id", orgId)
+    .order("created_at");
+  return (data ?? []).map((c) => ({
+    id: c.id as string,
+    provider: c.provider as MenuStatus["provider"],
+    status: c.status as MenuStatus["status"],
+    phase: c.phase as MenuStatus["phase"],
+    pending_orders: Number(c.pending_orders),
+    locked_until: (c.locked_until as string | null) ?? null,
+    last_sync_at: (c.last_sync_at as string | null) ?? null,
+    orders_imported: Number(c.orders_imported),
+  }));
+}
+
+/** Ainda há pedidos para chegar? (carga do histórico em andamento ou fila com pedidos esperando) */
+export const isImporting = (list: MenuStatus[]) => list.some((c) => c.status === "connected" && (c.phase === "history" || c.pending_orders > 0));

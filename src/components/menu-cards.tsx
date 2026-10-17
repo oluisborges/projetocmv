@@ -10,9 +10,27 @@ const REASON: Record<Extract<OutsideEstimate, { ok: false }>["reason"], string> 
 };
 
 /** Bloco "Vendas pelo cardápio": números reais vindos da integração, com a cobertura dos vínculos. */
-export function MenuSalesCard({ orders, revenue, summary, unlinkedProducts }: { orders: number; revenue: number; summary: MenuMonth; unlinkedProducts: number }) {
+export function MenuSalesCard({
+  orders,
+  revenue,
+  summary,
+  unlinkedProducts,
+  importing = false,
+}: {
+  orders: number;
+  revenue: number;
+  summary: MenuMonth;
+  unlinkedProducts: number;
+  /** A importação ainda não terminou: os números do mês podem estar incompletos. */
+  importing?: boolean;
+}) {
   return (
     <section className="flex flex-col gap-3 card p-4">
+      {importing ? (
+        <p role="status" className="rounded-lg bg-warning/10 p-3 text-sm">
+          <strong>Ainda importando seus pedidos.</strong> Os números do mês podem estar incompletos; eles se completam sozinhos.
+        </p>
+      ) : null}
       <header className="flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Vendas pelo cardápio</h2>
         <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs text-success">automático</span>

@@ -5,6 +5,7 @@ import { viewAsOrganization } from "../actions";
 import { addMember, createOrganization, resetPassword } from "./actions";
 import { AdminForm, Field } from "./admin-form";
 import { SubmitButton } from "@/components/submit-button";
+import { kickStalled } from "@/lib/menu/server/kick";
 import { MenuSection, type MenuConnectionRow } from "./menu-section";
 
 export const metadata = { title: "Painel Shogun" };
@@ -21,10 +22,21 @@ export default async function AdminPage() {
     admin.from("organizations").select("id, name, slug, created_at").order("name"),
     admin.from("memberships").select("org_id, user_id, role"),
     admin.auth.admin.listUsers({ perPage: 1000 }),
-    admin.from("menu_connections").select("id, org_id, provider, status, phase, merchant_name, last_sync_at, last_error, orders_imported").order("created_at"),
+    admin.from("menu_connections").select("id, org_id, provider, status, phase, merchant_name, last_sync_at, last_error, orders_imported, pending_orders, locked_until").order("created_at"),
     admin.from("menu_credentials").select("connection_id, webhook_token"),
   ]);
   const webhookTokens = new Map((menuCreds ?? []).map((c) => [c.connection_id as string, c.webhook_token as string]));
+  // importação parada no meio? abrir o painel retoma (a corrente de ciclos pode quebrar se uma função for encerrada)
+  await kickStalled(
+    (menuConns ?? []).map((c) => ({
+      id: c.id as string,
+      status: c.status as string,
+      phase: c.phase as "history" | "done",
+      pending_orders: Number(c.pending_orders),
+      locked_until: (c.locked_until as string | null) ?? null,
+      last_sync_at: (c.last_sync_at as string | null) ?? null,
+    })),
+  );
 
   const users = new Map((usersPage?.users ?? []).map((u) => [u.id, u]));
 

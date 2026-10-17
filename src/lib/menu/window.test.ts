@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isStale, MAX_CHAIN_DEPTH, menuLookbackStart, shouldChain } from "./window";
+import { isStale, MAX_CHAIN_DEPTH, menuLookbackStart, needsKick, shouldChain } from "./window";
 
 describe("janela da carga inicial", () => {
   it("mês atual + 3 anteriores, a partir do dia 1 em Brasília", () => {
@@ -34,4 +34,16 @@ describe("encadear ciclos", () => {
     expect(shouldChain({ ...base, progressed: false })).toBe(false);
   });
   it("para ao atingir o limite da corrente", () => expect(shouldChain({ ...base, depth: MAX_CHAIN_DEPTH })).toBe(false));
+});
+
+describe("importação parada", () => {
+  const now = new Date("2026-10-17T15:00:00Z");
+  const base = { status: "connected", phase: "done" as const, pending_orders: 284, locked_until: null, last_sync_at: "2026-10-17T14:46:40Z" };
+  it("fila com pedidos e ciclo antigo = retoma", () => expect(needsKick(base, now)).toBe(true));
+  it("carga do histórico em andamento = retoma", () => expect(needsKick({ ...base, phase: "history", pending_orders: 0 }, now)).toBe(true));
+  it("em dia e sem fila = nada a fazer", () => expect(needsKick({ ...base, pending_orders: 0 }, now)).toBe(false));
+  it("alguém está rodando agora = espera", () => expect(needsKick({ ...base, locked_until: "2026-10-17T15:00:30Z" }, now)).toBe(false));
+  it("ciclo muito recente = espera", () => expect(needsKick({ ...base, last_sync_at: "2026-10-17T14:59:30Z" }, now)).toBe(false));
+  it("conexão com erro de chave não é retomada", () => expect(needsKick({ ...base, status: "error" }, now)).toBe(false));
+  it("trava vencida não impede", () => expect(needsKick({ ...base, locked_until: "2026-10-17T14:50:00Z" }, now)).toBe(true));
 });

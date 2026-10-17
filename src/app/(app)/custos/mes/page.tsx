@@ -5,7 +5,8 @@ import { requireMember } from "@/lib/auth";
 import { summarizeCombo } from "@/lib/combo-view";
 import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
 import { loadStaff } from "@/lib/costs-data";
-import { hasMenuConnection, loadMenuMonth, loadMenuProducts } from "@/lib/menu-data";
+import { hasMenuConnection, isImporting, loadMenuMonth, loadMenuProducts, loadMenuStatus } from "@/lib/menu-data";
+import { kickStalled } from "@/lib/menu/server/kick";
 import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { normalizeSnapshot, summarizeSamples } from "@/lib/history-view";
@@ -86,6 +87,8 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
   // Mês sem pedidos (anterior à conexão) continua com o digitado como total.
   const connected = await hasMenuConnection(orgId);
   const menuData = connected ? await loadMenuMonth(ctx.unit.id, month) : null;
+  const menuStatus = connected ? await loadMenuStatus(orgId) : [];
+  await kickStalled(menuStatus); // importação parada? quem abre esta tela a retoma
   const menuOn = usesMenu(connected, menuData?.orders ?? 0);
   const menuView = menuOn
     ? buildMenuMonth({
@@ -152,7 +155,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
-      {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} /> : null}
+      {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} importing={isImporting(menuStatus)} /> : null}
 
       {canWrite ? (
         <section className="flex flex-col gap-3">
