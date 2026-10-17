@@ -15,10 +15,12 @@ type Props = {
   combos: TargetOption[];
   suggestion: TargetOption | null;
   canWrite: boolean;
+  /** Avisa que o vínculo foi salvo (a lista mantém a linha no lugar até trocar de aba). */
+  onSaved?: () => void;
 };
 
 /** Uma linha da tela de vínculos: escolhe a ficha/combo e salva sozinha ao mudar. */
-export function LinkRow({ product, sold, recipes, combos, suggestion, canWrite }: Props) {
+export function LinkRow({ product, sold, recipes, combos, suggestion, canWrite, onSaved }: Props) {
   const [target, setTarget] = useState(product.target);
   const [units, setUnits] = useState(String(product.units));
   const [state, setState] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
@@ -30,6 +32,7 @@ export function LinkRow({ product, sold, recipes, combos, suggestion, canWrite }
     const result = await saveMenuLink(product.id, nextTarget, nextUnits);
     if (mine !== latest.current) return;
     if (result.ok) {
+      onSaved?.();
       setState({ kind: "saved" });
       setTimeout(() => setState((s) => (s.kind === "saved" ? { kind: "idle" } : s)), 2000);
     } else setState({ kind: "error", message: result.error });
