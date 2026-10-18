@@ -1,4 +1,5 @@
 import { after, NextResponse, type NextRequest } from "next/server";
+import { recordError } from "@/lib/errors/record";
 import { dispatchRun } from "@/lib/menu/server/dispatch";
 import { lockConnection, runConnection } from "@/lib/menu/server/sync";
 import { shouldChain } from "@/lib/menu/window";
@@ -27,7 +28,13 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ connec
 
   const origin = new URL(request.url).origin;
   after(async () => {
-    const r = await runConnection(db, connectionId, Date.now() + BUDGET_MS);
+    let r: Awaited<ReturnType<typeof runConnection>>;
+    try {
+      r = await runConnection(db, connectionId, Date.now() + BUDGET_MS);
+    } catch (e) {
+      await recordError("sync", e, { path: "api/menu/run", routeType: "route" });
+      return;
+    }
     // se este ciclo morrer antes daqui, a retomada vem do "kick" (telas abertas) e do cron diário
     const chain = shouldChain({ phase: r.phase, pending: r.pending, progressed: r.progressed, error: Boolean(r.error), depth });
     console.log(JSON.stringify({ menu: "cycle", connectionId, depth, saved: r.ordersSaved, pending: r.pending, phase: r.phase, progressed: r.progressed, error: r.error ?? null, chain }));

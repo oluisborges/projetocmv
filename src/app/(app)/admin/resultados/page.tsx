@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
+import { countOpenErrors } from "@/lib/errors/data";
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
 import { loadNetwork } from "@/lib/network-data";
 import { boardRow } from "@/lib/network-board";
@@ -34,7 +35,7 @@ export default async function NetworkPage(props: PageProps<"/admin/resultados">)
         <p className="text-muted">Como a rede está vendendo, quanto sobra e quem precisa de ajuda.</p>
       </section>
 
-      <AdminTabs active="results" />
+      <AdminTabs active="results" errorCount={await countOpenErrors()} />
 
       <div>
         <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Mês</p>

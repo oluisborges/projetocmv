@@ -4,6 +4,7 @@ import { mapOrder as cwMapOrder } from "../cardapioweb";
 import { mapOrder as pfMapOrder, orderState } from "../prefiro";
 import type { MappedOrder, Raw } from "../types";
 import { AuthError, RangeRefusedError, TransientError, cardapiowebClient, prefiroClient } from "./http";
+import { recordError } from "@/lib/errors/record";
 import { knownOrderIds, removeOrders, saveOrders, type Connection } from "./store";
 
 const DAY_MS = 86_400_000;
@@ -320,6 +321,8 @@ export async function runConnection(db: SupabaseClient, connectionId: string, de
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    // chave recusada é rotina de suporte (aparece como alerta do cardápio); o resto vai para o monitoramento de erros
+    if (!(e instanceof AuthError)) await recordError("sync", e, { path: `sync/${conn.provider}`, routeType: "sync", orgId: conn.org_id });
     await setState(db, connectionId, {
       status: e instanceof AuthError ? "error" : "connected", last_error: msg.slice(0, 400), last_sync_at: new Date().toISOString(), locked_until: null,
     });

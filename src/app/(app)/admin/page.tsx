@@ -1,6 +1,7 @@
 import { SubmitButton } from "@/components/submit-button";
 import { attentionReasons, menuHealth, MENU_HEALTH_LABEL, orgFlags, orgSeverity, worstMenuHealth } from "@/lib/admin-overview";
 import { requireAdmin } from "@/lib/auth";
+import { countOpenErrors } from "@/lib/errors/data";
 import { kickStalled } from "@/lib/menu/server/kick";
 import { PROVIDER_LABEL } from "@/lib/menu/types";
 import { dateTimeBR, timeAgo } from "@/lib/relative-time";
@@ -150,7 +151,7 @@ export default async function AdminPage() {
         <p className="text-muted">Quem está usando o sistema, como estão os cardápios e o que precisa da sua atenção.</p>
       </section>
 
-      <AdminTabs active="clients" />
+      <AdminTabs active="clients" errorCount={await countOpenErrors()} />
 
       <OrgDirectory
         items={items}
