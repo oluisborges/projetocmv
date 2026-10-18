@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { viewAsOrganization } from "../actions";
 import { createOrganization } from "./actions";
 import { AdminForm, Field } from "./admin-form";
+import { AdminTabs } from "./admin-tabs";
 import { MenuPanel, type MenuConnectionRow } from "./menu-panel";
 import { OrgDirectory, type OrgItem } from "./org-directory";
 import { UsersPanel, type UserRow } from "./users-panel";
@@ -148,6 +149,8 @@ export default async function AdminPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Painel Shogun</h1>
         <p className="text-muted">Quem está usando o sistema, como estão os cardápios e o que precisa da sua atenção.</p>
       </section>
+
+      <AdminTabs active="clients" />
 
       <OrgDirectory
         items={items}
