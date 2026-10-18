@@ -74,3 +74,21 @@ export function recipeCostSettings(
     safetyMarginPct: safetyMarginPct ?? 0,
   };
 }
+
+/**
+ * Quanto de cada insumo COMPRADO (na unidade-base: g, ml ou un) uma porção da ficha consome, já com rendimento e fator de correção.
+ * Sem a margem de segurança: ela cobre perda no custo, não é insumo que saiu da prateleira. `null` se a ficha está incompleta.
+ */
+export function recipeUsage(settings: CostSettings, items: (CostItem & { ingredientId: string })[]): Map<string, number> | null {
+  const view = computeRecipe(settings, items);
+  if (!view.ok) return null;
+  const portions = view.cost.portions.toNumber();
+  if (!(portions > 0)) return null;
+  const out = new Map<string, number>();
+  for (const i of items) {
+    const yieldFactor = settings.useCookingYield && i.scope === "batch" ? (i.ingredient.cooking_yield ?? 1) : 1;
+    const gross = (i.netQty / (yieldFactor > 0 ? yieldFactor : 1)) * i.ingredient.correction_factor;
+    out.set(i.ingredientId, (out.get(i.ingredientId) ?? 0) + (i.scope === "batch" ? gross / portions : gross));
+  }
+  return out;
+}

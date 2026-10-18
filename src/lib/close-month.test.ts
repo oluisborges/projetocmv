@@ -13,6 +13,7 @@ const full = {
   hasFixedCosts: true,
   recipesWithoutCost: 0,
   soldUnits: 1500,
+  stockCounted: 0,
 };
 
 describe("fechar o mês", () => {
@@ -45,6 +46,15 @@ describe("fechar o mês", () => {
     expect(r.ready).toBe(false);
     expect(r.requiredDone).toBe(3); // compras, fichas, contas fixas
     expect(r.required).toBe(4);
+  });
+
+  it("a contagem de estoque é opcional e não bloqueia", () => {
+    const r = closeMonthChecklist(full);
+    const stock = r.items.find((i) => i.key === "stock")!;
+    expect(stock.optional).toBe(true);
+    expect(stock.href).toBe("/custos/estoque?mes=2026-09");
+    expect(r.ready).toBe(true);
+    expect(closeMonthChecklist({ ...full, stockCounted: 12 }).items.find((i) => i.key === "stock")!.done).toBe(true);
   });
 
   it("o link de informar leva ao mês certo", () => {

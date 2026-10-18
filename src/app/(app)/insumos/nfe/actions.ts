@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSession, requireMember } from "@/lib/auth";
-import { isPurchaseUnit, type PurchaseUnit } from "@/lib/calc";
+import { isPurchaseUnit, toBaseQty, type PurchaseUnit } from "@/lib/calc";
 import { newPurchasePrice, nfeCostPerBase, parseNfeXml, suggestIngredient, classifyUnit, type NfeDoc, type NfeItem } from "@/lib/nfe";
 import { normalizeName } from "@/lib/names";
 import { activeUnit } from "@/lib/pricing-data";
@@ -153,7 +153,7 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
     const doc = byKey.get(note.accessKey);
     if (!doc) continue;
     // A nota entra primeiro: a chave única impede contar duas vezes (dois cliques, duas abas).
-    const { error: importError } = await supabase.from("nfe_imports").insert({
+    const { data: importRow, error: importError } = await supabase.from("nfe_imports").insert({
       org_id: orgId,
       unit_id: unit.id,
       access_key: doc.accessKey,
@@ -165,7 +165,7 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
       items_count: doc.items.length,
       added_to_purchases: 0,
       imported_by: session.userId,
-    });
+    }).select("id").maybeSingle();
     if (importError?.code === "23505") {
       skippedNotes++;
       continue;
@@ -178,6 +178,14 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
     const items = new Map<string, NfeItem>(doc.items.map((i) => [i.code, i]));
     // Só o valor dos itens que viraram insumo entra nas compras: frete, imposto e o que não é insumo (limpeza…) ficam de fora.
     let stockTotal = 0;
+    const month = monthOf(doc.issuedAt);
+    // Quantidade comprada deste insumo (na unidade-base), para o estoque e o uso por insumo.
+    const recordPurchase = async (ingredientId: string, item: NfeItem, pack: { qty: number; unit: PurchaseUnit } | null) => {
+      const k = classifyUnit(item.unit);
+      const qtyBase = k.kind === "measure" ? toBaseQty(item.qty, k.unit).toNumber() : pack ? toBaseQty(item.qty * pack.qty, pack.unit).toNumber() : 0;
+      if (!(qtyBase > 0) || !importRow) return;
+      await supabase.from("ingredient_purchases").insert({ org_id: orgId, unit_id: unit.id, ingredient_id: ingredientId, month, qty_base: qtyBase, amount: item.total, source: "nfe", nfe_import_id: importRow.id });
+    };
     const changes: { ingredient_id: string; old_price: number | null; new_price: number; created: boolean }[] = [];
     const cnpj = doc.supplierCnpj || "0";
     for (const d of note.decisions) {
@@ -222,6 +230,7 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
         names.add(normalizeName(name));
         ingredientId = data.id as string;
         changes.push({ ingredient_id: ingredientId, old_price: null, new_price: price, created: true });
+        await recordPurchase(ingredientId, item, pack);
         stockTotal += item.total;
         created++;
       } else {
@@ -241,6 +250,7 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
           continue;
         }
         changes.push({ ingredient_id: ing.id, old_price: ing.purchase_price, new_price: price, created: false });
+        await recordPurchase(ing.id, item, pack);
         ing.purchase_price = price;
         stockTotal += item.total;
         updated++;
@@ -255,7 +265,7 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
     const addTotal = note.addToPurchases ? Math.round(stockTotal * 100) / 100 : 0;
     let purchasesAdded = 0;
     if (addTotal > 0) {
-      const { error } = await supabase.rpc("nfe_add_purchases", { p_org: orgId, p_unit: unit.id, p_month: monthOf(doc.issuedAt), p_amount: addTotal });
+      const { error } = await supabase.rpc("nfe_add_purchases", { p_org: orgId, p_unit: unit.id, p_month: month, p_amount: addTotal });
       if (error) warnings.push(`Nota ${doc.number ?? ""}: não consegui somar ao total de compras do mês.`);
       else {
         purchases += addTotal;

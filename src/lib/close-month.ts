@@ -1,7 +1,7 @@
 // "Fechar o mês" em poucos toques: o que o app já sabe e o que ainda falta informar.
 
 export type CloseItem = {
-  key: "menu" | "purchases" | "outside" | "recipes" | "fixed";
+  key: "menu" | "purchases" | "outside" | "recipes" | "fixed" | "stock";
   title: string;
   detail: string;
   done: boolean;
@@ -30,6 +30,8 @@ export function closeMonthChecklist(input: {
   /** Produtos vendidos cuja ficha está incompleta. */
   recipesWithoutCost: number;
   soldUnits: number;
+  /** Insumos contados no estoque do fim do mês. */
+  stockCounted: number;
 }): CloseMonth {
   const mes = input.month.slice(0, 7);
   const items: CloseItem[] = [];
@@ -95,6 +97,19 @@ export function closeMonthChecklist(input: {
     detail: input.hasFixedCosts ? "Cadastradas (valem para todos os meses até você mudar)." : "Aluguel, energia, salários… sem isso não dá para saber quanto sobrou.",
     href: input.hasFixedCosts ? undefined : "/custos",
     cta: input.hasFixedCosts ? undefined : "Cadastrar",
+  });
+
+  items.push({
+    key: "stock",
+    title: "Contagem do estoque",
+    optional: true,
+    done: input.stockCounted > 0,
+    detail:
+      input.stockCounted > 0
+        ? `${input.stockCounted} ${input.stockCounted === 1 ? "insumo contado" : "insumos contados"}: o app já mostra o CMV real.`
+        : "Conte o que sobrou dos insumos mais caros para ver quanto sumiu de verdade.",
+    href: `/custos/estoque?mes=${mes}`,
+    cta: input.stockCounted > 0 ? "Ver" : "Contar",
   });
 
   const required = items.filter((i) => !i.optional);

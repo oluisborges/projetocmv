@@ -56,6 +56,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     supabase.from("nfe_imports").select("added_to_purchases").eq("unit_id", ctx.unit.id).gte("issued_at", bounds.start.toISOString()).lt("issued_at", bounds.end.toISOString()),
   ]);
   const purchasesFromNfe = (nfeRows ?? []).reduce((n, r) => n + Number(r.added_to_purchases), 0);
+  const { count: stockCounted } = await supabase.from("ingredient_stock_counts").select("id", { count: "exact", head: true }).eq("unit_id", ctx.unit.id).eq("month", month);
   const { data: salesRows } = period
     ? await supabase.from("period_sales").select("recipe_id, qty_sold").eq("period_id", period.id)
     : { data: [] as { recipe_id: string; qty_sold: number }[] };
@@ -148,6 +149,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     hasFixedCosts: ctx.fixedTotal > 0,
     recipesWithoutCost: summary.salesWithoutCost,
     soldUnits: summary.soldUnits,
+    stockCounted: stockCounted ?? 0,
   });
 
   const months = lastMonths(now, 6);
