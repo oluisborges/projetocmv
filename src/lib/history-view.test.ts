@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendSample, monthPriceMoves, normalizeSnapshot, summarizeHistoryMonth, summarizeSamples, type SnapshotState } from "./history-view";
+import { appendSample, mergeMonthWithMenu, monthPriceMoves, normalizeSnapshot, summarizeHistoryMonth, summarizeSamples, type SnapshotState } from "./history-view";
 
 const snapshot: SnapshotState = { fixedTotal: 3000, staffTotal: 4000, taxPct: 0.06, feePct: 0, products: [] };
 
@@ -116,5 +116,47 @@ describe("fuso de Brasília", () => {
     const r = summarizeSamples(snap, "2026-09-01", b.end);
     expect(r.products[0].avgPrice!).toBeGreaterThan(10); // as 2h finais valem R$ 20, então a média passa de 10
     expect(monthBounds("2026-12-01").end.toISOString()).toBe("2027-01-01T03:00:00.000Z");
+  });
+});
+
+describe("histórico com o cardápio", () => {
+  const costs = new Map([["frango", 8.5], ["strog", 11.2]]);
+  const costOf = (id: string) => costs.get(id) ?? null;
+  const combos = new Map([["kit", { cost: 80, units: 10 }]]);
+
+  it("soma o faturamento do cardápio ao digitado e conta as marmitas dos dois", () => {
+    const m = mergeMonthWithMenu({
+      typed: { revenue: 6_000, qty: new Map([["frango", 100]]) },
+      menu: { orders: 120, revenue: 14_000, recipeUnits: new Map([["frango", 200], ["strog", 50]]), comboQty: new Map([["kit", 4]]) },
+      costOf,
+      combos,
+    });
+    expect(m.revenue).toBe(20_000);
+    expect(m.soldUnits).toBe(100 + 250 + 40);
+    expect(m.theoreticalCost).toBe(100 * 8.5 + 200 * 8.5 + 50 * 11.2 + 4 * 80);
+    expect(m.menuRevenue).toBe(14_000);
+    expect(m.menuOrders).toBe(120);
+  });
+
+  it("mês sem pedidos importados fica só com o digitado (o que foi digitado era o total)", () => {
+    const m = mergeMonthWithMenu({
+      typed: { revenue: 30_000, qty: new Map([["frango", 500]]) },
+      menu: { orders: 0, revenue: 0, recipeUnits: new Map(), comboQty: new Map() },
+      costOf,
+      combos,
+    });
+    expect(m).toMatchObject({ revenue: 30_000, soldUnits: 500, menuRevenue: 0, menuOrders: 0 });
+    expect(m.theoreticalCost).toBe(4_250);
+  });
+
+  it("ficha sem custo não entra no custo esperado, mas conta como vendida", () => {
+    const m = mergeMonthWithMenu({
+      typed: { revenue: 0, qty: new Map() },
+      menu: { orders: 5, revenue: 500, recipeUnits: new Map([["semcusto", 10]]), comboQty: new Map() },
+      costOf,
+      combos,
+    });
+    expect(m.soldUnits).toBe(10);
+    expect(m.theoreticalCost).toBeNull();
   });
 });

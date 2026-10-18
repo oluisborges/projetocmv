@@ -216,3 +216,59 @@ export function monthPriceMoves(
   }
   return moves.sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct)).slice(0, limit);
 }
+
+export type MonthWithMenu = {
+  /** Digitado + cardápio. */
+  revenue: number;
+  soldUnits: number;
+  /** O que as vendas do mês deveriam ter custado pelas fichas; `null` se nenhuma venda tem custo. */
+  theoreticalCost: number | null;
+  menuRevenue: number;
+  menuOrders: number;
+};
+
+/**
+ * Junta o que o dono digitou no mês (faturamento por fora e marmitas avulsas) com o que o cardápio vendeu.
+ * Mês sem pedidos importados (anterior à conexão) continua só com o digitado.
+ * Marmitas do cardápio: as das fichas vinculadas (`recipeUnits`, já com "marmitas por venda") e as dos combos vinculados.
+ */
+export function mergeMonthWithMenu(input: {
+  typed: { revenue: number; qty: Map<string, number> };
+  menu: { orders: number; revenue: number; recipeUnits: Map<string, number>; comboQty: Map<string, number> };
+  costOf: (recipeId: string) => number | null;
+  /** Custo e marmitas de cada combo (custos de hoje). */
+  combos: Map<string, { cost: number | null; units: number }>;
+}): MonthWithMenu {
+  const menuOn = input.menu.orders > 0;
+  let theoretical = 0;
+  let counted = false;
+  let soldUnits = 0;
+
+  const add = (units: number, cost: number | null) => {
+    soldUnits += units;
+    if (units > 0 && cost !== null) {
+      theoretical += cost * units;
+      counted = true;
+    }
+  };
+  for (const [id, q] of input.typed.qty) add(q, input.costOf(id));
+  if (menuOn) {
+    for (const [id, units] of input.menu.recipeUnits) add(units, input.costOf(id));
+    for (const [id, qty] of input.menu.comboQty) {
+      const c = input.combos.get(id);
+      if (!c) continue;
+      soldUnits += qty * c.units;
+      if (qty > 0 && c.cost !== null) {
+        theoretical += c.cost * qty;
+        counted = true;
+      }
+    }
+  }
+  return {
+    revenue: input.typed.revenue + (menuOn ? input.menu.revenue : 0),
+    soldUnits,
+    theoreticalCost: counted ? theoretical : null,
+    menuRevenue: menuOn ? input.menu.revenue : 0,
+    menuOrders: menuOn ? input.menu.orders : 0,
+  };
+}

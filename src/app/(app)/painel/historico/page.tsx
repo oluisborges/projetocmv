@@ -76,7 +76,11 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
           <>
             <Delta now={s.revenue} before={previous?.summary.revenue} />
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <Stat label="Faturamento" value={s.revenue > 0 ? formatBRL(s.revenue) : "—"} />
+              <Stat
+                label="Faturamento"
+                value={s.revenue > 0 ? formatBRL(s.revenue) : "—"}
+                sub={entry.menuOrders > 0 ? `${formatBRL(entry.menuRevenue)} do cardápio${s.revenue - entry.menuRevenue > 0 ? ` + ${formatBRL(s.revenue - entry.menuRevenue)} por fora` : ""}` : undefined}
+              />
               <Stat label="Compras de insumos" value={s.purchases > 0 ? formatBRL(s.purchases) : "—"} />
               <Stat
                 label="Gasto com insumos"

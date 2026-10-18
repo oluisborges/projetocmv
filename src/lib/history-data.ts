@@ -1,14 +1,20 @@
 import "server-only";
 import { loadDashboard } from "@/lib/dashboard-data";
-import { monthPriceMoves, normalizeSnapshot, summarizeHistoryMonth, summarizeSamples, type ChangeEvent, type HistoryMonth, type PriceMove, type ProductSeries } from "@/lib/history-view";
+import { mergeMonthWithMenu, monthPriceMoves, normalizeSnapshot, summarizeHistoryMonth, summarizeSamples, type ChangeEvent, type HistoryMonth, type PriceMove, type ProductSeries } from "@/lib/history-view";
+import { summarizeCombo } from "@/lib/combo-view";
+import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
+import { hasMenuConnection, loadMenuMonthly, loadMenuRecipeSales, type MenuMonthlyRow } from "@/lib/menu-data";
 import { currentMonthStart, lastMonths, monthBounds } from "@/lib/month-view";
 import { createClient } from "@/lib/supabase/server";
 
-/** Já existe algum mês com faturamento informado? Antes disso o Histórico não tem o que mostrar. */
+/** Já existe algum mês com faturamento (digitado ou vindo do cardápio)? Antes disso o Histórico não tem o que mostrar. */
 export async function hasHistory(unitId: string): Promise<boolean> {
   const supabase = await createClient();
-  const { data } = await supabase.from("periods").select("id").eq("unit_id", unitId).gt("revenue", 0).limit(1);
-  return (data?.length ?? 0) > 0;
+  const [{ data }, { data: menu }] = await Promise.all([
+    supabase.from("periods").select("id").eq("unit_id", unitId).gt("revenue", 0).limit(1),
+    supabase.from("menu_orders").select("id").eq("unit_id", unitId).limit(1),
+  ]);
+  return (data?.length ?? 0) > 0 || (menu?.length ?? 0) > 0;
 }
 
 export type HistoryEntry = {
@@ -16,6 +22,9 @@ export type HistoryEntry = {
   summary: HistoryMonth;
   /** Tem o registro do mês (custos e preços como eram durante o mês)? */
   hasSnapshot: boolean;
+  /** Quanto do faturamento do mês veio do cardápio digital (o resto foi digitado pelo dono). */
+  menuRevenue: number;
+  menuOrders: number;
   /** Quantas vezes o app viu algo mudar no mês (preços, contas, equipe). */
   changeCount: number;
   moves: PriceMove[];
@@ -48,11 +57,34 @@ export async function loadHistory(orgId: string, canWrite: boolean): Promise<{ e
   const priceHistory = (history ?? []).map((h) => ({ ingredient_id: h.ingredient_id as string, unit_cost: Number(h.unit_cost), changed_at: h.changed_at as string }));
   const todayCost = new Map(dash.dishes.map((d) => [d.id, d.cost]));
 
+  // Cardápio digital: faturamento, marmitas por ficha e combos de cada mês (o mês sem pedidos continua só com o digitado).
+  const menuMonthly: Map<string, MenuMonthlyRow> = (await hasMenuConnection(orgId)) ? await loadMenuMonthly(unitId, oldest) : new Map();
+  const menuUnits = new Map<string, Map<string, number>>();
+  await Promise.all(
+    [...menuMonthly.values()]
+      .filter((m) => m.orders > 0)
+      .map(async (m) => {
+        const { start, end } = monthBounds(m.month);
+        const sales = await loadMenuRecipeSales(unitId, start, end);
+        menuUnits.set(m.month, new Map([...sales].map(([id, v]) => [id, v.units])));
+      }),
+  );
+  const comboInfo = new Map<string, { cost: number | null; units: number }>();
+  if ([...menuMonthly.values()].some((m) => m.comboQty.size > 0)) {
+    const [combos, weights] = await Promise.all([loadCombos(orgId, { active: true }), loadSalesWeights(unitId)]);
+    const recipeCosts = new Map(dash.dishes.map((d) => [d.id, { cost: d.cost }]));
+    for (const c of combos) {
+      const sc = summarizeCombo(c, recipeCosts, weights, dash.ctx.settings, dash.ctx.channels[0]?.fee_pct ?? 0);
+      comboInfo.set(c.id, { cost: sc.cost > 0 ? sc.cost : null, units: sc.units });
+    }
+  }
+
   const entries: HistoryEntry[] = [];
   for (const month of months) {
     const period = periodByMonth.get(month);
     const snapshot = snapByMonth.get(month) ?? null;
-    if (!period && !snapshot) continue;
+    const menuMonth = menuMonthly.get(month);
+    if (!period && !snapshot && !(menuMonth && menuMonth.orders > 0)) continue;
 
     const qty = new Map((sales ?? []).filter((s) => s.period_id === period?.id).map((s) => [s.recipe_id as string, Number(s.qty_sold)]));
     const monthEnd = monthBounds(month).end;
@@ -60,31 +92,29 @@ export async function loadHistory(orgId: string, canWrite: boolean): Promise<{ e
     const avgCost = new Map((series?.products ?? []).map((p) => [p.id, p.avgCost]));
     const costOf = (id: string) => (series ? (avgCost.get(id) ?? null) : (todayCost.get(id) ?? null));
 
-    let theoretical = 0;
-    let counted = false;
-    for (const [id, q] of qty) {
-      const c = costOf(id);
-      if (q > 0 && c !== null) {
-        theoretical += c * q;
-        counted = true;
-      }
-    }
-    const soldUnits = [...qty.values()].reduce((s, q) => s + q, 0);
+    const merged = mergeMonthWithMenu({
+      typed: { revenue: Number(period?.revenue ?? 0), qty },
+      menu: { orders: menuMonth?.orders ?? 0, revenue: menuMonth?.revenue ?? 0, recipeUnits: menuUnits.get(month) ?? new Map(), comboQty: menuMonth?.comboQty ?? new Map() },
+      costOf,
+      combos: comboInfo,
+    });
 
     entries.push({
       month,
       summary: summarizeHistoryMonth({
-        revenue: Number(period?.revenue ?? 0),
+        revenue: merged.revenue,
         purchases: Number(period?.purchases ?? 0),
-        soldUnits,
-        theoreticalCost: counted ? theoretical : null,
+        soldUnits: merged.soldUnits,
+        theoreticalCost: merged.theoreticalCost,
         snapshot: series?.average ?? null,
       }),
       hasSnapshot: Boolean(series),
+      menuRevenue: merged.menuRevenue,
+      menuOrders: merged.menuOrders,
       changeCount: series?.events.length ?? 0,
       moves: monthPriceMoves(priceHistory, names, month),
       events: series?.events ?? [],
-      products: (series?.products ?? []).map((p) => ({ ...p, sold: qty.get(p.id) ?? 0 })),
+      products: (series?.products ?? []).map((p) => ({ ...p, sold: (qty.get(p.id) ?? 0) + (menuUnits.get(month)?.get(p.id) ?? 0) })),
     });
   }
   return { entries, unitName: dash.ctx.unit.name };
