@@ -12,6 +12,7 @@ const dish = (id: string, name: string, cost: number, price: number | null): Das
   cost,
   price,
   analysis: analyzePrice({ cost, settings, feePct: 0, price }),
+  weight: 0,
 });
 
 function build(over: Partial<Dashboard> = {}): Dashboard {

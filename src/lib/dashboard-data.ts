@@ -23,6 +23,8 @@ export type DashboardDish = {
   cost: number | null;
   price: number | null;
   analysis: PriceAnalysis | null;
+  /** Marmitas vendidas nos últimos meses (as mesmas que pesam as médias); 0 sem vendas. */
+  weight: number;
 };
 
 export type Dashboard = {
@@ -120,7 +122,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
     );
     const cost = view.ok ? view.cost.costPerPortion.toNumber() : null;
     const price = prices.get(r.id) ?? null;
-    return { id: r.id, name: r.name, cost, price, analysis: cost === null ? null : analyzePrice({ cost, settings: ctx.settings, feePct, price }) };
+    return { id: r.id, name: r.name, cost, price, analysis: cost === null ? null : analyzePrice({ cost, settings: ctx.settings, feePct, price }), weight: weights.get(r.id) ?? 0 };
   });
 
   // "Produto com preço" = custo calculado (> 0) e preço de venda definido: o mesmo critério do Painel.

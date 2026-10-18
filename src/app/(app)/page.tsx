@@ -2,6 +2,9 @@ import Link from "next/link";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadDashboard } from "@/lib/dashboard-data";
 import { formatPct } from "@/lib/format";
+import { MonthHealthCard, PriceActionsCard } from "@/components/home-cards";
+import { monthHealth } from "@/lib/month-health";
+import { priceActions } from "@/lib/price-actions";
 import { BrandFooter } from "@/components/brand-footer";
 import { DashboardView } from "./dashboard";
 
@@ -82,6 +85,28 @@ export default async function HomePage() {
   const doneCount = steps.filter((s) => s.done).length;
   const allDone = steps.length > 0 && !next;
   const showDashboard = Boolean(data && data.pricedCount > 0);
+
+  // "Como estou este mês?" e "O que fazer agora": só com algum número no mês e produto com preço.
+  const health =
+    data && showDashboard && data.month.hasData
+      ? monthHealth({
+          monthStart: data.month.start,
+          now: new Date(),
+          revenue: data.month.revenue,
+          insumosCost: data.month.theoreticalCost,
+          variablePct: data.ctx.settings.taxPct + (data.ctx.settings.otherPct ?? 0),
+          fixedTotal: data.ctx.fixedTotal,
+          breakEvenRevenue: data.breakEven?.revenue ?? null,
+        })
+      : null;
+  const actions = data
+    ? priceActions({
+        dishes: data.dishes.map((d) => ({ id: d.id, name: d.name, cost: d.cost, price: d.price, netPct: d.analysis?.at?.netPct ?? null })),
+        settings: data.ctx.settings,
+        feePct: data.ctx.channels[0]?.fee_pct ?? 0,
+        units: new Map(data.dishes.map((d) => [d.id, d.weight])),
+      })
+    : [];
 
   const remainingMinutes = steps.filter((s) => !s.done).reduce((sum, s) => sum + s.minutes, 0);
 
@@ -177,7 +202,9 @@ export default async function HomePage() {
           </p>
         </section>
       ) : null}
+      {health && data ? <MonthHealthCard health={health} month={data.month.start} canWrite={canWrite} /> : null}
       {checklist}
+      {actions.length > 0 && data ? <PriceActionsCard actions={actions} targetPct={data.ctx.settings.minMarginPct} /> : null}
       {summary}
       {showDashboard && data ? <DashboardView data={data} variant="alerts" /> : null}
 
