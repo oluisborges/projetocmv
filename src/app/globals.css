@@ -47,7 +47,7 @@
   &::before {
     content: "";
     position: absolute;
-    inset: -0.875rem -0.5rem;
+    inset: -1rem -0.5rem;
   }
 }
 
