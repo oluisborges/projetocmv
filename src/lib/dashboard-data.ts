@@ -9,6 +9,7 @@ import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { summarizeFixedCosts, type FixedCostSummary } from "@/lib/fixed-costs-view";
 import { summarizePanel, type PanelSummary } from "@/lib/panel-view";
 import { loadStaff } from "@/lib/costs-data";
+import { normalizeSnapshot, summarizeSamples } from "@/lib/history-view";
 import { currentMonthStart, lastMonths, monthBounds, summarizeMonth, type MonthSummary } from "@/lib/month-view";
 import { priceIncreaseAlerts, type PriceIncreaseAlert } from "@/lib/price-alerts";
 import { loadCurrentPrices, loadPricingContext, type PricingContext } from "@/lib/pricing-data";
@@ -43,6 +44,11 @@ export type Dashboard = {
   /** Lucro líquido médio dos produtos com preço (fração), ou `null` se nenhuma tem preço. */
   avgNetPct: number | null;
   month: MonthSummary & { start: string; hasData: boolean };
+  /**
+   * Base da conta do mês, a MESMA do Histórico: custos, taxas e contas fixas como valeram durante o mês (média pelo tempo),
+   * e não só os de hoje. Sem registro do mês, vale o de hoje.
+   */
+  monthBasis: { variablePct: number; fixedTotal: number };
   /** Números do cardápio digital no mês do resumo (`null` sem cardápio conectado ou sem pedidos no mês). */
   menu: {
     orders: number;
@@ -95,6 +101,13 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
   const period = hasNumbers(currentPeriod) ? currentPeriod : hasNumbers(previousPeriod) ? previousPeriod : currentPeriod;
   const monthStart = period ? String(period.month) : now;
 
+  // Custo de cada marmita como valeu durante o mês (média pelo tempo), igual ao Histórico. Sem registro, o de hoje.
+  const { data: snapRow } = await supabase.from("month_snapshots").select("data").eq("unit_id", ctx.unit.id).eq("month", monthStart).maybeSingle();
+  const snap = snapRow ? normalizeSnapshot(snapRow.data, monthStart) : null;
+  const monthEnd = monthBounds(monthStart).end;
+  const series = snap ? summarizeSamples(snap, monthStart, monthEnd.getTime() > Date.now() ? new Date() : monthEnd) : null;
+  const seriesCost = new Map((series?.products ?? []).map((p) => [p.id, p.avgCost]));
+
   const periodIds = [...new Set([period?.id, ...(recentPeriods ?? []).map((p) => p.id)].filter(Boolean) as string[])];
   const { data: allSales } = periodIds.length
     ? await supabase.from("period_sales").select("period_id, recipe_id, qty_sold").in("period_id", periodIds)
@@ -126,6 +139,8 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
     return { id: r.id, name: r.name, cost, price, analysis: cost === null ? null : analyzePrice({ cost, settings: ctx.settings, feePct, price }), weight: weights.get(r.id) ?? 0 };
   });
 
+  const monthCost = (d: DashboardDish): number | null => (series ? (seriesCost.get(d.id) ?? null) : d.cost);
+
   // "Produto com preço" = custo calculado (> 0) e preço de venda definido: o mesmo critério do Painel.
   const priced = dishes.filter((d) => d.analysis?.at && (d.cost ?? 0) > 0);
   const belowTarget = priced.filter((d) => d.analysis!.at!.status === "below-target");
@@ -144,7 +159,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
     const data = await loadMenuMonth(ctx.unit.id, monthStart);
     if (usesMenu(true, data.orders)) {
       const [products, combos, comboWeights] = await Promise.all([loadMenuProducts(orgId), loadCombos(orgId, { active: true }), loadSalesWeights(ctx.unit.id)]);
-      const recipeCosts = new Map(dishes.map((d) => [d.id, { cost: d.cost }]));
+      const recipeCosts = new Map(dishes.map((d) => [d.id, { cost: monthCost(d) }]));
       const comboTargets = new Map(
         combos.map((c) => {
           const sc = summarizeCombo(c, recipeCosts, comboWeights, ctx.settings, feePct);
@@ -154,7 +169,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
       // Os cardápios cobram mensalidade fixa (custo fixo), não % por pedido: aqui só impostos e outras taxas.
       const variablePct = ctx.settings.taxPct + (ctx.settings.otherPct ?? 0);
       const view = buildMenuMonth({ products, sales: data.sales, recipes: recipeCosts, combos: comboTargets, variablePct });
-      const profit = menuProfit(view, { typedRevenue: typedOutside, dishes: dishes.map((d) => ({ qty: qty.get(d.id) ?? 0, price: d.price, cost: d.cost })), variablePct });
+      const profit = menuProfit(view, { typedRevenue: typedOutside, dishes: dishes.map((d) => ({ qty: qty.get(d.id) ?? 0, price: d.price, cost: monthCost(d) })), variablePct });
       menu = {
         orders: data.orders,
         revenue: data.revenue,
@@ -174,7 +189,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
     revenue: (menu ? menu.outsideRevenue : typedOutside) + (menu?.revenue ?? 0),
     purchases: Number(period?.purchases ?? 0),
     sales: [
-      ...dishes.map((d) => ({ recipeId: d.id, qty: qty.get(d.id) ?? 0, cost: d.cost })),
+      ...dishes.map((d) => ({ recipeId: d.id, qty: qty.get(d.id) ?? 0, cost: monthCost(d) })),
       ...menuLines.flatMap((l) =>
         l.status === "linked" ? [{ recipeId: "menu", qty: Number(l.qty), cost: l.costPerSale == null ? null : Number(l.costPerSale), unitsPerSale: l.unitsPerSale }] : [],
       ),
@@ -240,6 +255,9 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
     belowTarget,
     avgNetPct,
     month: { ...summary, start: monthStart, hasData: summary.revenue > 0 || summary.purchases > 0 || summary.soldUnits > 0 },
+    monthBasis: series
+      ? { variablePct: series.average.taxPct + series.average.feePct, fixedTotal: series.average.fixedTotal + series.average.staffTotal }
+      : { variablePct: ctx.settings.taxPct + (ctx.settings.otherPct ?? 0), fixedTotal: ctx.fixedTotal },
     menu,
     staleCount: activeIngs.filter((i) => Number(i.purchase_price) > 0 && new Date(i.price_updated_at).getTime() < staleBefore).length,
     noPriceCount: activeIngs.filter((i) => !(Number(i.purchase_price) > 0)).length,

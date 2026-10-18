@@ -94,8 +94,8 @@ export default async function HomePage() {
           now: new Date(),
           revenue: data.month.revenue,
           insumosCost: data.month.theoreticalCost,
-          variablePct: data.ctx.settings.taxPct + (data.ctx.settings.otherPct ?? 0),
-          fixedTotal: data.ctx.fixedTotal,
+          variablePct: data.monthBasis.variablePct,
+          fixedTotal: data.monthBasis.fixedTotal,
           breakEvenRevenue: data.breakEven?.revenue ?? null,
         })
       : null;
