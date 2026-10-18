@@ -57,15 +57,15 @@ function numberOf(c: Cell): number | null {
 type Columns<K extends string> = Partial<Record<K, number>>;
 
 /** Procura a linha de cabeçalho (nas 10 primeiras) e a posição de cada coluna pelos nomes que o dono costuma usar. */
-function findColumns<K extends string>(rows: Cell[][], synonyms: Record<K, string[]>, required: NoInfer<K>[]): { headerRow: number; cols: Columns<K> } | null {
+function findColumns<K extends string>(rows: Cell[][], synonyms: Record<K, string[]>, required: NoInfer<K>[], anyOf: NoInfer<K>[] = []): { headerRow: number; cols: Columns<K> } | null {
   for (let r = 0; r < Math.min(rows.length, 10); r++) {
     const heads = rows[r].map(header);
     const cols: Columns<K> = {};
     for (const key of Object.keys(synonyms) as K[]) {
-      const idx = heads.findIndex((h) => synonyms[key].includes(h));
+      const idx = heads.findIndex((h) => synonyms[key].some((syn) => h === syn || h.startsWith(`${syn} `)));
       if (idx >= 0) cols[key] = idx;
     }
-    if (required.every((k) => cols[k] !== undefined)) return { headerRow: r, cols };
+    if (required.every((k) => cols[k] !== undefined) && (anyOf.length === 0 || anyOf.some((k) => cols[k] !== undefined))) return { headerRow: r, cols };
   }
   return null;
 }
@@ -75,29 +75,34 @@ export type SheetIngredient = {
   name: string;
   category: string | null;
   unit: PurchaseUnit;
+  /** A planilha não tem coluna de unidade: o sistema assumiu kg e o dono confere na prévia. */
+  unitAssumed: boolean;
   qty: number;
   price: number;
   correctionFactor: number;
 };
 
 const ING_COLUMNS = {
-  name: ["nome", "insumo", "produto", "item", "ingrediente", "descricao"],
+  name: ["nome", "insumo", "insumos", "insumos alimenticios", "produto", "item", "ingrediente", "descricao"],
   unit: ["unidade", "un", "medida", "unidade de compra", "und"],
-  qty: ["quantidade", "qtd", "qtde", "quantidade de compra", "qtd compra", "embalagem"],
-  price: ["preco", "valor", "preco pago", "preco de compra", "custo", "preco r"],
+  qty: ["quantidade", "qtd", "qtde", "quantidade de compra", "qtd compra", "qtd na embalagem", "qtd embalagem", "embalagem"],
+  price: ["preco", "valor", "preco pago", "preco de compra", "custo do insumo", "custo", "preco r"],
   category: ["categoria", "grupo", "tipo"],
   fc: ["fc", "fator de correcao", "fator correcao", "fator"],
 };
 
 export function readIngredientSheet(rows: Cell[][]): { items: SheetIngredient[]; errors: RowError[] } | { error: string } {
-  const found = findColumns(rows, ING_COLUMNS, ["name", "unit"]);
-  if (!found) return { error: "Não achei as colunas. A primeira linha precisa ter pelo menos “Nome” e “Unidade” (veja o modelo)." };
+  const found = findColumns(rows, ING_COLUMNS, ["name"], ["unit", "price", "qty"]);
+  if (!found) return { error: "Não achei as colunas. A linha de títulos precisa ter pelo menos “Nome” e o preço ou a quantidade (veja o modelo)." };
   const { headerRow, cols } = found;
   const items: SheetIngredient[] = [];
   const errors: RowError[] = [];
   for (let r = headerRow + 1; r < rows.length; r++) {
     const row = rows[r];
-    if (row.every((c) => text(c) === "")) continue;
+    if (row.every((c) => text(c) === "")) {
+      if (items.length > 0 || errors.length > 0) break; // a tabela acabou: o que vem depois (outra tabela na mesma aba) não é insumo
+      continue;
+    }
     const line = r + 1;
     const name = text(row[cols.name!]);
     if (!name) {
@@ -108,9 +113,10 @@ export function readIngredientSheet(rows: Cell[][]): { items: SheetIngredient[];
       errors.push({ line, message: `“${name.slice(0, 20)}…”: nome com mais de 80 letras.` });
       continue;
     }
-    const k = classifyUnit(text(row[cols.unit!]));
+    const rawUnit = cols.unit === undefined ? "" : text(row[cols.unit]);
+    const k = rawUnit === "" ? ({ kind: "measure", unit: "kg" } as const) : classifyUnit(rawUnit);
     if (k.kind !== "measure") {
-      errors.push({ line, message: `${name}: unidade “${text(row[cols.unit!])}” não é válida. Use kg, g, l, ml ou un.` });
+      errors.push({ line, message: `${name}: unidade “${rawUnit}” não é válida. Use kg, g, l, ml ou un.` });
       continue;
     }
     const qty = cols.qty === undefined || text(row[cols.qty]) === "" ? 1 : numberOf(row[cols.qty]);
@@ -129,7 +135,7 @@ export function readIngredientSheet(rows: Cell[][]): { items: SheetIngredient[];
       continue;
     }
     const category = cols.category === undefined ? "" : text(row[cols.category]);
-    items.push({ line, name, category: category ? category.slice(0, 40) : null, unit: k.unit, qty, price, correctionFactor: fc });
+    items.push({ line, name, category: category ? category.slice(0, 40) : null, unit: k.unit, unitAssumed: rawUnit === "", qty, price, correctionFactor: fc });
   }
   if (items.length === 0 && errors.length === 0) return { error: "A planilha não tem linhas com insumos." };
   return { items, errors };

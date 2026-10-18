@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { readSheet } from "read-excel-file/node";
+import readXlsxFile from "read-excel-file/node";
 import { getSession, requireMember } from "@/lib/auth";
 import { baseUnitOf, isCompatibleUnit, isPurchaseUnit, toBaseQty } from "@/lib/calc";
 import { normalizeName } from "@/lib/names";
@@ -17,21 +17,32 @@ const MAX_ROWS = 3000;
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 type Existing = { id: string; name: string; kind: string; purchase_unit: string; purchase_qty: number };
 
-async function readRows(formData: FormData): Promise<{ rows: Cell[][] } | { error: string }> {
+/** Todas as abas do arquivo (CSV tem uma só). O cliente costuma mandar uma pasta com várias abas; a certa é a que tem as colunas. */
+async function readSheets(formData: FormData): Promise<{ sheets: Cell[][][] } | { error: string }> {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "Escolha um arquivo .xlsx ou .csv." };
   if (file.size > MAX_BYTES) return { error: "Arquivo grande demais (máximo 2 MB)." };
   const lower = file.name.toLowerCase();
   try {
-    let rows: Cell[][];
-    if (lower.endsWith(".xlsx")) rows = (await readSheet(Buffer.from(await file.arrayBuffer()))) as Cell[][];
-    else if (lower.endsWith(".csv") || lower.endsWith(".txt")) rows = parseCsv(await file.text());
+    let sheets: Cell[][][];
+    if (lower.endsWith(".xlsx")) sheets = (await readXlsxFile(Buffer.from(await file.arrayBuffer()))).slice(0, 30).map((s) => s.data as Cell[][]);
+    else if (lower.endsWith(".csv") || lower.endsWith(".txt")) sheets = [parseCsv(await file.text())];
     else return { error: "Use um arquivo .xlsx (Excel) ou .csv. Arquivos .xls antigos: salve como .xlsx." };
-    if (rows.length > MAX_ROWS) return { error: `A planilha tem linhas demais (máximo ${MAX_ROWS}).` };
-    return { rows };
+    return { sheets: sheets.map((rows) => rows.slice(0, MAX_ROWS)) };
   } catch {
     return { error: "Não consegui abrir o arquivo. Confira se é uma planilha válida." };
   }
+}
+
+/** A primeira aba em que o leitor encontra as colunas; se nenhuma, o erro da primeira aba com conteúdo. */
+function firstSheet<T>(sheets: Cell[][][], parse: (rows: Cell[][]) => T | { error: string }): T | { error: string } {
+  let firstError: { error: string } | null = null;
+  for (const rows of sheets) {
+    const r = parse(rows);
+    if (!(typeof r === "object" && r !== null && "error" in r)) return r;
+    firstError ??= r as { error: string };
+  }
+  return firstError ?? { error: "A planilha está vazia." };
 }
 
 async function existingIngredients(supabase: Supabase, orgId: string): Promise<Existing[]> {
@@ -68,24 +79,24 @@ function classifyRecipes(recipes: SheetRecipe[], ingredients: Existing[], recipe
 export async function previewSheet(kind: SheetKind, formData: FormData): Promise<SheetPreview> {
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
-  const read = await readRows(formData);
+  const read = await readSheets(formData);
   if ("error" in read) return { ok: false, error: read.error };
   const supabase = await createClient();
   const ingredients = await existingIngredients(supabase, orgId);
 
   if (kind === "insumos") {
-    const parsed = readIngredientSheet(read.rows);
+    const parsed = firstSheet(read.sheets, readIngredientSheet);
     if ("error" in parsed) return { ok: false, error: parsed.error };
     const have = new Set(ingredients.map((i) => normalizeName(i.name)));
     return {
       ok: true,
       kind,
       errors: parsed.errors,
-      rows: dedupeIngredients(parsed.items).map((i) => ({ line: i.line, name: i.name, unit: i.unit, qty: i.qty, price: i.price, category: i.category, status: have.has(normalizeName(i.name)) ? "exists" : "new" })),
+      rows: dedupeIngredients(parsed.items).map((i) => ({ line: i.line, name: i.name, unit: i.unit, assumed: i.unitAssumed, qty: i.qty, price: i.price, category: i.category, status: have.has(normalizeName(i.name)) ? "exists" : "new" })),
     };
   }
 
-  const parsed = readRecipeSheet(read.rows);
+  const parsed = firstSheet(read.sheets, readRecipeSheet);
   if ("error" in parsed) return { ok: false, error: parsed.error };
   const classified = classifyRecipes(parsed.recipes, ingredients, await existingRecipeNames(supabase, orgId));
   return { ok: true, kind, errors: parsed.errors, recipes: classified.map((c) => ({ name: c.recipe.name, items: c.recipe.lines.length, status: c.status, missing: c.problems })) };
@@ -94,16 +105,30 @@ export async function previewSheet(kind: SheetKind, formData: FormData): Promise
 export async function applySheet(kind: SheetKind, formData: FormData): Promise<SheetApplyResult> {
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
-  const read = await readRows(formData);
+  const read = await readSheets(formData);
   if ("error" in read) return { ok: false, error: read.error };
   const supabase = await createClient();
   const ingredients = await existingIngredients(supabase, orgId);
+  // Unidade escolhida na prévia para as linhas que vieram sem unidade: { "linha": "kg" | "l" | "un"... }
+  let unitPicks: Record<string, string> = {};
+  try {
+    unitPicks = JSON.parse(String(formData.get("units") ?? "{}")) as Record<string, string>;
+  } catch {
+    return { ok: false, error: "Não entendi as unidades escolhidas. Recarregue a página e tente de novo." };
+  }
   const updatePrices = formData.get("update_prices") === "1";
   let message: string;
 
   if (kind === "insumos") {
-    const parsed = readIngredientSheet(read.rows);
-    if ("error" in parsed) return { ok: false, error: parsed.error };
+    const found = firstSheet(read.sheets, readIngredientSheet);
+    if ("error" in found) return { ok: false, error: found.error };
+    const parsed = {
+      ...found,
+      items: found.items.map((i) => {
+        const pick = unitPicks[String(i.line)];
+        return i.unitAssumed && typeof pick === "string" && isPurchaseUnit(pick) ? { ...i, unit: pick } : i;
+      }),
+    };
     const byName = new Map(ingredients.map((i) => [normalizeName(i.name), i]));
     const fresh: SheetIngredient[] = [];
     let updated = 0;
@@ -136,7 +161,7 @@ export async function applySheet(kind: SheetKind, formData: FormData): Promise<S
       .filter(Boolean)
       .join(" · ");
   } else {
-    const parsed = readRecipeSheet(read.rows);
+    const parsed = firstSheet(read.sheets, readRecipeSheet);
     if ("error" in parsed) return { ok: false, error: parsed.error };
     const classified = classifyRecipes(parsed.recipes, ingredients, await existingRecipeNames(supabase, orgId));
     const byName = new Map(ingredients.map((i) => [normalizeName(i.name), i]));

@@ -93,3 +93,29 @@ describe("planilha de fichas", () => {
     expect(r.errors.map((e) => e.line)).toEqual([2, 3]);
   });
 });
+
+describe("planilha de cliente sem coluna de unidade", () => {
+  const rows = [
+    [null, null, null],
+    [null, "Insumos alimentícios", "Custo do insumo (R$)", "Qtd na embalagem (kg/lt/unds)", "Custo unitário final (R$)"],
+    [null, "arroz branco", 122, 30, 4.07],
+    [null, "azeite", 42.9, 0.5, 85.8],
+    [null, null, null, null, null],
+    [null, "Spaghetti com almondega", 8.3, 1, 8.3],
+    [null, "Insumos descartáveis", "Custo do insumo (R$)", "Qtd embalagem (kg/lt/und)", "Custo unitário final (R$)"],
+  ];
+
+  it("lê nome, preço e quantidade, assume kg e para na primeira linha em branco", () => {
+    const r = readIngredientSheet(rows);
+    if ("error" in r) throw new Error(r.error);
+    expect(r.errors).toEqual([]);
+    expect(r.items.map((i) => [i.name, i.price, i.qty, i.unit, i.unitAssumed])).toEqual([
+      ["arroz branco", 122, 30, "kg", true],
+      ["azeite", 42.9, 0.5, "kg", true],
+    ]);
+  });
+
+  it("uma aba só de apresentação não vira insumos", () => {
+    expect("error" in readIngredientSheet([[null, "Ficha Técnica Gerencial"], [null, "Como fazer uma Ficha Técnica?"]])).toBe(true);
+  });
+});

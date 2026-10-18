@@ -6,7 +6,7 @@ export type SheetPreview =
   | {
       ok: true;
       kind: "insumos";
-      rows: { line: number; name: string; unit: string; qty: number; price: number; category: string | null; status: "new" | "exists" }[];
+      rows: { line: number; name: string; unit: string; assumed: boolean; qty: number; price: number; category: string | null; status: "new" | "exists" }[];
       errors: RowError[];
     }
   | {

@@ -39,6 +39,7 @@ export function SheetImporter() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Extract<SheetPreview, { ok: true }> | null>(null);
   const [updatePrices, setUpdatePrices] = useState(false);
+  const [units, setUnits] = useState<Record<number, string>>({}); // unidade escolhida nas linhas que vieram sem unidade
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [reading, startReading] = useTransition();
@@ -57,6 +58,7 @@ export function SheetImporter() {
     setError(null);
     setDone(null);
     setPreview(null);
+    setUnits({});
     setFile(f);
     if (!f) return;
     const fd = new FormData();
@@ -73,6 +75,7 @@ export function SheetImporter() {
     const fd = new FormData();
     fd.set("file", file);
     if (updatePrices) fd.set("update_prices", "1");
+    fd.set("units", JSON.stringify(units));
     setError(null);
     startSaving(async () => {
       const res = await applySheet(kind, fd);
@@ -159,15 +162,32 @@ export function SheetImporter() {
 
       {preview?.kind === "insumos" ? (
         <>
+          {preview.rows.some((r) => r.assumed) ? (
+            <p className="rounded-xl bg-warning/10 p-3 text-sm">Sua planilha não tem coluna de unidade. Deixei tudo em kg: confira e troque para litro ou unidade nos itens que forem assim.</p>
+          ) : null}
           <ul className="divide-y divide-border card px-4">
             {preview.rows.map((r) => (
               <li key={r.line} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <p className="font-semibold leading-snug">{r.name}</p>
                   <p className="tabular text-sm text-muted">
-                    {r.price > 0 ? formatBRL(r.price) : "sem preço"} por {formatNumber(r.qty, 3)} {r.unit}
+                    {r.price > 0 ? formatBRL(r.price) : "sem preço"} por {formatNumber(r.qty, 3)} {r.assumed ? "" : r.unit}
                     {r.category ? ` · ${r.category}` : ""}
                   </p>
+                  {r.assumed ? (
+                    <select
+                      value={units[r.line] ?? r.unit}
+                      onChange={(e) => setUnits((u) => ({ ...u, [r.line]: e.target.value }))}
+                      aria-label={`Unidade de ${r.name}`}
+                      className="mt-1 h-11 card px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="kg">kg (peso)</option>
+                      <option value="l">litro</option>
+                      <option value="un">unidade</option>
+                      <option value="g">g</option>
+                      <option value="ml">ml</option>
+                    </select>
+                  ) : null}
                 </div>
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.status === "new" ? "bg-success/10 text-success" : "bg-border text-muted"}`}>{r.status === "new" ? "Novo" : "Já existe"}</span>
               </li>
