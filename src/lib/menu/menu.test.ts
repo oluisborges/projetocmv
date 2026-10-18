@@ -35,6 +35,14 @@ describe("CardápioWeb", () => {
     expect(lines.find((l) => l.name === "Arroz extra")).toMatchObject({ key: "id:9", kind: "option", qty: 2, total: 4 });
   });
 
+  it("código do cupom: só desconto da categoria cupom, em maiúsculas", () => {
+    const m = cw.mapOrder({ ...order, discounts: [{ category: "loyalty", total: 2 }, { category: "coupon", coupon_code: " bem10 ", total: 3 }] })!;
+    expect(m.coupon).toBe("BEM10");
+    expect(m.discount).toBe(5);
+    expect(cw.mapOrder({ ...order, discounts: [{ category: "loyalty", coupon_code: "X", total: 2 }] })!.coupon).toBeNull();
+    expect(cw.mapOrder({ ...order, discounts: null })!.coupon).toBeNull();
+  });
+
   it("cancelado e em andamento não são venda", () => {
     expect(cw.mapOrder({ ...order, status: "canceled" })).toBeNull();
     expect(cw.mapOrder({ ...order, status: "confirmed" })).toBeNull();
@@ -83,6 +91,12 @@ describe("Prefiro Delivery", () => {
     expect(m.orderedAt).toBe("2026-10-13T00:15:00.000Z");
     expect(m.lines.map((l) => l.name)).toEqual(["Strogonoff 350g", "Arroz extra", "Frango grelhado 350g"]);
     expect(m.lines[0]).toMatchObject({ kind: "item", qty: 2, total: 39.8 });
+  });
+
+  it("cupom da Prefiro vem no campo cupom", () => {
+    expect(pf.mapOrder({ ...raw, cupom: "frete gratis" })!.coupon).toBe("FRETE GRATIS");
+    expect(pf.mapOrder({ ...raw, cupom: "" })!.coupon).toBeNull();
+    expect(pf.mapOrder(raw)!.coupon).toBeNull();
   });
 
   it("status: solicitado fica de fora, cancelado e expirado nunca são venda", () => {

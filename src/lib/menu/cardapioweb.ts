@@ -19,7 +19,7 @@ export type CwOrderDetail = {
   created_at: string;
   sales_channel?: string | null;
   delivery_fee?: number | string | null;
-  discounts?: { total?: number | string | null }[] | null;
+  discounts?: { category?: string | null; coupon_code?: string | null; total?: number | string | null }[] | null;
   items?: CwItem[] | null;
 };
 
@@ -45,6 +45,12 @@ export function mapLines(items: CwItem[] | null | undefined): MappedLine[] {
   return out;
 }
 
+/** Código do cupom do pedido: o primeiro desconto da categoria "coupon" que traz código. */
+export function couponOf(discounts: CwOrderDetail["discounts"]): string | null {
+  const c = (discounts ?? []).find((d) => d?.category === "coupon" && text(d?.coupon_code));
+  return c ? text(c.coupon_code).toUpperCase().slice(0, 60) : null;
+}
+
 /** Só pedido `closed` vira venda. Cancelado e em andamento devolvem null. */
 export function mapOrder(o: CwOrderDetail): MappedOrder | null {
   if (o.status !== "closed") return null;
@@ -55,6 +61,7 @@ export function mapOrder(o: CwOrderDetail): MappedOrder | null {
     orderedAt: new Date(o.created_at).toISOString(),
     total: cents(total),
     discount: money((o.discounts ?? []).reduce((s, d) => s + num(d?.total), 0)),
+    coupon: couponOf(o.discounts),
     deliveryFee: money(num(o.delivery_fee)),
     channel: text(o.sales_channel) || null,
     lines: mapLines(o.items),

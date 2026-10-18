@@ -71,7 +71,7 @@ export async function saveOrders(db: SupabaseClient, conn: Pick<Connection, "id"
     const { error } = await db.from("menu_orders").upsert(
       part.map((o) => ({
         org_id: conn.org_id, unit_id: conn.unit_id, connection_id: conn.id, external_id: o.externalId,
-        ordered_at: o.orderedAt, total: o.total, discount: o.discount, delivery_fee: o.deliveryFee, channel: o.channel,
+        ordered_at: o.orderedAt, total: o.total, discount: o.discount, coupon_code: o.coupon ?? "", delivery_fee: o.deliveryFee, channel: o.channel,
       })),
       { onConflict: "connection_id,external_id" },
     );

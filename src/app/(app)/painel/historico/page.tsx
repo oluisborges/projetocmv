@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PainelTabs } from "@/components/painel-tabs";
 import { requireMember } from "@/lib/auth";
+import { hasMenuConnection } from "@/lib/menu-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { loadHistory, type HistoryEntry } from "@/lib/history-data";
 import type { ChangeEvent } from "@/lib/history-view";
@@ -201,7 +202,7 @@ export default async function HistoricoPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Painel</h1>
         <p className="text-muted">O que aconteceu em cada mês.</p>
       </section>
-      <PainelTabs active="historico" />
+      <PainelTabs active="historico" showCoupons={await hasMenuConnection(orgId)} />
 
       {!history || history.entries.length === 0 ? (
         <p className="card p-4 text-sm">

@@ -83,6 +83,7 @@ export function mapOrder(raw: Raw | null | undefined): MappedOrder | null {
     orderedAt,
     total: cents(num(raw.total)),
     discount: money(num(raw.desconto)),
+    coupon: text(raw.cupom) ? text(raw.cupom).toUpperCase().slice(0, 60) : null,
     deliveryFee: money(num(raw.taxa_entrega)),
     channel: "prefiro",
     lines: mapLines(raw.itens),

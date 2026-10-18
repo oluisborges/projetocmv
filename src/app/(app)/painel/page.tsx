@@ -3,6 +3,7 @@ import { PainelTabs } from "@/components/painel-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadDashboard } from "@/lib/dashboard-data";
 import { hasHistory } from "@/lib/history-data";
+import { hasMenuConnection } from "@/lib/menu-data";
 import { PainelView } from "./painel-view";
 
 export const metadata = { title: "Painel" };
@@ -18,7 +19,7 @@ export default async function PainelPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Painel</h1>
         <p className="text-muted">Como está o seu negócio, em números simples.</p>
       </section>
-      <PainelTabs active="resumo" showHistory={showHistory} />
+      <PainelTabs active="resumo" showHistory={showHistory} showCoupons={await hasMenuConnection(orgId)} />
       {data ? <PainelView data={data} /> : <p className="card p-4 text-sm">Sua marmitaria ainda não tem unidade cadastrada. Fale com o suporte do Precificaí.</p>}
       <BrandFooter />
     </>

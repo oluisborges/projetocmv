@@ -5,6 +5,7 @@ import { PainelTabs } from "@/components/painel-tabs";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { hasHistory } from "@/lib/history-data";
+import { hasMenuConnection } from "@/lib/menu-data";
 import { loadMenuEngineering } from "@/lib/menu-engineering-data";
 import { productsForShare, QUADRANT_INFO, summarizeQuadrants, type Quadrant } from "@/lib/menu-engineering";
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
@@ -35,7 +36,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
         <h1 className="text-2xl font-extrabold tracking-tight">Painel</h1>
         <p className="text-muted">Quais marmitas valem destaque, reajuste ou saída do cardápio.</p>
       </section>
-      <PainelTabs active="cardapio" showHistory={showHistory} />
+      <PainelTabs active="cardapio" showHistory={showHistory} showCoupons={await hasMenuConnection(orgId)} />
     </>
   );
 

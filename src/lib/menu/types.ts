@@ -22,6 +22,8 @@ export type MappedOrder = {
   orderedAt: string;
   total: number;
   discount: number;
+  /** Código do cupom usado no pedido (maiúsculas); `null` = o pedido não traz código (desconto de fidelidade, etc.). */
+  coupon: string | null;
   deliveryFee: number;
   channel: string | null;
   lines: MappedLine[];

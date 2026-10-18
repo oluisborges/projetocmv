@@ -81,6 +81,16 @@ export async function enqueue(db: SupabaseClient, conn: Pick<Connection, "id" | 
   }
 }
 
+/**
+ * Pedidos importados antes de guardarmos o cupom (código nulo) que têm desconto: voltam para a fila para serem relidos e ganharem o código.
+ * Um lote por ciclo; quando acabam, nada mais volta. Pedido que não existe mais no cardápio recebe "" (sem código) para não voltar sempre.
+ */
+async function enqueueLegacyCoupons(db: SupabaseClient, conn: Pick<Connection, "id" | "org_id">, limit = 300) {
+  const { data } = await db.from("menu_orders").select("external_id").eq("connection_id", conn.id).gt("discount", 0).is("coupon_code", null).limit(limit);
+  const ids = (data ?? []).map((r) => String(r.external_id).replace(/^(cw|pf):/, ""));
+  if (ids.length > 0) await enqueue(db, conn, ids, true);
+}
+
 async function drainQueue(db: SupabaseClient, conn: Connection, fetchOne: (id: string) => Promise<Fetched>, deadline: number): Promise<number> {
   let processed = 0;
   while (Date.now() < deadline - SAFETY_MS) {
@@ -102,7 +112,11 @@ async function drainQueue(db: SupabaseClient, conn: Connection, fetchOne: (id: s
       if (Date.now() > deadline - SAFETY_MS) break;
       try {
         const r = await fetchOne(q.order_id);
-        if (!r) settle.push({ order_id: q.order_id, state: "skipped", attempts: q.attempts, last_error: "não encontrado" });
+        if (!r) {
+          settle.push({ order_id: q.order_id, state: "skipped", attempts: q.attempts, last_error: "não encontrado" });
+          // se era um pedido antigo à espera do código do cupom, para de pedir
+          await db.from("menu_orders").update({ coupon_code: "" }).eq("connection_id", conn.id).eq("external_id", `${conn.provider === "cardapioweb" ? "cw" : "pf"}:${q.order_id}`).is("coupon_code", null);
+        }
         else {
           if (r.order) sales.push(r.order);
           if (r.gone) gone.push(`${conn.provider === "cardapioweb" ? "cw" : "pf"}:${q.order_id}`);
@@ -193,6 +207,7 @@ async function syncCardapioweb(db: SupabaseClient, conn: Connection, creds: Cred
         continue;
       }
       const startedAt = new Date();
+      await enqueueLegacyCoupons(db, conn);
       await listWindow(from, new Date());
       saved += await drainQueue(db, conn, fetchOne, deadline);
       await setState(db, conn.id, { last_incremental_at: startedAt.toISOString() });
@@ -273,6 +288,7 @@ async function syncPrefiro(db: SupabaseClient, conn: Connection, creds: Creds, d
     } else {
       // em dia: pedidos criados ou alterados desde a última conferência (pega novos, mudança de status e cancelamento)
       const startedAt = new Date();
+      await enqueueLegacyCoupons(db, conn);
       const since = new Date((conn.last_incremental_at ? Date.parse(conn.last_incremental_at) : Date.now() - DAY_MS) - PF_OVERLAP_MS);
       if (Date.now() - since.getTime() > MAX_INCREMENTAL_GAP_MS) {
         phase = "history";
