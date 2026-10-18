@@ -10,6 +10,7 @@ import { kickStalled } from "@/lib/menu/server/kick";
 import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { normalizeSnapshot, summarizeSamples } from "@/lib/history-view";
+import { closeMonthChecklist } from "@/lib/close-month";
 import { currentMonthStart, lastMonths, monthBounds, monthLabel, monthStart, summarizeMonth } from "@/lib/month-view";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
@@ -48,6 +49,13 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
     loadRecipes(),
     loadCurrentPrices(ctx.unit.id), // preço que o dono cadastrou: vale para a venda por fora
   ]);
+  const prevMonth = lastMonths(month, 2)[1];
+  const bounds = monthBounds(month);
+  const [{ data: prevPeriod }, { data: nfeRows }] = await Promise.all([
+    supabase.from("periods").select("revenue").eq("unit_id", ctx.unit.id).eq("month", prevMonth).maybeSingle(),
+    supabase.from("nfe_imports").select("added_to_purchases").eq("unit_id", ctx.unit.id).gte("issued_at", bounds.start.toISOString()).lt("issued_at", bounds.end.toISOString()),
+  ]);
+  const purchasesFromNfe = (nfeRows ?? []).reduce((n, r) => n + Number(r.added_to_purchases), 0);
   const { data: salesRows } = period
     ? await supabase.from("period_sales").select("recipe_id, qty_sold").eq("period_id", period.id)
     : { data: [] as { recipe_id: string; qty_sold: number }[] };
@@ -128,6 +136,20 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
       : staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
   });
 
+  const close = closeMonthChecklist({
+    month,
+    connected: menuOn,
+    menuOrders: menuData?.orders ?? 0,
+    menuRevenue: menuData?.revenue ?? 0,
+    purchases,
+    purchasesFromNfe,
+    outsideRevenue: typedOutside,
+    prevOutsideRevenue: Number(prevPeriod?.revenue ?? 0),
+    hasFixedCosts: ctx.fixedTotal > 0,
+    recipesWithoutCost: summary.salesWithoutCost,
+    soldUnits: summary.soldUnits,
+  });
+
   const months = lastMonths(now, 6);
   if (!months.includes(month)) months.push(month);
   months.sort().reverse(); // do mais recente para o mais antigo, mesmo quando o mês pedido está fora da lista
@@ -165,10 +187,40 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
+      <section aria-label="Para fechar o mês" className={`flex flex-col gap-3 rounded-2xl border-2 p-4 ${close.ready ? "border-success/40 bg-success/10" : "border-border bg-surface"}`}>
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="font-bold">{close.ready ? "Tudo pronto para fechar o mês" : "Para fechar o mês"}</h3>
+          <span className="tabular text-sm text-muted">
+            {close.requiredDone} de {close.required}
+          </span>
+        </div>
+        <ul className="flex flex-col divide-y divide-border">
+          {close.items.map((i) => (
+            <li key={i.key} className="flex items-start gap-3 py-2.5">
+              <span aria-hidden className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${i.done ? "bg-success text-primary-foreground" : "bg-border text-muted"}`}>
+                {i.done ? "✓" : "•"}
+              </span>
+              <span className="min-w-0 flex-1 text-sm">
+                <span className="block font-semibold">
+                  {i.title}
+                  {i.optional ? <span className="font-normal text-muted"> (opcional)</span> : null}
+                </span>
+                <span className="text-muted">{i.detail}</span>
+              </span>
+              {canWrite && i.href && i.cta ? (
+                <Link href={i.href} className="flex min-h-11 shrink-0 items-center text-sm font-semibold text-primary">
+                  {i.cta}
+                </Link>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} discount={menuData.discount} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} importing={isImporting(menuStatus)} pending={menuStatus.reduce((n, c) => n + c.pending_orders, 0)} /> : null}
 
       {canWrite ? (
-        <section className="flex flex-col gap-3">
+        <section id="contas-do-mes" className="flex scroll-mt-20 flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{menuOn ? "1. Vendas por fora do cardápio e compras do mês" : "1. Faturamento e compras do mês"}</h2>
           <PeriodForm month={month} revenue={typedOutside} purchases={purchases} outside={menuOn} />
         </section>
