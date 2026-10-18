@@ -60,16 +60,39 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
             <Link href="/insumos/novo" className={`${button} ${primary}`}>
               + Novo insumo
             </Link>
-            <Link href="/insumos/catalogo" className={`${button} ${secondary}`}>
-              Catálogo de insumos
-            </Link>
+            {items.length < 10 ? (
+              <Link href="/insumos/catalogo" className={`${button} ${secondary}`}>
+                Catálogo de insumos
+              </Link>
+            ) : (
+              <Link href="/insumos/nfe" className={`${button} ${secondary}`}>
+                Importar nota fiscal
+              </Link>
+            )}
           </div>
-          <Link href="/insumos/nfe"className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
-            Importar nota fiscal (XML) do fornecedor
-          </Link>
-          <Link href="/insumos/reajuste" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
-            Reajustar vários preços de uma vez (%)
-          </Link>
+          {items.length < 10 ? (
+            <Link href="/insumos/nfe" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
+              Importar nota fiscal (XML) do fornecedor
+            </Link>
+          ) : (
+            // Depois de montar a lista, o catálogo e o reajuste em % são de uso raro: ficam recolhidos.
+            <details className="text-center">
+              <summary className="inline-flex min-h-11 cursor-pointer items-center justify-center text-sm font-semibold text-muted">Mais opções</summary>
+              <div className="flex flex-col">
+                <Link href="/insumos/catalogo" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
+                  Catálogo de insumos
+                </Link>
+                <Link href="/insumos/reajuste" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
+                  Reajustar vários preços de uma vez (%)
+                </Link>
+              </div>
+            </details>
+          )}
+          {items.length < 10 ? (
+            <Link href="/insumos/reajuste" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
+              Reajustar vários preços de uma vez (%)
+            </Link>
+          ) : null}
         </div>
       ) : null}
 

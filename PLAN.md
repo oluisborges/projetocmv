@@ -198,3 +198,12 @@ Antes de implementar cada tela uso o skill `frontend-design`.
 
 ## 11. Primeira execução após aprovação
 Gravar `PLAN.md` (este documento) e `CLAUDE.md` (seção 7) na raiz do repositório e começar a **Fase 0** exatamente como no item 6.
+
+## Atualização — Início útil, CMV real e relatórios
+- **Início**: cartão "Como estou este mês?" (`lib/month-health`) e "O que fazer agora" (`lib/price-actions`: preço mínimo que bate a meta de margem; só sobe, nunca sugere baixar).
+- **Histórico**: "Por que o resultado mudou" (`lib/profit-bridge`, decomposição exata: quantidade, preço médio, custo dos insumos, contas fixas).
+- **Fechar o mês**: lista do que o app já sabe e do que falta (`lib/close-month`).
+- **Estoque (Custos → Estoque)**: compras por insumo (`ingredient_purchases`, vindas da NF-e ou informadas), uso esperado pelas fichas (`recipeUsage`), contagem no fim do mês (`ingredient_stock_counts`) e marmitas prontas no freezer (`periods.finished_stock_value`). CMV real = estoque do começo + compras − estoque do fim ± freezer (`lib/stock-view`). Combos ainda não entram no uso esperado.
+- **NF-e**: só os itens que viraram insumo somam nas compras do mês; cada importação guarda o que mudou (`nfe_imports.changes`) e pode ser desfeita.
+- **Planilha**: importação só pelo Painel Shogun (`/admin/planilha?org=`), lê todas as abas e aceita planilhas sem coluna de unidade.
+- **Exportar**: `/painel/exportar?mes=&formato=pdf|xlsx` (relatório do mês) e `/fichas/exportar?formato=pdf|xlsx` (fichas).

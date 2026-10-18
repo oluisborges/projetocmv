@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ExportLinks } from "@/components/export-links";
 import { FichasTabs } from "@/components/fichas-tabs";
 import { requireMember } from "@/lib/auth";
+import { loadCombos } from "@/lib/combos-data";
 import { loadSafetyMargin } from "@/lib/pricing-data";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { computeRecipe, recipeCostSettings, type CostItem } from "@/lib/recipe-cost";
@@ -13,7 +14,7 @@ export const metadata = { title: "Fichas técnicas" };
 
 export default async function RecipesPage() {
   const { orgId, canWrite } = await requireMember();
-  const [ingredients, { recipes, items }, archived, safetyMarginPct] = await Promise.all([loadIngredients(), loadRecipes(), loadArchivedRecipes(), loadSafetyMargin(orgId)]);
+  const [ingredients, { recipes, items }, archived, safetyMarginPct, combos] = await Promise.all([loadIngredients(), loadRecipes(), loadArchivedRecipes(), loadSafetyMargin(orgId), loadCombos(orgId)]);
   const byId = new Map(ingredients.map((i) => [i.id, i]));
 
   const cards = recipes.map((r) => {
@@ -31,7 +32,7 @@ export default async function RecipesPage() {
         <p className="text-muted">A receita de cada produto, com o custo por porção sempre atualizado.</p>
       </section>
 
-      <FichasTabs active="marmitas" />
+      <FichasTabs active="marmitas" showCombos={combos.length > 0} />
 
       {canWrite ? (
         <Link href="/fichas/nova" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">
@@ -78,6 +79,12 @@ export default async function RecipesPage() {
           ))}
         </ul>
       )}
+
+      {combos.length === 0 && canWrite && cards.length > 0 ? (
+        <Link href="/fichas/combos" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
+          Vende combos ou kits? Monte um combo
+        </Link>
+      ) : null}
 
       {archived.length > 0 ? (
         <details className="card px-4">
