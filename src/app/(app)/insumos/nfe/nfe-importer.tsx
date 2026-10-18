@@ -95,6 +95,7 @@ export function NfeImporter() {
     });
   }
 
+  const stockTotalOf = (n: NfePreviewNote) => n.items.reduce((sum, i) => (["update", "create"].includes(picks[keyOf(n, i)]?.choice ?? "skip") ? sum + i.total : sum), 0);
   const ingredients = preview?.ingredients ?? [];
   const byId = new Map(ingredients.map((i) => [i.id, i]));
   const importable = preview?.notes.filter((n) => !n.alreadyImported) ?? [];
@@ -221,8 +222,10 @@ export function NfeImporter() {
               <label className="flex min-h-11 items-center gap-3 text-sm">
                 <input type="checkbox" className="size-5" checked={addPurchases[n.accessKey] ?? false} onChange={(e) => setAddPurchases((c) => ({ ...c, [n.accessKey]: e.target.checked }))} />
                 <span>
-                  Somar {formatBRL(n.total)} às compras do mês
-                  <Hint>As compras do mês entram no CMV. Desmarque se você já lançou esse valor em Fechar o mês, para não contar duas vezes.</Hint>
+                  Somar {formatBRL(stockTotalOf(n))} às compras do mês
+                  <Hint>
+                    Só entram os itens que você marcou como insumo (frete, impostos e itens ignorados ficam de fora). As compras do mês entram no CMV. Desmarque se você já lançou esse valor em Fechar o mês, para não contar duas vezes.
+                  </Hint>
                 </span>
               </label>
             </>

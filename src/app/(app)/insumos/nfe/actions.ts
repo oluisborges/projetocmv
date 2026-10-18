@@ -152,8 +152,6 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
   for (const note of payload) {
     const doc = byKey.get(note.accessKey);
     if (!doc) continue;
-    const addTotal = note.addToPurchases ? Math.round((doc.total > 0 ? doc.total : doc.items.reduce((s, i) => s + i.total, 0)) * 100) / 100 : 0;
-
     // A nota entra primeiro: a chave única impede contar duas vezes (dois cliques, duas abas).
     const { error: importError } = await supabase.from("nfe_imports").insert({
       org_id: orgId,
@@ -165,7 +163,7 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
       issued_at: doc.issuedAt,
       total: doc.total,
       items_count: doc.items.length,
-      added_to_purchases: addTotal,
+      added_to_purchases: 0,
       imported_by: session.userId,
     });
     if (importError?.code === "23505") {
@@ -178,6 +176,9 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
     }
 
     const items = new Map<string, NfeItem>(doc.items.map((i) => [i.code, i]));
+    // Só o valor dos itens que viraram insumo entra nas compras: frete, imposto e o que não é insumo (limpeza…) ficam de fora.
+    let stockTotal = 0;
+    const changes: { ingredient_id: string; old_price: number | null; new_price: number; created: boolean }[] = [];
     const cnpj = doc.supplierCnpj || "0";
     for (const d of note.decisions) {
       const item = items.get(d.code);
@@ -220,6 +221,8 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
         }
         names.add(normalizeName(name));
         ingredientId = data.id as string;
+        changes.push({ ingredient_id: ingredientId, old_price: null, new_price: price, created: true });
+        stockTotal += item.total;
         created++;
       } else {
         const ing = ingredientId ? ingredients.get(ingredientId) : undefined;
@@ -237,6 +240,9 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
           warnings.push(`${ing.name}: não foi possível atualizar o preço.`);
           continue;
         }
+        changes.push({ ingredient_id: ing.id, old_price: ing.purchase_price, new_price: price, created: false });
+        ing.purchase_price = price;
+        stockTotal += item.total;
         updated++;
       }
 
@@ -246,11 +252,21 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
       );
     }
 
+    const addTotal = note.addToPurchases ? Math.round(stockTotal * 100) / 100 : 0;
+    let purchasesAdded = 0;
     if (addTotal > 0) {
       const { error } = await supabase.rpc("nfe_add_purchases", { p_org: orgId, p_unit: unit.id, p_month: monthOf(doc.issuedAt), p_amount: addTotal });
       if (error) warnings.push(`Nota ${doc.number ?? ""}: não consegui somar ao total de compras do mês.`);
-      else purchases += addTotal;
+      else {
+        purchases += addTotal;
+        purchasesAdded = addTotal;
+      }
     }
+    await supabase
+      .from("nfe_imports")
+      .update({ added_to_purchases: purchasesAdded, items_in_stock_total: Math.round(stockTotal * 100) / 100, changes })
+      .eq("org_id", orgId)
+      .eq("access_key", doc.accessKey);
     notesDone++;
   }
 
@@ -271,4 +287,45 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
   const message = [parts.join(" · ") || "Nada para importar.", ...warnings.slice(0, 5)].join("\n");
   if (notesDone === 0 && skippedNotes === 0) return { ok: false, error: message };
   return { ok: true, message };
+}
+
+type Change = { ingredient_id: string; old_price: number | null; new_price: number; created: boolean };
+
+/**
+ * Desfaz uma importação de nota: devolve o preço dos insumos que ainda estão como a nota deixou (se o dono já mexeu depois, respeita),
+ * arquiva os insumos que a nota criou e que nenhuma ficha usa, tira o valor das compras do mês e libera a nota para importar de novo.
+ */
+export async function undoNfe(formData: FormData): Promise<void> {
+  const { orgId, canWrite } = await requireMember();
+  const id = z.uuid().safeParse(formData.get("id"));
+  if (!canWrite || !id.success) return;
+  const session = await getSession();
+  const unit = await activeUnit(orgId);
+  if (!session || !unit) return;
+
+  const supabase = await createClient();
+  const { data: imp } = await supabase
+    .from("nfe_imports")
+    .select("id, nfe_number, issued_at, added_to_purchases, changes")
+    .eq("id", id.data)
+    .eq("org_id", orgId)
+    .maybeSingle();
+  if (!imp) return;
+
+  for (const c of (Array.isArray(imp.changes) ? imp.changes : []) as Change[]) {
+    if (c.created) {
+      const { count } = await supabase.from("recipe_items").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("ingredient_id", c.ingredient_id);
+      if ((count ?? 0) === 0) await supabase.from("ingredients").update({ archived_at: new Date().toISOString() }).eq("id", c.ingredient_id).eq("org_id", orgId);
+    } else if (c.old_price !== null) {
+      await supabase.from("ingredients").update({ purchase_price: c.old_price }).eq("id", c.ingredient_id).eq("org_id", orgId).eq("purchase_price", c.new_price);
+    }
+  }
+  const added = Number(imp.added_to_purchases);
+  if (added > 0) await supabase.rpc("nfe_remove_purchases", { p_org: orgId, p_unit: unit.id, p_month: monthOf(imp.issued_at as string), p_amount: added });
+  await supabase.from("nfe_imports").delete().eq("id", imp.id).eq("org_id", orgId);
+  await supabase.from("activity_log").insert({ org_id: orgId, user_id: session.userId, by_admin: session.isPlatformAdmin, kind: "change", summary: `Desfez a importação da NF-e ${imp.nfe_number ?? ""}`.trim() });
+  recordSnapshot();
+  revalidatePath("/insumos");
+  revalidatePath("/insumos/nfe");
+  revalidatePath("/custos/mes");
 }
