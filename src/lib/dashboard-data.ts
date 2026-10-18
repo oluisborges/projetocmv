@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { saveMonthSnapshot } from "@/lib/snapshot-data";
 import type { MenuLine, MenuMonth, OutsideEstimate } from "@/lib/calc";
 import { summarizeCombo } from "@/lib/combo-view";
@@ -66,7 +67,7 @@ export type Dashboard = {
 };
 
 /** Tudo que o painel do Início precisa, numa carga só (cada consulta já filtrada pela organização). */
-export async function loadDashboard(orgId: string, canWrite: boolean): Promise<Dashboard | null> {
+export async function loadDashboard(orgId: string, canWrite: boolean, opts: { awaitSnapshot?: boolean } = {}): Promise<Dashboard | null> {
   const ctx = await loadPricingContext(orgId, canWrite);
   if (!ctx) return null;
 
@@ -213,14 +214,19 @@ export async function loadDashboard(orgId: string, canWrite: boolean): Promise<D
   });
 
   // Fotografia do mês para o Histórico (só quem edita grava).
+  // Depois de responder: gravar a foto não deve atrasar a tela.
   if (canWrite) {
-    await saveMonthSnapshot(orgId, ctx.unit.id, {
+    const unitId = ctx.unit.id;
+    const state = {
       fixedTotal: ctx.fixedTotal - ctx.staffTotal,
       staffTotal: ctx.staffTotal,
       taxPct: ctx.settings.taxPct,
       feePct: feePct + (ctx.settings.otherPct ?? 0), // taxa do canal + outras taxas: é a soma que entra na conta do mês
       products: dishes.map((d) => ({ id: d.id, name: d.name, cost: d.cost, price: d.price })),
-    });
+    };
+    // O Histórico lê a foto logo em seguida: nele a gravação é esperada.
+    if (opts.awaitSnapshot) await saveMonthSnapshot(orgId, unitId, state);
+    else after(() => saveMonthSnapshot(orgId, unitId, state));
   }
 
   return {

@@ -34,7 +34,7 @@ export type HistoryEntry = {
 
 /** Meses com alguma informação, do mais recente para o mais antigo. */
 export async function loadHistory(orgId: string, canWrite: boolean): Promise<{ entries: HistoryEntry[]; unitName: string } | null> {
-  const dash = await loadDashboard(orgId, canWrite); // também grava a foto do mês atual
+  const dash = await loadDashboard(orgId, canWrite, { awaitSnapshot: true }); // também grava a foto do mês atual (e espera, porque lê logo em seguida)
   if (!dash) return null;
   const unitId = dash.ctx.unit.id;
   const supabase = await createClient();
