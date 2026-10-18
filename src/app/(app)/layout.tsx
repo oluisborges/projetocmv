@@ -14,7 +14,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const active = await getActiveOrg();
   const orgName = active?.orgName;
   // Equipe Shogun (fora do "ver como"): cardápios que pararam de importar aparecem em qualquer tela.
-  const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts() : [];
+  // O aviso é um extra: se falhar (chave de serviço ausente, banco lento), a tela continua funcionando.
+  const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts().catch(() => []) : [];
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col" style={{ "--sticky-top": active?.viewingAs ? "7.75rem" : "4rem" } as React.CSSProperties}>
