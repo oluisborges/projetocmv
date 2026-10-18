@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { setRecipePrice } from "@/app/(app)/precificacao/actions";
+import { setRecipePrice } from "@/app/(app)/marmitas/precos-actions";
 import { Spinner } from "@/components/spinner";
 import { formatBRL } from "@/lib/format";
 

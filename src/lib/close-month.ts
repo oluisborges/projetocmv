@@ -42,7 +42,7 @@ export function closeMonthChecklist(input: {
       title: "Vendas do cardápio digital",
       done: input.menuOrders > 0,
       detail: input.menuOrders > 0 ? `${input.menuOrders.toLocaleString("pt-BR")} pedidos · ${brl(input.menuRevenue)} já importados, sem digitar nada.` : "Ainda não chegou nenhum pedido deste mês.",
-      href: input.menuOrders > 0 ? undefined : "/custos/cardapio",
+      href: input.menuOrders > 0 ? undefined : "/ajustes/cardapio",
       cta: input.menuOrders > 0 ? undefined : "Ver vínculos",
     });
   }
@@ -72,7 +72,7 @@ export function closeMonthChecklist(input: {
         : input.connected
           ? `WhatsApp, balcão, feira… Só se vendeu por fora.${input.prevOutsideRevenue > 0 ? ` Mês passado: ${brl(input.prevOutsideRevenue)}.` : ""}`
           : `Informe quanto faturou.${input.prevOutsideRevenue > 0 ? ` Mês passado: ${brl(input.prevOutsideRevenue)}.` : ""}`,
-    href: input.outsideRevenue > 0 ? undefined : `/custos/mes?mes=${mes}#contas-do-mes`,
+    href: input.outsideRevenue > 0 ? undefined : `/mes?mes=${mes}#contas-do-mes`,
     cta: input.outsideRevenue > 0 ? undefined : "Informar",
   });
 
@@ -86,7 +86,7 @@ export function closeMonthChecklist(input: {
         : input.recipesWithoutCost === 0
           ? "Todas com custo calculado."
           : `${input.recipesWithoutCost} ${input.recipesWithoutCost === 1 ? "marmita vendida está" : "marmitas vendidas estão"} com a ficha incompleta; o custo esperado fica subestimado.`,
-    href: input.recipesWithoutCost > 0 ? "/fichas" : undefined,
+    href: input.recipesWithoutCost > 0 ? "/marmitas" : undefined,
     cta: input.recipesWithoutCost > 0 ? "Completar fichas" : undefined,
   });
 
@@ -95,7 +95,7 @@ export function closeMonthChecklist(input: {
     title: "Contas fixas e equipe",
     done: input.hasFixedCosts,
     detail: input.hasFixedCosts ? "Cadastradas (valem para todos os meses até você mudar)." : "Aluguel, energia, salários… sem isso não dá para saber quanto sobrou.",
-    href: input.hasFixedCosts ? undefined : "/custos",
+    href: input.hasFixedCosts ? undefined : "/ajustes/custos",
     cta: input.hasFixedCosts ? undefined : "Cadastrar",
   });
 
@@ -108,7 +108,7 @@ export function closeMonthChecklist(input: {
       input.stockCounted > 0
         ? `${input.stockCounted} ${input.stockCounted === 1 ? "insumo contado" : "insumos contados"}: o app já mostra o CMV real.`
         : "Conte o que sobrou dos insumos mais caros para ver quanto sumiu de verdade.",
-    href: `/custos/estoque?mes=${mes}`,
+    href: `/mes/estoque?mes=${mes}`,
     cta: input.stockCounted > 0 ? "Ver" : "Contar",
   });
 

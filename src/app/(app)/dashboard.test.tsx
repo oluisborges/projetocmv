@@ -111,7 +111,7 @@ describe("DashboardView", () => {
     const html = renderToStaticMarkup(
       <DashboardView data={build({ month: { ...base.month, cmvRealPct: null, cmoPct: null, deviationPct: null, deviationCost: null, hasData: false } })} />,
     );
-    expect(html).toContain("informe o mês em Custos");
-    expect(html).toContain("equipe e faturamento em Custos");
+    expect(html).toContain("informe o mês na aba Mês");
+    expect(html).toContain("cadastre a equipe em Ajustes e o mês em Mês");
   });
 });

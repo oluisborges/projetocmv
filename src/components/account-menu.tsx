@@ -40,6 +40,9 @@ export function AccountMenu({ isAdmin, alertCount = 0, signOutAction }: { isAdmi
             Painel Shogun{alertCount > 0 ? ` (${alertCount} ${alertCount === 1 ? "alerta" : "alertas"})` : ""}
           </Link>
         ) : null}
+        <Link href="/ajustes" className={item}>
+          Ajustes
+        </Link>
         <Link href="/conta/senha" className={item}>
           Trocar minha senha
         </Link>

@@ -1,0 +1,103 @@
+// @vitest-environment node
+// Todo link interno do app precisa levar a uma página que existe (ou a um redirect declarado).
+// Evita o erro clássico de reorganizar o menu e deixar um botão apontando para o nada.
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+const SRC = path.join(process.cwd(), "src");
+const APP = path.join(SRC, "app");
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const name of fs.readdirSync(dir)) {
+    const full = path.join(dir, name);
+    if (fs.statSync(full).isDirectory()) walk(full, out);
+    else out.push(full);
+  }
+  return out;
+}
+
+/** Rotas reais: pastas com page.tsx/route.ts(x) (grupos "(app)" não contam; "[x]" é parâmetro). */
+function realRoutes(): string[] {
+  return walk(APP)
+    .filter((f) => /[\\/](page\.tsx|route\.tsx?)$/.test(f))
+    .map((f) => {
+      const rel = path.relative(APP, path.dirname(f)).split(path.sep).filter((seg) => !/^\(.*\)$/.test(seg));
+      return "/" + rel.join("/");
+    })
+    .map((r) => (r === "/." ? "/" : r));
+}
+
+const routes = realRoutes();
+const toRegex = (route: string) => new RegExp("^" + route.replace(/\[[^\]]+\]/g, "[^/]+").replace(/\//g, "\\/") + "$");
+const matchers = routes.map(toRegex);
+
+/** Redirects declarados no next.config.ts: [origem, destino]. */
+function declaredRedirects(): { source: RegExp }[] {
+  const text = fs.readFileSync(path.join(process.cwd(), "next.config.ts"), "utf-8");
+  return [...text.matchAll(/to\("([^"]+)",\s*"([^"]+)"\)/g)].map((m) => ({
+    source: new RegExp(
+      "^" +
+        m[1]
+          .replace(/:[a-z]+\(\[[^)]+\)\{?\d*\}?\)?/gi, "[^/]+")
+          .replace(/\/:path\*/g, "(\\/.*)?")
+          .replace(/:[a-z]+/gi, "[^/]+")
+          .replace(/\//g, "\\/") +
+        "$",
+    ),
+  }));
+}
+
+/** Caminhos internos escritos como texto em href=, redirect(, revalidatePath( e router.push(. */
+function internalLinks(): { file: string; link: string }[] {
+  const files = walk(SRC).filter((f) => /\.(ts|tsx)$/.test(f) && !/\.test\./.test(f) && !f.includes(`${path.sep}lib${path.sep}routes`));
+  const found: { file: string; link: string }[] = [];
+  const re = /(?:href=\{?[`"']|redirect\(\s*[`"']|revalidatePath\(\s*[`"']|router\.push\(\s*[`"']|href:\s*[`"'])(\/[a-z0-9\-_/[\]${}.]*)/gi;
+  for (const file of files) {
+    const text = fs.readFileSync(file, "utf-8");
+    for (const m of text.matchAll(re)) {
+      const raw = m[1];
+      // Interpolações viram um segmento qualquer.
+      const normalized = raw.replace(/\$\{[^}]*\}/g, "x");
+      found.push({ file: path.relative(process.cwd(), file).replace(/\\/g, "/"), link: normalized.replace(/\/+$/, "") || "/" });
+    }
+  }
+  return found;
+}
+
+describe("links internos", () => {
+  const redirects = declaredRedirects();
+  const links = internalLinks();
+
+  it("o app tem as rotas esperadas do menu novo", () => {
+    for (const r of ["/", "/marmitas", "/marmitas/[id]", "/marmitas/[id]/preco", "/insumos", "/mes", "/mes/estoque", "/mes/historico", "/painel", "/ajustes", "/ajustes/custos", "/ajustes/impostos", "/avisos"]) {
+      expect(routes, `falta a rota ${r}`).toContain(r);
+    }
+  });
+
+  it("nenhuma rota do menu antigo continua existindo como página (viraram redirects)", () => {
+    for (const r of ["/fichas", "/precificacao", "/custos", "/custos/mes", "/custos/estoque", "/painel/historico"]) {
+      expect(routes, `a rota antiga ${r} ainda existe`).not.toContain(r);
+    }
+  });
+
+  it("todo link interno vai para uma rota que existe", () => {
+    const broken = links.filter(({ link }) => {
+      const path = link.split("?")[0].split("#")[0];
+      if (path.startsWith("/api/") && routes.some((r) => toRegex(r).test(path))) return false;
+      return !matchers.some((re) => re.test(path)) && !redirects.some((r) => r.source.test(path));
+    });
+    expect(
+      broken.map((b) => `${b.file} -> ${b.link}`),
+      "links quebrados",
+    ).toEqual([]);
+  });
+
+  it("nenhum link do código aponta mais para as URLs antigas (só os redirects as conhecem)", () => {
+    const old = links.filter(({ link }) => /^\/(fichas|precificacao|custos)(\/|$)/.test(link) || link === "/painel/historico");
+    expect(
+      old.map((b) => `${b.file} -> ${b.link}`),
+      "links para URLs antigas",
+    ).toEqual([]);
+  });
+});

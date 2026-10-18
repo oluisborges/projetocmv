@@ -284,7 +284,7 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
     await supabase.from("activity_log").insert({ org_id: orgId, user_id: session.userId, by_admin: session.isPlatformAdmin, kind: "change", summary: `Importou ${notesDone} NF-e: ${updated} preço(s) atualizado(s), ${created} insumo(s) novo(s)` });
     recordSnapshot();
     revalidatePath("/insumos");
-    revalidatePath("/custos/mes");
+    revalidatePath("/mes");
   }
 
   const parts = [
@@ -337,5 +337,5 @@ export async function undoNfe(formData: FormData): Promise<void> {
   recordSnapshot();
   revalidatePath("/insumos");
   revalidatePath("/insumos/nfe");
-  revalidatePath("/custos/mes");
+  revalidatePath("/mes");
 }

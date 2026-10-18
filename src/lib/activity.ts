@@ -3,24 +3,31 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const EXACT: Record<string, string> = {
   "/": "Abriu o Início",
   "/painel": "Abriu o Painel",
-  "/painel/historico": "Abriu o Histórico do painel",
+  "/painel/cardapio": "Abriu a análise do cardápio",
+  "/painel/cupons": "Abriu os cupons",
+  "/mes": "Abriu Fechar o mês",
+  "/mes/estoque": "Abriu o estoque do mês",
+  "/mes/historico": "Abriu o Histórico",
   "/insumos": "Abriu Insumos",
   "/insumos/novo": "Abriu o cadastro de novo insumo",
   "/insumos/catalogo": "Abriu o catálogo de insumos",
   "/insumos/reajuste": "Abriu o reajuste de preços em lote",
-  "/fichas": "Abriu Fichas",
-  "/fichas/nova": "Abriu a criação de ficha",
-  "/precificacao": "Abriu Preços",
-  "/precificacao/ajustes": "Abriu os ajustes de preço",
-  "/custos": "Abriu Custos",
-  "/custos/mes": "Abriu Fechar o mês",
+  "/insumos/nfe": "Abriu a importação de nota fiscal",
+  "/marmitas": "Abriu Marmitas",
+  "/marmitas/nova": "Abriu a criação de ficha",
+  "/marmitas/combos": "Abriu Combos",
+  "/ajustes": "Abriu Ajustes",
+  "/ajustes/custos": "Abriu Custos fixos",
+  "/ajustes/impostos": "Abriu os ajustes de preço",
+  "/ajustes/cardapio": "Abriu os vínculos do cardápio",
+  "/avisos": "Abriu Avisos",
   "/conta/senha": "Abriu Trocar senha",
 };
 
 const PATTERNS: [RegExp, string][] = [
   [new RegExp(`^/insumos/${UUID}$`, "i"), "Abriu a edição de um insumo"],
-  [new RegExp(`^/fichas/${UUID}$`, "i"), "Abriu uma ficha"],
-  [new RegExp(`^/precificacao/${UUID}$`, "i"), "Abriu o preço de um produto"],
+  [new RegExp(`^/marmitas/${UUID}$`, "i"), "Abriu uma ficha"],
+  [new RegExp(`^/marmitas/${UUID}/preco$`, "i"), "Abriu o preço de um produto"],
 ];
 
 /**

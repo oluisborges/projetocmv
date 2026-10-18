@@ -10,17 +10,17 @@ const ICONS = {
   chart: <path d="M4 20V10m5.5 10V4M15 20v-7m5.5 7V8" {...stroke} />,
   basket: <path d="M3 9h18l-1.6 9.2a2 2 0 0 1-2 1.8H6.6a2 2 0 0 1-2-1.8L3 9Zm4-.5 3-5m7 5-3-5M9.5 13v3m5-3v3" {...stroke} />,
   recipe: <path d="M7 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm2.5 5h5m-5 4h5m-5 4h3" {...stroke} />,
-  tag: <path d="M3.5 12.4V4.5a1 1 0 0 1 1-1h7.9a1 1 0 0 1 .7.3l7.4 7.4a1 1 0 0 1 0 1.4l-7.9 7.9a1 1 0 0 1-1.4 0l-7.4-7.4a1 1 0 0 1-.3-.7ZM8 8h.01" {...stroke} />,
-  wallet: <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V17a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 7.5ZM16 13.5h.01" {...stroke} />,
+  calendar: <path d="M5 5.5h14a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1ZM4 10h16M8 3.5v4m8-4v4" {...stroke} />,
 } as const;
 
-const ITEMS: { href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean }[] = [
+type Item = { href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean; key?: "mes" | "painel" };
+
+const ITEMS: Item[] = [
   { href: "/", label: "Início", icon: "home", match: (p) => p === "/" },
-  { href: "/painel", label: "Painel", icon: "chart", match: (p) => p.startsWith("/painel") },
+  { href: "/marmitas", label: "Marmitas", icon: "recipe", match: (p) => p.startsWith("/marmitas") || p.startsWith("/fichas") || p.startsWith("/precificacao") },
   { href: "/insumos", label: "Insumos", icon: "basket", match: (p) => p.startsWith("/insumos") },
-  { href: "/fichas", label: "Fichas", icon: "recipe", match: (p) => p.startsWith("/fichas") },
-  { href: "/precificacao", label: "Preços", icon: "tag", match: (p) => p.startsWith("/precificacao") },
-  { href: "/custos", label: "Custos", icon: "wallet", match: (p) => p.startsWith("/custos") },
+  { href: "/mes", label: "Mês", icon: "calendar", match: (p) => p.startsWith("/mes") || p.startsWith("/custos/mes"), key: "mes" },
+  { href: "/painel", label: "Painel", icon: "chart", match: (p) => p.startsWith("/painel"), key: "painel" },
 ];
 
 /** Ícone + nome. Enquanto a página do toque carrega, o ícone pulsa e uma barra lima corre no topo do botão. */
@@ -40,8 +40,8 @@ function NavLabel({ label, icon, active }: { label: string; icon: keyof typeof I
   );
 }
 
-/** Navegação inferior fixa: no celular o polegar alcança tudo. */
-export function BottomNav() {
+/** Navegação inferior fixa: no celular o polegar alcança tudo. Mês e Painel só aparecem quando já fazem sentido (o item da tela atual nunca some). */
+export function BottomNav({ show }: { show: { mes: boolean; painel: boolean } }) {
   const pathname = usePathname();
 
   return (
@@ -49,6 +49,7 @@ export function BottomNav() {
       <ul className="mx-auto flex max-w-3xl">
         {ITEMS.map((item) => {
           const active = item.match(pathname);
+          if (item.key && !show[item.key] && !active) return null;
           return (
             <li key={item.href} className="flex-1">
               <Link

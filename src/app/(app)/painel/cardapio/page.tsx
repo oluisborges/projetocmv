@@ -4,12 +4,10 @@ import { Hint } from "@/components/hint";
 import { PainelTabs } from "@/components/painel-tabs";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
-import { hasHistory } from "@/lib/history-data";
 import { hasMenuConnection } from "@/lib/menu-data";
 import { loadMenuEngineering } from "@/lib/menu-engineering-data";
 import { productsForShare, QUADRANT_INFO, summarizeQuadrants, type Quadrant } from "@/lib/menu-engineering";
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
-import { activeUnit } from "@/lib/pricing-data";
 import { MenuMatrix } from "./matrix";
 
 export const metadata = { title: "Análise do cardápio" };
@@ -22,8 +20,6 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
   const sp = await props.searchParams;
   const now = currentMonthStart();
   const month = monthStart(typeof sp.mes === "string" ? sp.mes : undefined) ?? now;
-  const unit = await activeUnit(orgId);
-  const showHistory = unit ? await hasHistory(unit.id) : false;
   const data = await loadMenuEngineering(orgId, canWrite, month);
 
   const months = lastMonths(now, 6);
@@ -36,7 +32,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
         <h1 className="text-2xl font-extrabold tracking-tight">Painel</h1>
         <p className="text-muted">Quais marmitas valem destaque, reajuste ou saída do cardápio.</p>
       </section>
-      <PainelTabs active="cardapio" showHistory={showHistory} showCoupons={await hasMenuConnection(orgId)} />
+      <PainelTabs active="cardapio" showCoupons={await hasMenuConnection(orgId)} />
     </>
   );
 
@@ -86,18 +82,18 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
             {data.menuConnected ? (
               <>
                 Vincule os produtos do cardápio às fichas em{" "}
-                <Link href="/custos/cardapio" className="font-semibold text-primary">
-                  Custos → Cardápio
+                <Link href="/ajustes/cardapio" className="font-semibold text-primary">
+                  Ajustes → Cardápio
                 </Link>{" "}
                 e complete as fichas que ainda estão sem custo.
               </>
             ) : (
               <>
                 Informe quantas marmitas vendeu de cada ficha em{" "}
-                <Link href={`/custos/mes?mes=${month.slice(0, 7)}`} className="font-semibold text-primary">
+                <Link href={`/mes?mes=${month.slice(0, 7)}`} className="font-semibold text-primary">
                   Fechar o mês
                 </Link>{" "}
-                (e o preço de cada uma em Preços) para ver a análise.
+                (e o preço de cada uma em Marmitas → Preço) para ver a análise.
               </>
             )}
           </p>
@@ -140,7 +136,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
               {result.products.map((p) => (
                 <li key={p.id} className="flex flex-col gap-1.5 py-3">
                   <div className="flex items-start justify-between gap-3">
-                    <Link href={`/precificacao/${p.id}`} className="tap-area min-w-0 font-semibold leading-snug">
+                    <Link href={`/marmitas/${p.id}/preco`} className="tap-area min-w-0 font-semibold leading-snug">
                       {p.name}
                     </Link>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${BADGE[p.quadrant]}`}>{QUADRANT_INFO[p.quadrant].label}</span>
@@ -166,8 +162,8 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
                 .map((u) => u.name)
                 .join(", ")}
               {result.unclassified.length > 4 ? "…" : ""}. Complete em{" "}
-              <Link href="/fichas" className="font-semibold text-primary">
-                Fichas
+              <Link href="/marmitas" className="font-semibold text-primary">
+                Marmitas
               </Link>
               .
             </p>
@@ -175,8 +171,8 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
           {data.skippedManualUnits > 0 ? (
             <p className="rounded-xl bg-warning/10 p-3 text-sm">
               {formatNumber(data.skippedManualUnits, 0)} marmitas que você digitou em fichas sem preço cadastrado não entraram. Cadastre o preço em{" "}
-              <Link href="/precificacao" className="font-semibold text-primary">
-                Preços
+              <Link href="/marmitas" className="font-semibold text-primary">
+                Marmitas → Preço
               </Link>
               .
             </p>

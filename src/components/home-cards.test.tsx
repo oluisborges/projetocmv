@@ -4,7 +4,7 @@ import { monthHealth } from "@/lib/month-health";
 import { MonthHealthCard, PriceActionsCard } from "./home-cards";
 
 // A ação do servidor puxa módulos "server-only"; aqui só a marcação importa.
-vi.mock("@/app/(app)/precificacao/actions", () => ({ setRecipePrice: vi.fn() }));
+vi.mock("@/app/(app)/marmitas/precos-actions", () => ({ setRecipePrice: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const health = (breakEvenRevenue: number | null) =>
@@ -16,12 +16,12 @@ describe("cartões do início", () => {
     expect(html).toContain("Sobra até agora");
     expect(html).toContain("No ritmo de hoje");
     expect(html).toMatch(/Faltam .* para pagar todas as contas/);
-    expect(html).toContain("/custos/mes?mes=2026-09");
+    expect(html).toContain("/mes?mes=2026-09");
   });
 
   it("sem permissão de edição não oferece o link para atualizar", () => {
     const html = renderToStaticMarkup(<MonthHealthCard health={health(null)} month="2026-09-01" canWrite={false} />);
-    expect(html).not.toContain("/custos/mes");
+    expect(html).not.toContain("/mes?mes=");
     expect(html).not.toContain("Ponto de equilíbrio");
   });
 
@@ -31,7 +31,7 @@ describe("cartões do início", () => {
     );
     expect(html).toContain("Frango com arroz");
     expect(html).toMatch(/17,00[\s\S]*19,00/);
-    expect(html).toContain("/precificacao/a");
+    expect(html).toContain("/marmitas/a/preco");
   });
 
   it("quem pode editar ganha o botão de aplicar o preço; quem só lê, não", () => {

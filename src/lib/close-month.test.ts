@@ -52,12 +52,12 @@ describe("fechar o mês", () => {
     const r = closeMonthChecklist(full);
     const stock = r.items.find((i) => i.key === "stock")!;
     expect(stock.optional).toBe(true);
-    expect(stock.href).toBe("/custos/estoque?mes=2026-09");
+    expect(stock.href).toBe("/mes/estoque?mes=2026-09");
     expect(r.ready).toBe(true);
     expect(closeMonthChecklist({ ...full, stockCounted: 12 }).items.find((i) => i.key === "stock")!.done).toBe(true);
   });
 
   it("o link de informar leva ao mês certo", () => {
-    expect(closeMonthChecklist({ ...full, connected: false }).items.find((i) => i.key === "outside")!.href).toBe("/custos/mes?mes=2026-09#contas-do-mes");
+    expect(closeMonthChecklist({ ...full, connected: false }).items.find((i) => i.key === "outside")!.href).toBe("/mes?mes=2026-09#contas-do-mes");
   });
 });

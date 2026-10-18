@@ -6,9 +6,7 @@ import { requireMember } from "@/lib/auth";
 import { loadCoupons } from "@/lib/coupon-data";
 import { verdictLabel, type Verdict } from "@/lib/coupon-view";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
-import { hasHistory } from "@/lib/history-data";
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
-import { activeUnit } from "@/lib/pricing-data";
 
 export const metadata = { title: "Cupons de desconto" };
 
@@ -22,8 +20,6 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
   const sp = await props.searchParams;
   const now = currentMonthStart();
   const month = monthStart(typeof sp.mes === "string" ? sp.mes : undefined) ?? now;
-  const unit = await activeUnit(orgId);
-  const showHistory = unit ? await hasHistory(unit.id) : false;
   const data = await loadCoupons(orgId, canWrite, month);
 
   const months = lastMonths(now, 6);
@@ -36,7 +32,7 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
         <h1 className="text-2xl font-extrabold tracking-tight">Painel</h1>
         <p className="text-muted">Quanto os cupons custam e se ainda sobra lucro com eles.</p>
       </section>
-      <PainelTabs active="cupons" showHistory={showHistory} showCoupons />
+      <PainelTabs active="cupons" showCoupons />
     </>
   );
 
@@ -149,7 +145,7 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
                   ) : (
                     <p className="text-xs text-muted">
                       Só {formatPct(r.coverage, 0)} dos itens têm ficha vinculada.{" "}
-                      <Link href="/custos/cardapio" className="font-semibold text-primary">
+                      <Link href="/ajustes/cardapio" className="font-semibold text-primary">
                         Vincular produtos
                       </Link>
                     </p>
@@ -173,7 +169,7 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
             {data.room.map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
-                  <Link href={`/precificacao/${r.id}`} className="block truncate font-semibold">
+                  <Link href={`/marmitas/${r.id}/preco`} className="block truncate font-semibold">
                     {r.name}
                   </Link>
                   <p className="tabular text-xs text-muted">

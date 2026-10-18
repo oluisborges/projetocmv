@@ -7,14 +7,12 @@ function Pending({ children }: { children: React.ReactNode }) {
   return <span className={pending ? "animate-pulse" : undefined}>{children}</span>;
 }
 
-/** Alternância dentro do Painel: o retrato de hoje, a análise das marmitas, os cupons (só com cardápio conectado) ou o histórico mês a mês. */
+/** Alternância dentro do Painel: o retrato de hoje, a análise das marmitas ou os cupons (só com cardápio conectado). */
 export function PainelTabs({
   active,
-  showHistory = true,
   showCoupons = false,
 }: {
-  active: "resumo" | "cardapio" | "cupons" | "historico";
-  showHistory?: boolean;
+  active: "resumo" | "cardapio" | "cupons";
   showCoupons?: boolean;
 }) {
   const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg px-1 text-sm font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
@@ -29,11 +27,6 @@ export function PainelTabs({
       {showCoupons ? (
         <Link href="/painel/cupons" aria-current={active === "cupons" ? "page" : undefined} className={item(active === "cupons")}>
           <Pending>Cupons</Pending>
-        </Link>
-      ) : null}
-      {showHistory ? (
-        <Link href="/painel/historico" aria-current={active === "historico" ? "page" : undefined} className={item(active === "historico")}>
-          <Pending>Histórico</Pending>
         </Link>
       ) : null}
     </nav>

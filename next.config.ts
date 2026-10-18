@@ -21,6 +21,22 @@ const nextConfig: NextConfig = {
     "/fichas/exportar": ["./public/brand/logo-horizontal.png"],
   },
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
+  // URLs antigas (favoritos, links enviados) continuam funcionando depois da reorganização do menu.
+  async redirects() {
+    const to = (source: string, destination: string) => ({ source, destination, permanent: false });
+    return [
+      to("/fichas", "/marmitas"),
+      to("/fichas/:path*", "/marmitas/:path*"),
+      to("/precificacao", "/marmitas"),
+      to("/precificacao/ajustes", "/ajustes/impostos"),
+      to("/precificacao/:id([0-9a-f-]{36})", "/marmitas/:id/preco"),
+      to("/custos/mes", "/mes"),
+      to("/custos/estoque", "/mes/estoque"),
+      to("/custos/cardapio", "/ajustes/cardapio"),
+      to("/custos", "/ajustes/custos"),
+      to("/painel/historico", "/mes/historico"),
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

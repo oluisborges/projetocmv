@@ -38,8 +38,8 @@ export default async function HomePage() {
         minutes: 5,
         title: "Monte a ficha de cada produto",
         detail: data.recipeCount === 0 ? "A receita de um produto, com o custo calculado na hora." : `${data.recipeCount} ${data.recipeCount === 1 ? "ficha criada" : "fichas criadas"}`,
-        href: data.recipeCount === 0 ? "/fichas/nova" : "/fichas",
-        cta: data.recipeCount === 0 ? "Criar a primeira ficha" : "Ver fichas",
+        href: data.recipeCount === 0 ? "/marmitas/nova" : "/marmitas",
+        cta: data.recipeCount === 0 ? "Criar a primeira ficha" : "Ver marmitas",
         done: data.recipeCount > 0,
       },
       {
@@ -51,7 +51,7 @@ export default async function HomePage() {
           : ctx.fixedAuto
             ? "Falta só informar os impostos para o lucro mostrado ser o real."
             : "Sem isso o lucro mostrado é só uma estimativa.",
-        href: "/precificacao/ajustes",
+        href: "/ajustes/impostos",
         cta: "Informar agora",
         done: ctx.configured,
       },
@@ -65,7 +65,7 @@ export default async function HomePage() {
               ? "Cadastrados: o app já usa isso no preço e mostra seu ponto de equilíbrio."
               : "Cadastrados. Informe também o faturamento do mês para o app usar no preço."
             : "Aluguel, energia, equipe… para descobrir quanto precisa vender para empatar.",
-        href: "/custos",
+        href: "/ajustes/custos",
         cta: ctx.fixedTotal > 0 ? "Completar" : "Cadastrar custos",
         done: ctx.fixedAuto,
       },
@@ -74,7 +74,7 @@ export default async function HomePage() {
         minutes: 3,
         title: "Defina o preço de venda",
         detail: data.recipeCount === 0 ? "Depois de criar as fichas." : `${data.withPriceCount} de ${data.recipeCount} produtos com preço`,
-        href: "/precificacao",
+        href: "/marmitas",
         cta: "Definir preços",
         done: data.recipeCount > 0 && data.withPriceCount === data.recipeCount,
       },

@@ -49,7 +49,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           {data.belowTarget.length > 2 ? "…" : ""})
         </>
       ),
-      href: "/precificacao",
+      href: "/marmitas",
       cta: "Ajustar preços",
     });
   }
@@ -102,7 +102,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           <strong>Você gastou {formatBRL(month.deviationCost)} a mais em insumos</strong> do que as vendas do mês explicam
         </>
       ),
-      href: "/custos/mes",
+      href: "/mes",
       cta: "Ver o mês",
     });
   }
@@ -115,26 +115,26 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           label="Lucro médio"
           value={data.avgNetPct !== null ? formatPct(data.avgNetPct) : "—"}
           hint={estimate ? "estimativa: faltam impostos" : `por unidade, vendendo por ${data.channelName}`}
-          href="/precificacao"
+          href="/marmitas"
         />
         <Kpi
           label="Abaixo da meta"
           value={String(data.belowTarget.length)}
           hint={`de ${data.pricedCount} ${data.pricedCount === 1 ? "produto com preço" : "produtos com preço"}`}
           tone={data.belowTarget.length > 0 && !estimate ? "bad" : "default"}
-          href="/precificacao"
+          href="/marmitas"
         />
         <Kpi
           label="Gasto com insumos"
           value={month.cmvRealPct !== null ? formatPct(month.cmvRealPct) : "—"}
-          hint={month.cmvRealPct !== null ? "do faturamento neste mês" : "informe o mês em Custos"}
-          href="/custos/mes"
+          hint={month.cmvRealPct !== null ? "do faturamento neste mês" : "informe o mês na aba Mês"}
+          href="/mes"
         />
         <Kpi
           label="Mão de obra"
           value={month.cmoPct !== null ? formatPct(month.cmoPct) : "—"}
-          hint={month.cmoPct !== null ? "do faturamento neste mês" : "equipe e faturamento em Custos"}
-          href="/custos"
+          hint={month.cmoPct !== null ? "do faturamento neste mês" : "cadastre a equipe em Ajustes e o mês em Mês"}
+          href="/ajustes/custos"
         />
       </div>
       ) : null}
@@ -174,7 +174,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           <ul className="divide-y divide-border card px-4">
             {worst.map((d) => (
               <li key={d.id}>
-                <Link href={`/precificacao/${d.id}`} className="flex min-h-14 items-center justify-between gap-3 py-3">
+                <Link href={`/marmitas/${d.id}/preco`} className="flex min-h-14 items-center justify-between gap-3 py-3">
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 font-medium leading-snug">{d.name}</span>
                     <span className="tabular text-xs text-muted">

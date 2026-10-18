@@ -208,7 +208,7 @@ export async function applySheet(kind: SheetKind, formData: FormData): Promise<S
     }
     message = [created > 0 ? `${created} ${created === 1 ? "ficha criada" : "fichas criadas"}` : null, left > 0 ? `${left} ficaram de fora (já existem ou faltam insumos)` : null].filter(Boolean).join(" · ");
     if (created === 0) return { ok: false, error: message || "Nenhuma ficha para importar." };
-    revalidatePath("/fichas");
+    revalidatePath("/marmitas");
   }
 
   await supabase.from("activity_log").insert({ org_id: orgId, user_id: userId, by_admin: true, kind: "change", summary: `Equipe Shogun importou planilha de ${kind}: ${message}` });

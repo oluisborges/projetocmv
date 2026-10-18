@@ -30,7 +30,7 @@ export function PainelView({ data }: { data: Dashboard }) {
   if (!panel) {
     return (
       <p className="card p-4 text-sm">
-        O painel aparece quando você tiver pelo menos um produto com custo e preço de venda. <Link href="/precificacao" className="font-semibold text-primary underline">Definir preços</Link>
+        O painel aparece quando você tiver pelo menos um produto com custo e preço de venda. <Link href="/marmitas" className="font-semibold text-primary underline">Definir preços</Link>
       </p>
     );
   }
@@ -119,7 +119,7 @@ export function PainelView({ data }: { data: Dashboard }) {
         <ul className="divide-y divide-border card px-4">
           {panel.cmvRanking.slice(0, 8).map((d, i) => (
             <li key={d.id}>
-              <Link href={`/precificacao/${d.id}`} className="flex min-h-14 flex-col justify-center gap-1.5 py-3">
+              <Link href={`/marmitas/${d.id}/preco`} className="flex min-h-14 flex-col justify-center gap-1.5 py-3">
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="line-clamp-1 text-sm font-medium">{d.name}</span>
                   <span className="tabular shrink-0 text-sm font-bold">{formatPct(d.pct)}</span>
@@ -158,7 +158,7 @@ export function PainelView({ data }: { data: Dashboard }) {
           </>
         ) : (
           <p className="text-sm text-muted">
-            Cadastre seus custos fixos e a equipe para ver quanto precisa vender. <Link href="/custos" className="font-semibold text-primary underline">Abrir Custos</Link>
+            Cadastre seus custos fixos e a equipe para ver quanto precisa vender. <Link href="/ajustes/custos" className="font-semibold text-primary underline">Abrir Custos fixos</Link>
           </p>
         )}
       </section>
