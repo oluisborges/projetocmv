@@ -64,9 +64,6 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
               Catálogo de insumos
             </Link>
           </div>
-          <Link href="/insumos/planilha" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
-            Importar planilha de insumos e fichas
-          </Link>
           <Link href="/insumos/nfe"className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
             Importar nota fiscal (XML) do fornecedor
           </Link>

@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import readXlsxFile from "read-excel-file/node";
-import { getSession, requireMember } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { baseUnitOf, isCompatibleUnit, isPurchaseUnit, toBaseQty } from "@/lib/calc";
 import { normalizeName } from "@/lib/names";
 import { parseCsv, readIngredientSheet, readRecipeSheet, type Cell, type SheetIngredient, type SheetRecipe } from "@/lib/sheet-import";
@@ -10,11 +11,22 @@ import { recordSnapshot } from "@/lib/snapshot-record";
 import { createClient } from "@/lib/supabase/server";
 import type { SheetApplyResult, SheetKind, SheetPreview } from "./types";
 
-const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 const MAX_BYTES = 2_000_000;
 const MAX_ROWS = 3000;
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/** Só admin Shogun importa planilha, em uma marmitaria escolhida (`org` no formulário). Quem não é admin recebe "não existe". */
+async function adminTarget(formData: FormData): Promise<{ orgId: string; userId: string; supabase: Supabase } | { error: string }> {
+  const session = await requireAdmin();
+  const org = z.uuid().safeParse(formData.get("org"));
+  if (!org.success) return { error: "Escolha a marmitaria." };
+  const supabase = await createClient();
+  const { data } = await supabase.from("organizations").select("id").eq("id", org.data).maybeSingle();
+  if (!data) return { error: "Marmitaria não encontrada." };
+  return { orgId: data.id as string, userId: session.userId, supabase };
+}
+
 type Existing = { id: string; name: string; kind: string; purchase_unit: string; purchase_qty: number };
 
 /** Todas as abas do arquivo (CSV tem uma só). O cliente costuma mandar uma pasta com várias abas; a certa é a que tem as colunas. */
@@ -77,11 +89,11 @@ function classifyRecipes(recipes: SheetRecipe[], ingredients: Existing[], recipe
 }
 
 export async function previewSheet(kind: SheetKind, formData: FormData): Promise<SheetPreview> {
-  const { orgId, canWrite } = await requireMember();
-  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+  const target = await adminTarget(formData);
+  if ("error" in target) return { ok: false, error: target.error };
+  const { orgId, supabase } = target;
   const read = await readSheets(formData);
   if ("error" in read) return { ok: false, error: read.error };
-  const supabase = await createClient();
   const ingredients = await existingIngredients(supabase, orgId);
 
   if (kind === "insumos") {
@@ -103,11 +115,11 @@ export async function previewSheet(kind: SheetKind, formData: FormData): Promise
 }
 
 export async function applySheet(kind: SheetKind, formData: FormData): Promise<SheetApplyResult> {
-  const { orgId, canWrite } = await requireMember();
-  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+  const target = await adminTarget(formData);
+  if ("error" in target) return { ok: false, error: target.error };
+  const { orgId, supabase, userId } = target;
   const read = await readSheets(formData);
   if ("error" in read) return { ok: false, error: read.error };
-  const supabase = await createClient();
   const ingredients = await existingIngredients(supabase, orgId);
   // Unidade escolhida na prévia para as linhas que vieram sem unidade: { "linha": "kg" | "l" | "un"... }
   let unitPicks: Record<string, string> = {};
@@ -199,10 +211,7 @@ export async function applySheet(kind: SheetKind, formData: FormData): Promise<S
     revalidatePath("/fichas");
   }
 
-  const session = await getSession();
-  if (session) {
-    await supabase.from("activity_log").insert({ org_id: orgId, user_id: session.userId, by_admin: session.isPlatformAdmin, kind: "change", summary: `Importou planilha de ${kind}: ${message}` });
-  }
+  await supabase.from("activity_log").insert({ org_id: orgId, user_id: userId, by_admin: true, kind: "change", summary: `Equipe Shogun importou planilha de ${kind}: ${message}` });
   recordSnapshot();
   revalidatePath("/insumos");
   return { ok: true, message: message || "Nada novo para importar." };

@@ -370,6 +370,9 @@ export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createFo
                   {label}
                 </button>
               ))}
+              <Link href={`/admin/planilha?org=${openItem.id}`} className="flex h-11 flex-1 items-center justify-center rounded-lg bg-border/50 text-sm font-semibold text-muted">
+                Planilha
+              </Link>
             </div>
             {manage.tab === "users" ? openItem.usersPanel : openItem.menuPanel}
           </>

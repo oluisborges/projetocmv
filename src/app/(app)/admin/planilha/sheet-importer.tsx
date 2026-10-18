@@ -34,7 +34,7 @@ function download(name: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export function SheetImporter() {
+export function SheetImporter({ orgId }: { orgId: string }) {
   const [kind, setKind] = useState<SheetKind>("insumos");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Extract<SheetPreview, { ok: true }> | null>(null);
@@ -63,6 +63,7 @@ export function SheetImporter() {
     if (!f) return;
     const fd = new FormData();
     fd.set("file", f);
+    fd.set("org", orgId);
     startReading(async () => {
       const res = await previewSheet(kind, fd);
       if (!res.ok) return setError(res.error);
@@ -74,6 +75,7 @@ export function SheetImporter() {
     if (!file) return;
     const fd = new FormData();
     fd.set("file", file);
+    fd.set("org", orgId);
     if (updatePrices) fd.set("update_prices", "1");
     fd.set("units", JSON.stringify(units));
     setError(null);
@@ -140,8 +142,8 @@ export function SheetImporter() {
       {done ? (
         <div role="status" className="flex flex-col gap-2 rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
           <p>{done}</p>
-          <Link href={kind === "insumos" ? "/insumos" : "/fichas"} className="font-semibold underline">
-            {kind === "insumos" ? "Ver os insumos" : "Ver as fichas"}
+          <Link href="/admin" className="font-semibold underline">
+            Voltar ao Painel Shogun
           </Link>
         </div>
       ) : null}
