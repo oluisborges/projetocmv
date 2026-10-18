@@ -55,7 +55,7 @@ function PriceRow({ item, canWrite }: { item: IngredientRow; canWrite: boolean }
     <li className="flex flex-col gap-1 py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <Link href={`/insumos/${item.id}`} className="block truncate font-medium">
+          <Link href={`/insumos/${item.id}`} className="tap-area block truncate font-medium">
             {item.name}
           </Link>
           <p className="truncate text-xs text-muted">

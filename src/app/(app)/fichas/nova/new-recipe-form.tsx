@@ -18,7 +18,7 @@ export function NewRecipeForm() {
         {mode === "serving"
           ? "Você vai informar quanto vai em CADA unidade vendida (120 g de frango, 150 g de arroz…)."
           : "Receita em lote: você informa a receita toda e quantas unidades ela rende."}{" "}
-        <button type="button" onClick={() => setMode(mode === "serving" ? "batch" : "serving")} className="font-semibold text-primary underline">
+        <button type="button" onClick={() => setMode(mode === "serving" ? "batch" : "serving")} className="tap-area font-semibold text-primary underline">
           {mode === "serving" ? "Faço em panela grande (lote)" : "Prefiro informar por unidade"}
         </button>
       </p>

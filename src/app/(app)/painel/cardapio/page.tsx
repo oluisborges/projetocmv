@@ -140,7 +140,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
               {result.products.map((p) => (
                 <li key={p.id} className="flex flex-col gap-1.5 py-3">
                   <div className="flex items-start justify-between gap-3">
-                    <Link href={`/precificacao/${p.id}`} className="min-w-0 font-semibold leading-snug">
+                    <Link href={`/precificacao/${p.id}`} className="tap-area min-w-0 font-semibold leading-snug">
                       {p.name}
                     </Link>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${BADGE[p.quadrant]}`}>{QUADRANT_INFO[p.quadrant].label}</span>

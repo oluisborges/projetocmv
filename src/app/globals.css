@@ -41,6 +41,16 @@
 }
 
 /* Cartão padrão do app: borda fina, cantos generosos e uma sombra suave que "levanta" do fundo. */
+/* Aumenta a área de toque de um link ou botão pequeno no meio do texto para 44 px, sem mudar o visual. */
+@utility tap-area {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -0.875rem -0.5rem;
+  }
+}
+
 @utility card {
   border-radius: 1rem;
   border: 1px solid var(--border);

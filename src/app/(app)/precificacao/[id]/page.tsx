@@ -40,7 +40,7 @@ export default async function RecipePricingPage(props: PageProps<"/precificacao/
         {view.ok ? (
           <p className="text-muted">
             Custa <strong className="tabular text-foreground">{formatBRL(view.cost.costPerPortion.toNumber())}</strong> por porção.{" "}
-            <Link href={`/fichas/${recipe.id}`} className="font-semibold text-primary">
+            <Link href={`/fichas/${recipe.id}`} className="tap-area font-semibold text-primary">
               Ver ficha
             </Link>
           </p>

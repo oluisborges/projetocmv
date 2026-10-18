@@ -184,7 +184,7 @@ export default async function CostsPage() {
 
       <div className="flex items-baseline justify-between text-sm">
         <h2 className="font-semibold">{doneCount === 3 ? "Tudo preenchido" : `${doneCount} de 3 preenchidos`}</h2>
-        <Link href="/custos/mes" className="font-semibold text-primary">
+        <Link href="/custos/mes" className="tap-area font-semibold text-primary">
           Fechar o mês →
         </Link>
       </div>

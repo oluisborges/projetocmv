@@ -153,7 +153,7 @@ function ItemRow({
             {canWrite ? (
               <>
                 {" · "}
-                <button type="button" onClick={() => setEditingPrice((v) => !v)} className="font-semibold text-primary underline">
+                <button type="button" onClick={() => setEditingPrice((v) => !v)} className="tap-area font-semibold text-primary underline">
                   {ingredient.unit_cost <= 0 ? "informar preço" : "mudar preço"}
                 </button>
               </>
@@ -632,7 +632,7 @@ export function RecipeEditor({
             {safetyMarginPct > 0 ? (
               <p className="text-xs text-muted">
                 Inclui {formatNumber(safetyMarginPct * 100, 1)}% de margem de segurança nos insumos.{" "}
-                <Link href="/precificacao/ajustes" className="font-semibold text-primary underline">
+                <Link href="/precificacao/ajustes" className="tap-area font-semibold text-primary underline">
                   Alterar
                 </Link>
               </p>
