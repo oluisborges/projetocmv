@@ -45,6 +45,7 @@ export async function setRecipePrice(
 
   recordSnapshot();
   revalidatePath("/precificacao");
+  revalidatePath("/");
   return { ok: true, price: Number(data.current_price) };
 }
 

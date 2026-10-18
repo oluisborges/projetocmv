@@ -4,17 +4,33 @@ import { appendSample, mergeMonthWithMenu, monthPriceMoves, normalizeSnapshot, s
 const snapshot: SnapshotState = { fixedTotal: 3000, staffTotal: 4000, taxPct: 0.06, feePct: 0, products: [] };
 
 describe("summarizeHistoryMonth", () => {
-  it("calcula o que sobrou no mês", () => {
+  it("calcula o que sobrou no mês pelo custo das fichas", () => {
     const r = summarizeHistoryMonth({ revenue: 30000, purchases: 9000, soldUnits: 1000, theoreticalCost: 8400, snapshot });
     expect(r.insumosPct).toBeCloseTo(0.3, 10);
     expect(r.expectedPct).toBeCloseTo(0.28, 10);
     expect(r.staffPct).toBeCloseTo(4000 / 30000, 10);
-    // 30000 − 9000 − 4000 − 3000 − 1800 = 12200
-    expect(r.result?.value).toBeCloseTo(12200, 6);
-    expect(r.result?.pct).toBeCloseTo(12200 / 30000, 10);
+    expect(r.resultBasis).toBe("fichas");
+    // 30000 − 8400 (fichas) − 4000 − 3000 − 1800 = 12800
+    expect(r.result?.value).toBeCloseTo(12800, 6);
+    expect(r.result?.pct).toBeCloseTo(12800 / 30000, 10);
   });
 
-  it("sem foto do mês ou sem compras não inventa resultado", () => {
+  it("sem fichas completas, usa as compras do mês", () => {
+    const r = summarizeHistoryMonth({ revenue: 30000, purchases: 9000, soldUnits: 1000, theoreticalCost: null, snapshot });
+    expect(r.resultBasis).toBe("compras");
+    expect(r.insumosCost).toBe(9000);
+    expect(r.result?.value).toBeCloseTo(12200, 6); // 30000 − 9000 − 4000 − 3000 − 1800
+  });
+
+  it("mês em andamento cobra as contas fixas só dos dias que passaram", () => {
+    const r = summarizeHistoryMonth({ revenue: 15000, purchases: 0, soldUnits: 500, theoreticalCost: 4200, snapshot, elapsed: 0.5 });
+    expect(r.partial).toBe(true);
+    // 15000 − 4200 − (4000 + 3000) × 0,5 − 900 = 6400
+    expect(r.result?.value).toBeCloseTo(6400, 6);
+    expect(r.staffPct).toBeCloseTo(2000 / 15000, 10);
+  });
+
+  it("sem foto do mês ou sem custo de insumos não inventa resultado", () => {
     expect(summarizeHistoryMonth({ revenue: 30000, purchases: 9000, soldUnits: 0, theoreticalCost: null, snapshot: null }).result).toBeNull();
     expect(summarizeHistoryMonth({ revenue: 30000, purchases: 0, soldUnits: 0, theoreticalCost: null, snapshot }).result).toBeNull();
   });

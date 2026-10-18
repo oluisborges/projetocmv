@@ -11,6 +11,9 @@ const month = (revenue: number, purchases: number, soldUnits: number, taxesPct: 
   staffPct: null,
   fixedPct: null,
   taxesPct,
+  insumosCost: purchases,
+  resultBasis: "compras",
+  partial: false,
   result: { value: revenue - purchases - fixed - revenue * taxesPct, pct: 0 },
 });
 
@@ -47,6 +50,10 @@ describe("por que o resultado mudou", () => {
     const b = profitBridge(sep, oct, [{ name: "Peito de frango", pct: 0.14 }])!;
     expect(b.steps[0].key).toBe("volume");
     expect(b.steps.find((s) => s.key === "cost")!.text).toContain("Peito de frango +14%");
+  });
+
+  it("mês em andamento não entra na comparação", () => {
+    expect(profitBridge(sep, { ...sep, partial: true })).toBeNull();
   });
 
   it("sem resultado ou sem marmitas vendidas não explica", () => {

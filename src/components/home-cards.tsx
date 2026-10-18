@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ApplyPriceButton } from "@/components/apply-price-button";
 import { Hint } from "@/components/hint";
 import { formatBRL, formatPct } from "@/lib/format";
 import type { MonthHealth } from "@/lib/month-health";
@@ -29,7 +30,7 @@ export function MonthHealthCard({ health, month, canWrite }: { health: MonthHeal
         <div className="flex flex-col">
           <p className="text-sm text-muted">
             {health.partial ? "Sobra até agora" : "Sobrou no mês"}
-            <Hint>Faturamento menos o custo dos insumos (pelas fichas), impostos e taxas, e as contas fixas dos dias que já passaram. É uma estimativa: usa o custo das fichas, não as compras reais.</Hint>
+            <Hint>Faturamento menos o custo dos insumos (pelas fichas), impostos e taxas, e as contas fixas só dos dias que já passaram. É o mesmo número do Histórico. É uma estimativa: usa o custo das fichas, não as compras reais.</Hint>
           </p>
           <p className={`tabular text-4xl font-extrabold tracking-tight ${health.profit < 0 ? "text-danger" : ""}`}>{formatBRL(health.profit)}</p>
           <p className="tabular text-sm text-muted">de {formatBRL(health.revenue)} faturados</p>
@@ -56,7 +57,7 @@ export function MonthHealthCard({ health, month, canWrite }: { health: MonthHeal
             <div className={`h-full rounded-full ${health.breakEvenProgress! >= 1 ? "bg-success" : "bg-accent"}`} style={{ width: `${pct * 100}%` }} />
           </div>
           <p className="tabular text-xs text-muted">
-            {health.breakEvenProgress! >= 1 ? "Você já passou do equilíbrio: daqui para frente é lucro." : `Faltam ${formatBRL(health.missingToBreakEven ?? 0)} para empatar.`}
+            {health.breakEvenProgress! >= 1 ? "Você já passou do equilíbrio: daqui para frente é lucro." : `Faltam ${formatBRL(health.missingToBreakEven ?? 0)} para pagar todas as contas do mês inteiro.`}
           </p>
         </div>
       ) : null}
@@ -71,7 +72,7 @@ export function MonthHealthCard({ health, month, canWrite }: { health: MonthHeal
 }
 
 /** "O que fazer agora": preço que bateria a meta, só para quem está abaixo dela. */
-export function PriceActionsCard({ actions, targetPct }: { actions: PriceAction[]; targetPct: number }) {
+export function PriceActionsCard({ actions, targetPct, canWrite = false }: { actions: PriceAction[]; targetPct: number; canWrite?: boolean }) {
   if (actions.length === 0) return null;
   return (
     <section aria-label="O que fazer agora" className="flex flex-col gap-3 card p-4">
@@ -83,8 +84,8 @@ export function PriceActionsCard({ actions, targetPct }: { actions: PriceAction[
       </h2>
       <ul className="divide-y divide-border">
         {actions.map((a) => (
-          <li key={a.id}>
-            <Link href={`/precificacao/${a.id}`} className="flex min-h-11 flex-col gap-0.5 py-3">
+          <li key={a.id} className="flex flex-col gap-2 py-3">
+            <Link href={`/precificacao/${a.id}`} className="flex min-h-11 flex-col gap-0.5">
               <span className="font-semibold leading-snug">{a.name}</span>
               <span className="tabular text-sm">
                 Suba de {formatBRL(a.price)} para <strong>{formatBRL(a.targetPrice)}</strong> <span className="text-muted">(+{formatBRL(a.rise)}, +{formatPct(a.risePct, 0)})</span>
@@ -94,6 +95,7 @@ export function PriceActionsCard({ actions, targetPct }: { actions: PriceAction[
                 {a.gainPerMonth !== null ? ` · cerca de ${formatBRL(a.gainPerMonth)} a mais por mês` : ""}
               </span>
             </Link>
+            {canWrite ? <ApplyPriceButton recipeId={a.id} price={a.targetPrice} name={a.name} /> : null}
           </li>
         ))}
       </ul>

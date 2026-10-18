@@ -1,5 +1,6 @@
 // "Por que o resultado mudou?": quanto de cada mudança veio das vendas, do preço médio, do custo dos insumos e das contas fixas.
-// Resultado = marmitas × (preço médio × (1 − imposto e taxa) − compras por marmita) − contas fixas e equipe.
+// Resultado = marmitas × (preço médio × (1 − imposto e taxa) − custo dos insumos por marmita) − contas fixas e equipe.
+// "Custo dos insumos" é o mesmo do resto do app: o das fichas (vendas × ficha); sem ele, as compras do mês. Só compara meses fechados.
 // A decomposição é exata: os quatro passos somam a diferença entre os dois meses.
 import type { HistoryMonth, PriceMove } from "@/lib/history-view";
 
@@ -14,18 +15,18 @@ const brl = (v: number, signed = false) => {
 const num = (v: number) => Math.round(v).toLocaleString("pt-BR");
 
 export function profitBridge(prev: HistoryMonth, cur: HistoryMonth, moves: PriceMove[] = []): ProfitBridge | null {
-  if (!prev.result || !cur.result || prev.soldUnits <= 0 || cur.soldUnits <= 0 || prev.revenue <= 0 || cur.revenue <= 0) return null;
+  if (!prev.result || !cur.result || prev.insumosCost === null || cur.insumosCost === null || prev.partial || cur.partial || prev.soldUnits <= 0 || cur.soldUnits <= 0 || prev.revenue <= 0 || cur.revenue <= 0) return null;
   const u0 = prev.soldUnits;
   const u1 = cur.soldUnits;
   const t0 = prev.revenue / u0;
   const t1 = cur.revenue / u1;
   const tax0 = prev.taxesPct ?? 0;
   const tax1 = cur.taxesPct ?? 0;
-  const c0 = prev.purchases / u0;
-  const c1 = cur.purchases / u1;
+  const c0 = prev.insumosCost / u0;
+  const c1 = cur.insumosCost / u1;
   // Contas fixas + equipe = o que sobra da conta do resultado.
-  const fixed0 = prev.revenue * (1 - tax0) - prev.purchases - prev.result.value;
-  const fixed1 = cur.revenue * (1 - tax1) - cur.purchases - cur.result.value;
+  const fixed0 = prev.revenue * (1 - tax0) - prev.insumosCost - prev.result.value;
+  const fixed1 = cur.revenue * (1 - tax1) - cur.insumosCost - cur.result.value;
 
   const m0 = t0 * (1 - tax0) - c0;
   const volume = (u1 - u0) * m0;

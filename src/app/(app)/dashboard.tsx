@@ -25,7 +25,7 @@ function Kpi({ label, value, hint, tone = "default", href }: { label: string; va
 }
 
 /** Painel do Início: o que o dono precisa ver em 10 segundos. Só aparece quando já há produto com preço. */
-export function DashboardView({ data, variant = "full" }: { data: Dashboard; variant?: "full" | "alerts" }) {
+export function DashboardView({ data, variant = "full", hideBelowTarget = false }: { data: Dashboard; variant?: "full" | "alerts"; /** O Início já mostra "O que fazer agora" para esses produtos: sem aviso repetido. */ hideBelowTarget?: boolean }) {
   const { ctx, month } = data;
   const estimate = ctx.estimate;
 
@@ -35,7 +35,7 @@ export function DashboardView({ data, variant = "full" }: { data: Dashboard; var
     .slice(0, 5);
 
   const alerts: { key: string; tone: "bad" | "warn"; text: React.ReactNode; href: string; cta: string }[] = [];
-  if (data.belowTarget.length > 0) {
+  if (data.belowTarget.length > 0 && !hideBelowTarget) {
     const names = data.belowTarget.slice(0, 2).map((d) => d.name).join(", ");
     alerts.push({
       key: "below",

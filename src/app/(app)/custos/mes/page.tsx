@@ -272,7 +272,7 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
                 <Hint>Compras do mês ÷ faturamento. É uma aproximação: o app ainda não controla o estoque, então o que sobrou na prateleira conta como gasto.</Hint>
               </dt>
               <dd className="tabular text-xl font-extrabold">{summary.cmvRealPct !== null ? formatPct(summary.cmvRealPct) : "—"}</dd>
-              <dd className="tabular text-xs text-muted">{formatBRL(summary.purchases)} do faturamento</dd>
+              <dd className="tabular text-xs text-muted">{formatBRL(summary.purchases)} em compras no mês</dd>
             </div>
             <div>
               <dt className="text-muted">

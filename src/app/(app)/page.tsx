@@ -166,7 +166,7 @@ export default async function HomePage() {
     data && data.panel ? (
       <Link href="/painel" className="flex items-center justify-between gap-3 rounded-2xl bg-primary p-5 text-primary-foreground">
         <span className="flex flex-col">
-          <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Lucro líquido médio</span>
+          <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Lucro por marmita (preço cadastrado)</span>
           <span className="tabular text-4xl font-extrabold tracking-tight">{formatPct(data.panel.composition.profit)}</span>
           <span className="text-sm opacity-90">de cada venda sobra para você{data.ctx.estimate ? " (estimativa)" : ""}</span>
         </span>
@@ -204,9 +204,9 @@ export default async function HomePage() {
       ) : null}
       {health && data ? <MonthHealthCard health={health} month={data.month.start} canWrite={canWrite} /> : null}
       {checklist}
-      {actions.length > 0 && data ? <PriceActionsCard actions={actions} targetPct={data.ctx.settings.minMarginPct} /> : null}
+      {actions.length > 0 && data ? <PriceActionsCard actions={actions} targetPct={data.ctx.settings.minMarginPct} canWrite={canWrite} /> : null}
       {summary}
-      {showDashboard && data ? <DashboardView data={data} variant="alerts" /> : null}
+      {showDashboard && data ? <DashboardView data={data} variant="alerts" hideBelowTarget={actions.length > 0} /> : null}
 
       {session.isPlatformAdmin && !member?.viewingAs ? (
         <Link href="/admin" className="rounded-xl bg-primary px-4 py-3 text-center font-semibold text-primary-foreground">

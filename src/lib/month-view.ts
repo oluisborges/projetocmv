@@ -103,3 +103,16 @@ export function monthLabel(start: string): string {
   const [y, m] = start.split("-").map(Number);
   return `${MONTHS[m - 1]} de ${y}`;
 }
+
+/**
+ * Quanto do mês já passou (0 a 1), no horário de Brasília. Mês fechado = 1. Serve para cobrar das contas fixas só os dias que correram
+ * quando o mês ainda está em andamento.
+ */
+export function elapsedFraction(month: string, now: Date = new Date()): number {
+  const [y, m] = month.split("-").map(Number);
+  const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const br = new Date(now.getTime() - 3 * 3600_000);
+  const sameMonth = br.getUTCFullYear() === y && br.getUTCMonth() + 1 === m;
+  if (!sameMonth) return br.getTime() > Date.UTC(y, m, 1) ? 1 : 0;
+  return Math.min(1, br.getUTCDate() / days);
+}

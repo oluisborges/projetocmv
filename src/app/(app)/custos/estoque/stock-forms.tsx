@@ -27,6 +27,8 @@ export function StockRowCard({ month, row, canWrite }: { month: string; row: Sto
   const missingQty = counted === null ? null : expected - counted;
   const missingValue = missingQty === null ? null : missingQty * row.unitCost;
   const u = row.displayUnit;
+  // Sem estoque de partida nem compras lançadas, "deveria sobrar" sairia negativo e assustaria sem motivo.
+  const noInflow = row.opening + purchased === 0;
 
   async function run(kind: "count" | "manual", text: string) {
     const mine = ++latest.current;
@@ -66,9 +68,13 @@ export function StockRowCard({ month, row, canWrite }: { month: string; row: Sto
         </div>
         <div>
           <dt className="text-xs text-muted">Deveria sobrar</dt>
-          <dd className={`tabular font-semibold ${expected < 0 ? "text-danger" : ""}`}>
-            {show(expected, row.perDisplay)} {u}
-          </dd>
+          {noInflow ? (
+            <dd className="text-xs text-muted">precisa das compras</dd>
+          ) : (
+            <dd className={`tabular font-semibold ${expected < 0 ? "text-danger" : ""}`}>
+              {show(expected, row.perDisplay)} {u}
+            </dd>
+          )}
         </div>
       </dl>
 
@@ -87,22 +93,25 @@ export function StockRowCard({ month, row, canWrite }: { month: string; row: Sto
             />
             <span className="text-muted">{u}</span>
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <span className="shrink-0">
-              Comprei sem nota
-              <Hint>Compras deste insumo que não vieram de nota fiscal importada (feira, mercado). As das notas já somam sozinhas.</Hint>
-            </span>
-            <input
-              value={manualText}
-              onChange={(e) => setManualText(e.target.value)}
-              onBlur={() => toText(manual > 0 ? manual : null, row.perDisplay) !== manualText.trim() && run("manual", manualText)}
-              inputMode="decimal"
-              placeholder="0"
-              aria-label={`Compras de ${row.name} sem nota, em ${u}`}
-              className={input}
-            />
-            <span className="text-muted">{u}</span>
-          </label>
+          <details className="w-full" open={manual > 0}>
+            <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-primary">Comprei sem nota fiscal</summary>
+            <label className="flex items-center gap-2 pb-2 text-sm">
+              <span className="shrink-0">
+                Quantidade
+                <Hint>Compras deste insumo que não vieram de nota fiscal importada (feira, mercado). As das notas já somam sozinhas.</Hint>
+              </span>
+              <input
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                onBlur={() => toText(manual > 0 ? manual : null, row.perDisplay) !== manualText.trim() && run("manual", manualText)}
+                inputMode="decimal"
+                placeholder="0"
+                aria-label={`Compras de ${row.name} sem nota, em ${u}`}
+                className={input}
+              />
+              <span className="text-muted">{u}</span>
+            </label>
+          </details>
         </div>
       ) : null}
 
@@ -117,7 +126,7 @@ export function StockRowCard({ month, row, canWrite }: { month: string; row: Sto
         {state.kind === "error" ? <span className="text-danger">{state.message}</span> : null}
       </p>
 
-      {missingQty !== null && missingValue !== null ? (
+      {!noInflow && missingQty !== null && missingValue !== null ? (
         <p className={`rounded-lg px-3 py-2 text-sm ${Math.abs(missingValue) < 5 ? "bg-success/10" : missingValue > 0 ? "bg-danger/10" : "bg-warning/10"}`}>
           {Math.abs(missingValue) < 5 ? (
             <>Bateu com o esperado.</>

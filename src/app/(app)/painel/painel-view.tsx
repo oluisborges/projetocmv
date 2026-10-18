@@ -57,7 +57,7 @@ export function PainelView({ data }: { data: Dashboard }) {
       <section aria-label="Lucro líquido" className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-[#2f5d4f] p-5 text-primary-foreground shadow-lg">
         <span aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-accent" />
         <p className="flex items-center text-sm font-semibold uppercase tracking-wider opacity-90">
-          Lucro líquido médio
+          Lucro por marmita (pelo preço cadastrado)
           <Hint label="O que é lucro líquido?">Em média, quanto sobra de cada R$ 100 vendidos depois de pagar ingredientes, equipe, despesas, impostos e taxas.</Hint>
         </p>
         <p className="flex flex-wrap items-center gap-3">
@@ -151,7 +151,7 @@ export function PainelView({ data }: { data: Dashboard }) {
                   <div className={`h-full rounded-full ${ctx.monthlyRevenue >= breakEven.revenue ? "bg-success" : "bg-danger"}`} style={{ width: `${Math.min(100, (ctx.monthlyRevenue / breakEven.revenue) * 100)}%` }} />
                 </div>
                 <p className="text-xs text-muted">
-                  Você fatura cerca de {formatBRL(ctx.monthlyRevenue)} por mês: {ctx.monthlyRevenue >= breakEven.revenue ? "acima" : "abaixo"} do equilíbrio.
+                  Pela sua média de faturamento ({formatBRL(ctx.monthlyRevenue)} por mês), você está {ctx.monthlyRevenue >= breakEven.revenue ? "acima" : "abaixo"} do equilíbrio. O mês em andamento aparece no Início.
                 </p>
               </>
             ) : null}

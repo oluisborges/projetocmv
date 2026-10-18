@@ -145,7 +145,12 @@ export type HistoryMonth = {
   fixedPct: number | null;
   /** Impostos + taxa do canal. */
   taxesPct: number | null;
-  /** Sobra estimada: faturamento − compras − equipe − contas fixas − impostos e taxas. Só com faturamento, compras e foto do mês. */
+  /** Custo dos insumos usado na conta do resultado: o das fichas (vendas × ficha) e, sem ele, as compras do mês. */
+  insumosCost: number | null;
+  resultBasis: "fichas" | "compras" | null;
+  /** Mês em andamento: contas fixas e equipe entram só na proporção dos dias que passaram. */
+  partial: boolean;
+  /** Sobra estimada: faturamento − insumos − equipe − contas fixas − impostos e taxas. Só com faturamento, custo dos insumos e foto do mês. */
   result: { value: number; pct: number } | null;
 };
 
@@ -157,14 +162,20 @@ export function summarizeHistoryMonth(input: {
   soldUnits: number;
   theoreticalCost: number | null;
   snapshot: SnapshotState | null;
+  /** Fração do mês que já passou (1 = mês fechado). */
+  elapsed?: number;
 }): HistoryMonth {
   const { revenue, purchases, snapshot } = input;
   const s = snapshot;
+  const elapsed = input.elapsed ?? 1;
   const taxRate = s ? s.taxPct + s.feePct : 0;
+  // Uma base só em todas as telas: o que as fichas dizem que as vendas custaram; sem isso, as compras do mês.
+  const insumosCost = input.theoreticalCost ?? (purchases > 0 ? purchases : null);
+  const resultBasis = input.theoreticalCost !== null ? "fichas" : purchases > 0 ? "compras" : null;
   const result =
-    s && revenue > 0 && purchases > 0
+    s && revenue > 0 && insumosCost !== null
       ? (() => {
-          const value = revenue - purchases - s.staffTotal - s.fixedTotal - revenue * taxRate;
+          const value = revenue - insumosCost - (s.staffTotal + s.fixedTotal) * elapsed - revenue * taxRate;
           return { value, pct: value / revenue };
         })()
       : null;
@@ -174,9 +185,12 @@ export function summarizeHistoryMonth(input: {
     soldUnits: input.soldUnits,
     insumosPct: purchases > 0 ? div(purchases, revenue) : null,
     expectedPct: input.theoreticalCost !== null ? div(input.theoreticalCost, revenue) : null,
-    staffPct: s ? div(s.staffTotal, revenue) : null,
-    fixedPct: s ? div(s.fixedTotal, revenue) : null,
+    staffPct: s ? div(s.staffTotal * elapsed, revenue) : null,
+    fixedPct: s ? div(s.fixedTotal * elapsed, revenue) : null,
     taxesPct: s && revenue > 0 ? taxRate : null,
+    insumosCost,
+    resultBasis,
+    partial: elapsed < 1,
     result,
   };
 }

@@ -4,7 +4,7 @@ import { mergeMonthWithMenu, monthPriceMoves, normalizeSnapshot, summarizeHistor
 import { summarizeCombo } from "@/lib/combo-view";
 import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
 import { hasMenuConnection, loadMenuMonthly, loadMenuRecipeSales, type MenuMonthlyRow } from "@/lib/menu-data";
-import { currentMonthStart, lastMonths, monthBounds } from "@/lib/month-view";
+import { currentMonthStart, elapsedFraction, lastMonths, monthBounds } from "@/lib/month-view";
 import { createClient } from "@/lib/supabase/server";
 
 /** Já existe algum mês com faturamento (digitado ou vindo do cardápio)? Antes disso o Histórico não tem o que mostrar. */
@@ -107,6 +107,7 @@ export async function loadHistory(orgId: string, canWrite: boolean): Promise<{ e
         soldUnits: merged.soldUnits,
         theoreticalCost: merged.theoreticalCost,
         snapshot: series?.average ?? null,
+        elapsed: elapsedFraction(month),
       }),
       hasSnapshot: Boolean(series),
       menuRevenue: merged.menuRevenue,

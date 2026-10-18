@@ -97,7 +97,13 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
                   <Stat label="Equipe" value={s.staffPct !== null ? formatPct(s.staffPct) : "—"} />
                   <Stat label="Despesas fixas" value={s.fixedPct !== null ? formatPct(s.fixedPct) : "—"} />
                   <Stat label="Impostos e taxas" value={s.taxesPct !== null ? formatPct(s.taxesPct) : "—"} />
-                  {s.result ? <Stat label="Sobrou (estimativa)" value={formatBRL(s.result.value)} sub={`${formatPct(s.result.pct)} do faturamento`} /> : null}
+                  {s.result ? (
+                    <Stat
+                      label={s.partial ? "Sobra até agora (estimativa)" : "Sobrou (estimativa)"}
+                      value={formatBRL(s.result.value)}
+                      sub={`${formatPct(s.result.pct)} do faturamento · ${s.resultBasis === "fichas" ? "pelo custo das fichas" : "pelas compras do mês"}${s.partial ? "; contas fixas só dos dias que passaram" : ""}`}
+                    />
+                  ) : null}
                 </>
               ) : null}
             </dl>
@@ -200,7 +206,8 @@ function Chart({ entries }: { entries: HistoryEntry[] }) {
 
 /** "Por que o resultado mudou?": o último mês com resultado contra o anterior. */
 function BridgeCard({ entries }: { entries: HistoryEntry[] }) {
-  const cur = entries.find((e) => e.summary.result);
+  // Só compara meses fechados: o mês em andamento ainda não tem todas as vendas nem todas as contas.
+  const cur = entries.find((e) => e.summary.result && !e.summary.partial);
   if (!cur) return null;
   const prevMonth = lastMonths(cur.month, 2)[1];
   const prev = entries.find((e) => e.month === prevMonth);
@@ -212,7 +219,7 @@ function BridgeCard({ entries }: { entries: HistoryEntry[] }) {
     <section aria-label="Por que o resultado mudou" className="flex flex-col gap-3 card p-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-muted">
         Por que o resultado mudou
-        <Hint>Compara o resultado de {monthLabel(cur.month)} com o do mês anterior e separa o que veio das vendas, do preço médio, do custo dos insumos e das contas fixas. Usa as compras do mês, como no resto do Histórico.</Hint>
+        <Hint>Compara o resultado de {monthLabel(cur.month)} com o do mês anterior e separa o que veio das vendas, do preço médio, do custo dos insumos e das contas fixas. Usa a mesma conta do resto do Histórico: custo dos insumos pelas fichas (ou pelas compras, se as fichas não bastam).</Hint>
       </p>
       <p className="text-sm">
         De <strong className="tabular">{formatBRL(bridge.from)}</strong> em <span className="first-letter:uppercase">{monthLabel(prev.month)}</span> para <strong className="tabular">{formatBRL(bridge.to)}</strong> em{" "}
