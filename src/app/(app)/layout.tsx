@@ -2,8 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { AccountMenu } from "@/components/account-menu";
 import { ActivityTracker } from "@/components/activity-tracker";
+import { AdminAlertBanner } from "@/components/admin-alert-banner";
 import { BottomNav } from "@/components/bottom-nav";
 import { getActiveOrg, requireUser } from "@/lib/auth";
+import { loadMenuAlerts } from "@/lib/menu/server/alerts";
 import { exitViewAs, signOut } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -11,6 +13,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await requireUser();
   const active = await getActiveOrg();
   const orgName = active?.orgName;
+  // Equipe Shogun (fora do "ver como"): cardápios que pararam de importar aparecem em qualquer tela.
+  const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts() : [];
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col" style={{ "--sticky-top": active?.viewingAs ? "7.75rem" : "4rem" } as React.CSSProperties}>
@@ -36,9 +40,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </span>
         </Link>
         {/* Em "ver como", a barra é a da marmitaria: sem menu de conta nem atalhos de admin; a saída é o botão da faixa laranja. */}
-        {active?.viewingAs ? null : <AccountMenu isAdmin={session.isPlatformAdmin} signOutAction={signOut} />}
+        {active?.viewingAs ? null : <AccountMenu isAdmin={session.isPlatformAdmin} alertCount={alerts.length} signOutAction={signOut} />}
       </header>
       <main className="flex flex-1 flex-col gap-6 px-4 py-6 pb-24">
+        <AdminAlertBanner alerts={alerts} />
         {children}
       </main>
       <ActivityTracker />

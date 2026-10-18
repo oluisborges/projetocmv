@@ -102,3 +102,31 @@ export function attentionReasons(input: {
   else if (now.getTime() - Date.parse(input.lastActivity) > INACTIVE_DAYS * 86_400_000) out.push({ key: "inactive", text: `Sem acessar (último acesso ${input.ago(input.lastActivity)})`, tab: "users", urgency: 2 });
   return out.sort((a, b) => a.urgency - b.urgency);
 }
+
+export type MenuAlert = {
+  connectionId: string;
+  orgId: string;
+  orgName: string;
+  health: "error" | "late";
+  /** "Vida Mais Fitt · CardápioWeb parou: chave recusada" */
+  text: string;
+};
+
+/**
+ * Cardápios que pararam de importar (erro ou sem leitura há mais de 30 h), do mais grave ao menos grave.
+ * Quem usa mostra isso à equipe em qualquer tela do sistema, sem precisar abrir o painel.
+ */
+export function menuAlerts(input: {
+  conns: (MenuConnSummary & { id: string; orgId: string; orgName: string; providerLabel: string })[];
+  now?: Date;
+  ago: (iso: string | null) => string;
+}): MenuAlert[] {
+  const now = input.now ?? new Date();
+  const out: MenuAlert[] = [];
+  for (const c of input.conns) {
+    const h = menuHealth(c, now);
+    if (h === "error") out.push({ connectionId: c.id, orgId: c.orgId, orgName: c.orgName, health: "error", text: `${c.orgName} · ${c.providerLabel} parou de importar (desconectado ou chave recusada)` });
+    else if (h === "late") out.push({ connectionId: c.id, orgId: c.orgId, orgName: c.orgName, health: "late", text: `${c.orgName} · ${c.providerLabel} sem importar (última leitura ${input.ago(c.last_sync_at)})` });
+  }
+  return out.sort((a, b) => (a.health === b.health ? a.orgName.localeCompare(b.orgName, "pt-BR") : a.health === "error" ? -1 : 1));
+}

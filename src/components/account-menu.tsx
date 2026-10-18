@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import { SubmitButton } from "@/components/submit-button";
 
 /** Menu da conta no cabeçalho: tira o "Sair" (botão de risco) do lugar nobre e reúne o que é de uso raro. */
-export function AccountMenu({ isAdmin, signOutAction }: { isAdmin: boolean; signOutAction: () => Promise<void> }) {
+export function AccountMenu({ isAdmin, alertCount = 0, signOutAction }: { isAdmin: boolean; /** cardápios parados (só equipe Shogun) */ alertCount?: number; signOutAction: () => Promise<void> }) {
   const ref = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
@@ -26,8 +26,9 @@ export function AccountMenu({ isAdmin, signOutAction }: { isAdmin: boolean; sign
     <details ref={ref} className="relative">
       <summary
         aria-label="Menu da conta"
-        className="flex size-11 cursor-pointer list-none items-center justify-center rounded-xl border border-white/25 bg-white/10 text-white [&::-webkit-details-marker]:hidden"
+        className="relative flex size-11 cursor-pointer list-none items-center justify-center rounded-xl border border-white/25 bg-white/10 text-white [&::-webkit-details-marker]:hidden"
       >
+        {alertCount > 0 ? <span aria-label={`${alertCount} alertas`} className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-bold leading-5 text-white">{alertCount}</span> : null}
         <svg viewBox="0 0 24 24" className="size-5" aria-hidden fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5" />
@@ -36,7 +37,7 @@ export function AccountMenu({ isAdmin, signOutAction }: { isAdmin: boolean; sign
       <div className="absolute right-0 top-[calc(100%+0.5rem)] z-40 flex w-60 flex-col gap-0.5 card p-2 text-foreground shadow-xl">
         {isAdmin ? (
           <Link href="/admin" className={`${item} font-semibold text-primary`}>
-            Painel Shogun
+            Painel Shogun{alertCount > 0 ? ` (${alertCount} ${alertCount === 1 ? "alerta" : "alertas"})` : ""}
           </Link>
         ) : null}
         <Link href="/conta/senha" className={item}>

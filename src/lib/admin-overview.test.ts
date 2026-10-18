@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attentionReasons, menuHealth, orgFlags, orgSeverity, sortOrgs, worstMenuHealth, type MenuConnSummary } from "./admin-overview";
+import { attentionReasons, menuAlerts, menuHealth, orgFlags, orgSeverity, sortOrgs, worstMenuHealth, type MenuConnSummary } from "./admin-overview";
 import { timeAgo } from "./relative-time";
 
 const now = new Date("2026-10-18T15:00:00Z");
@@ -98,5 +98,21 @@ describe("gravidade e motivos de atenção", () => {
 
   it("nunca acessou", () => {
     expect(attentionReasons({ lastActivity: null, conns: [], now, ago }).map((x) => x.key)).toEqual(["never"]);
+  });
+});
+
+describe("alerta de cardápio parado", () => {
+  const ago = (iso: string | null) => timeAgo(iso, now);
+  const c = (over: Partial<MenuConnSummary> & { id?: string; orgName?: string } = {}) => ({ ...conn(over), id: over.id ?? "x", orgId: "o", orgName: over.orgName ?? "Bela", providerLabel: "CardápioWeb" });
+
+  it("em dia ou importando não alerta", () => {
+    expect(menuAlerts({ conns: [c(), c({ phase: "history" })], now, ago })).toEqual([]);
+  });
+
+  it("erro vem antes de atraso, e cada um diz o que houve", () => {
+    const a = menuAlerts({ conns: [c({ id: "1", orgName: "Zeca", last_sync_at: "2026-10-15T10:00:00Z" }), c({ id: "2", orgName: "Ana", status: "error" })], now, ago });
+    expect(a.map((x) => [x.connectionId, x.health])).toEqual([["2", "error"], ["1", "late"]]);
+    expect(a[0].text).toContain("Ana · CardápioWeb parou de importar");
+    expect(a[1].text).toContain("última leitura há 3 dias");
   });
 });
