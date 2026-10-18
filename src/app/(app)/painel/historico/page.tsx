@@ -6,6 +6,8 @@ import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { loadHistory, type HistoryEntry } from "@/lib/history-data";
 import type { ChangeEvent } from "@/lib/history-view";
 import { lastMonths, monthLabel } from "@/lib/month-view";
+import { Hint } from "@/components/hint";
+import { profitBridge } from "@/lib/profit-bridge";
 
 export const metadata = { title: "Histórico" };
 
@@ -192,6 +194,52 @@ function Chart({ entries }: { entries: HistoryEntry[] }) {
   );
 }
 
+
+/** "Por que o resultado mudou?": o último mês com resultado contra o anterior. */
+function BridgeCard({ entries }: { entries: HistoryEntry[] }) {
+  const cur = entries.find((e) => e.summary.result);
+  if (!cur) return null;
+  const prevMonth = lastMonths(cur.month, 2)[1];
+  const prev = entries.find((e) => e.month === prevMonth);
+  if (!prev) return null;
+  const bridge = profitBridge(prev.summary, cur.summary, cur.moves);
+  if (!bridge) return null;
+  const up = bridge.delta >= 0;
+  return (
+    <section aria-label="Por que o resultado mudou" className="flex flex-col gap-3 card p-4">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+        Por que o resultado mudou
+        <Hint>Compara o resultado de {monthLabel(cur.month)} com o do mês anterior e separa o que veio das vendas, do preço médio, do custo dos insumos e das contas fixas. Usa as compras do mês, como no resto do Histórico.</Hint>
+      </p>
+      <p className="text-sm">
+        De <strong className="tabular">{formatBRL(bridge.from)}</strong> em <span className="first-letter:uppercase">{monthLabel(prev.month)}</span> para <strong className="tabular">{formatBRL(bridge.to)}</strong> em{" "}
+        <span>{monthLabel(cur.month)}</span>:{" "}
+        <strong className={`tabular ${up ? "text-success" : "text-danger"}`}>
+          {up ? "+" : "−"}
+          {formatBRL(Math.abs(bridge.delta))}
+        </strong>
+        .
+      </p>
+      <ul className="divide-y divide-border">
+        {bridge.steps
+          .filter((st) => Math.abs(st.value) >= 1)
+          .map((st) => (
+            <li key={st.key} className="flex items-start justify-between gap-3 py-2.5">
+              <span className="min-w-0 text-sm">
+                <span className="block font-semibold">{st.label}</span>
+                <span className="text-xs text-muted">{st.text}</span>
+              </span>
+              <span className={`tabular shrink-0 text-sm font-bold ${st.value >= 0 ? "text-success" : "text-danger"}`}>
+                {st.value >= 0 ? "+" : "−"}
+                {formatBRL(Math.abs(st.value))}
+              </span>
+            </li>
+          ))}
+      </ul>
+    </section>
+  );
+}
+
 export default async function HistoricoPage() {
   const { orgId, canWrite } = await requireMember();
   const history = await loadHistory(orgId, canWrite);
@@ -214,6 +262,7 @@ export default async function HistoricoPage() {
         </p>
       ) : (
         <>
+          <BridgeCard entries={history.entries} />
           <Chart entries={history.entries} />
           <div className="flex flex-col gap-3">
             {history.entries.map((e, i) => {
