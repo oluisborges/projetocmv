@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CostsTabs } from "@/components/costs-tabs";
+import { ExportLinks } from "@/components/export-links";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { summarizeCombo } from "@/lib/combo-view";
@@ -188,6 +189,8 @@ export default async function MonthPage(props: PageProps<"/custos/mes">) {
       </div>
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
+
+      {hasData ? <ExportLinks base="/painel/exportar" params={`mes=${month.slice(0, 7)}`} label="Relatório do mês" hint="PDF e Excel com o resultado, as marmitas e os insumos deste mês, prontos para o contador." /> : null}
 
       <section aria-label="Para fechar o mês" className={`flex flex-col gap-3 rounded-2xl border-2 p-4 ${close.ready ? "border-success/40 bg-success/10" : "border-border bg-surface"}`}>
         <div className="flex items-baseline justify-between gap-3">

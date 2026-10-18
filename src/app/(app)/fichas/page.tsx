@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ExportLinks } from "@/components/export-links";
 import { FichasTabs } from "@/components/fichas-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadSafetyMargin } from "@/lib/pricing-data";
@@ -37,6 +38,8 @@ export default async function RecipesPage() {
           + Nova ficha
         </Link>
       ) : null}
+
+      {cards.length > 0 ? <ExportLinks base="/fichas/exportar" label="Baixar todas as fichas" hint="PDF com uma ficha por página (para a cozinha) ou Excel (cópia de segurança, no mesmo formato da planilha de importação)." /> : null}
 
       {cards.length === 0 ? (
         <p className="card p-5 text-sm text-muted">

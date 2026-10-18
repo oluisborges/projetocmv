@@ -15,6 +15,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   // Importação de NF-e e planilhas envia arquivos para uma Server Action (padrão do Next: 1 MB; a Vercel corta em 4,5 MB).
+  // O logo do PDF é lido do disco no servidor: sem isto, a Vercel não leva a pasta public junto com a função.
+  outputFileTracingIncludes: {
+    "/painel/exportar": ["./public/brand/logo-horizontal.png"],
+    "/fichas/exportar": ["./public/brand/logo-horizontal.png"],
+  },
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

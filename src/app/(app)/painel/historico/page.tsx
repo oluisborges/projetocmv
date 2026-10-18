@@ -6,6 +6,7 @@ import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { loadHistory, type HistoryEntry } from "@/lib/history-data";
 import type { ChangeEvent } from "@/lib/history-view";
 import { lastMonths, monthLabel } from "@/lib/month-view";
+import { ExportLinks } from "@/components/export-links";
 import { Hint } from "@/components/hint";
 import { profitBridge } from "@/lib/profit-bridge";
 
@@ -154,6 +155,8 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
             </ul>
           </div>
         ) : null}
+
+        {hasNumbers ? <ExportLinks base="/painel/exportar" params={`mes=${entry.month.slice(0, 7)}`} label="Relatório do mês" hint="Para o contador e o financeiro: resultado, marmitas, insumos e (se você contou o estoque) o CMV real." /> : null}
 
         <p className="text-xs text-muted">
           {entry.hasSnapshot
