@@ -191,7 +191,7 @@ export function SheetImporter() {
                   {r.name} <span className="font-normal text-muted">· {r.items} {r.items === 1 ? "insumo" : "insumos"}</span>
                 </p>
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.status === "new" ? "bg-success/10 text-success" : r.status === "exists" ? "bg-border text-muted" : "bg-warning/10 text-warning"}`}>
-                  {r.status === "new" ? "Nova" : r.status === "exists" ? "Já existe" : "Faltam insumos"}
+                  {r.status === "new" ? "Nova" : r.status === "exists" ? "Já existe" : "Com problema"}
                 </span>
               </div>
               {r.status === "missing" ? <p className="text-sm text-muted">Não será criada: {r.missing.slice(0, 4).join(", ")}{r.missing.length > 4 ? "…" : ""}</p> : null}
