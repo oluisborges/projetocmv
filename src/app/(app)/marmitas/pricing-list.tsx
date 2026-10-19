@@ -54,7 +54,7 @@ function Row({ row, settings, feePct, canWrite, configured }: { row: PricingRowD
   return (
     <li className="flex flex-col gap-3 py-4">
       <div className="min-w-0">
-        <Link href={`/marmitas/${row.id}`} className="block text-base font-semibold leading-snug">
+        <Link href={`/marmitas/${row.id}`} className="tap-area block text-base font-semibold leading-snug">
           {row.name}
         </Link>
         <p className="text-xs text-muted">
