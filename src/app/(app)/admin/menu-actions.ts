@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { parseHash } from "@/lib/menu/prefiro";
-import { cardapiowebClient, prefiroClient, AuthError } from "@/lib/menu/server/http";
+import { cardapiowebClient, prefiroClient, AuthError, TransientError } from "@/lib/menu/server/http";
 import { dispatchRun } from "@/lib/menu/server/dispatch";
 import { lockConnection, runConnection } from "@/lib/menu/server/sync";
 import { menuLookbackStart, shouldChain } from "@/lib/menu/window";
@@ -78,7 +78,14 @@ export async function connectMenu(_prev: AdminState, formData: FormData): Promis
     }
   } catch (e) {
     if (e instanceof AuthError) return failure(e.message);
-    return failure(`Não foi possível falar com ${PROVIDER_LABEL[provider]}: ${e instanceof Error ? e.message : String(e)}`);
+    const detail = e instanceof Error ? e.message : String(e);
+    // Erro 5xx em todos os testes: a chave não foi recusada, o CardápioWeb é que está falhando para essa loja.
+    if (e instanceof TransientError && /(^|\D)5\d\d(\D|$)/.test(detail)) {
+      return failure(
+        `O ${PROVIDER_LABEL[provider]} devolveu erro interno (500) em todos os testes. A chave não foi recusada: o problema está do lado deles. Tente de novo em alguns minutos; se continuar, confira com o cliente se a integração por API está ativada (Configurações → Integrações → API) e peça ajuda ao suporte do CardápioWeb. Detalhe: ${detail.slice(0, 280)}`,
+      );
+    }
+    return failure(`Não foi possível falar com ${PROVIDER_LABEL[provider]}: ${detail}`);
   }
 
   const db = createAdminClient();

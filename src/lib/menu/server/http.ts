@@ -65,8 +65,31 @@ export function cardapiowebClient(apiKey: string) {
       get("/api/partner/v1/orders/history", { start_date: start, end_date: end, "status[]": ["closed"], page: String(page), per_page: "100" }, historyGate),
     detail: async (id: string) => (await get(`/api/partner/v1/orders/${encodeURIComponent(id)}`, {}, detailGate)) as CwOrderDetail | null,
     merchant: (): Promise<{ name?: string } | null> => get("/api/partner/v1/merchant", {}).catch(() => null),
-    /** Chamada leve para validar a chave. */
-    ping: () => get("/api/partner/v1/merchant/customers", { page: "1", per_page: "1" }),
+    /**
+     * Valida a chave. A API não tem um "teste de chave", e a lista de clientes (que usávamos) devolve 500 em algumas lojas:
+     * tenta os dados da loja, depois os pedidos de um dia e só por último os clientes. Qualquer resposta com conteúdo prova que a chave vale.
+     * Chave recusada (401/403) para na hora; se TODAS falharem por erro do servidor, o erro é do CardápioWeb e a mensagem diz isso.
+     */
+    ping: async (): Promise<Raw> => {
+      const day = new Date();
+      const attempts: [string, () => Promise<Raw | null>][] = [
+        ["dados da loja", () => get("/api/partner/v1/merchant", {})],
+        ["pedidos", () => get("/api/partner/v1/orders/history", { start_date: new Date(day.getTime() - 86_400_000).toISOString(), end_date: day.toISOString(), "status[]": ["closed"], page: "1", per_page: "1" }, historyGate)],
+        ["clientes", () => get("/api/partner/v1/merchant/customers", { page: "1", per_page: "1" })],
+      ];
+      const failures: string[] = [];
+      for (const [label, run] of attempts) {
+        try {
+          const r = await run();
+          if (r) return r;
+          failures.push(`${label}: sem resposta (404)`);
+        } catch (e) {
+          if (e instanceof AuthError) throw e;
+          failures.push(`${label}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+      throw new TransientError(failures.join(" | "));
+    },
   };
 }
 export type CardapiowebClient = ReturnType<typeof cardapiowebClient>;
