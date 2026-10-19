@@ -8,6 +8,7 @@ import "server-only";
 export async function dispatchRun(origin: string, connectionId: string, depth = 0): Promise<boolean> {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
+  origin = dispatchOrigin(origin);
   // duas tentativas: uma falha passageira de rede não pode quebrar a corrente de ciclos
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
@@ -25,4 +26,13 @@ export async function dispatchRun(origin: string, connectionId: string, depth = 
     await new Promise((r) => setTimeout(r, 1000));
   }
   return false;
+}
+
+/**
+ * Em produção, sempre pelo domínio de produção: o cron da Vercel chega pelo endereço único do deploy, que fica atrás do login
+ * da Vercel (proteção de deploy) e recusa a chamada interna. O domínio de produção é público.
+ */
+export function dispatchOrigin(origin: string, env: Record<string, string | undefined> = process.env): string {
+  const prod = env.VERCEL_ENV === "production" ? env.VERCEL_PROJECT_PRODUCTION_URL : undefined;
+  return prod ? `https://${prod}` : origin;
 }
