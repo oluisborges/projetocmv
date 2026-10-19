@@ -280,6 +280,8 @@ async function syncPrefiro(db: SupabaseClient, conn: Connection, creds: Creds, d
   let phase = conn.phase;
   let cursor = new Date(conn.history_cursor ?? conn.lookback_from);
   let note: string | undefined;
+  let listed = 0; // pedidos que a Prefiro devolveu nas listas deste ciclo
+  let lastRaw = "";
 
   while (Date.now() < deadline - SAFETY_MS) {
     if (phase === "history") {
@@ -295,6 +297,8 @@ async function syncPrefiro(db: SupabaseClient, conn: Connection, creds: Creds, d
         const to = new Date(Math.min(cursor.getTime() + span * DAY_MS, now.getTime()));
         const r = await pf.orders(cursor, to);
         if (r.ok) {
+          listed += r.data.length;
+          lastRaw = r.raw;
           saved += await apply(r.data);
           cursor = to;
           break;
@@ -328,6 +332,10 @@ async function syncPrefiro(db: SupabaseClient, conn: Connection, creds: Creds, d
     }
   }
   if (phase === "done" && Date.now() < deadline - SAFETY_MS) saved += await drainQueue(db, conn, fetchOne, deadline);
+  // carga inicial que terminou sem nenhum pedido: pode ser loja nova, mas também hash/chave de outro estabelecimento. Deixa o aviso (com a resposta) para o suporte.
+  if (!note && phase === "done" && conn.phase === "history" && conn.orders_imported === 0 && saved === 0 && listed === 0) {
+    note = `A Prefiro respondeu, mas sem nenhum pedido desde ${conn.lookback_from.slice(0, 10)}. Confira se a hash e a chave são desta loja. Resposta: ${lastRaw.replace(/\s+/g, " ").slice(0, 120) || "(vazia)"}`;
+  }
   return { saved, phase, note };
 }
 
