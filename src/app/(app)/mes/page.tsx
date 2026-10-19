@@ -102,7 +102,7 @@ export default async function MonthPage(props: PageProps<"/mes">) {
   await kickStalled(menuStatus); // importação parada? quem abre esta tela a retoma
   const menuOn = usesMenu(connected, menuData?.orders ?? 0);
   // Os cardápios (CardápioWeb e Prefiro) cobram mensalidade fixa, não % por pedido: aqui só entram os impostos e as outras taxas.
-  // A mensalidade é um custo fixo e entra em Ajustes → Custos fixos.
+  // A mensalidade é um custo fixo e entra em Custos, aba Custos fixos.
   const menuVariablePct = ctx.settings.taxPct + (ctx.settings.otherPct ?? 0);
   const menuView = menuOn
     ? buildMenuMonth({
@@ -303,7 +303,7 @@ export default async function MonthPage(props: PageProps<"/mes">) {
             <div className="border-t border-border pt-3 text-sm">
               <p className="text-muted">
                 Mão de obra
-                <Hint>Salários mais encargos da sua equipe (cadastrada em Ajustes → Custos fixos), dividido pelo faturamento do mês.</Hint>
+                <Hint>Salários mais encargos da sua equipe (cadastrada em Custos, aba Custos fixos), dividido pelo faturamento do mês.</Hint>
               </p>
               <p className="tabular">
                 <strong className="text-xl font-extrabold">{summary.cmoPct !== null ? formatPct(summary.cmoPct) : "—"}</strong>{" "}

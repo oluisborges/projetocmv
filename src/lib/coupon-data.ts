@@ -13,7 +13,7 @@ export type CouponData = {
   unitName: string;
   month: string;
   analysis: CouponAnalysis;
-  /** Margem mínima desejada do cliente (Ajustes → Impostos, taxas e meta), usada para dizer "margem baixa". */
+  /** Margem mínima desejada do cliente (Custos, aba Impostos e meta), usada para dizer "margem baixa". */
   minMarginPct: number;
   /** Desconto que as marmitas mais vendidas aguentam sem passar da margem mínima. */
   room: DiscountRoom[];

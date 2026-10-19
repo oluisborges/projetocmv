@@ -16,7 +16,7 @@ export default async function ChangePasswordPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 px-4 py-10">
       {forced ? null : (
-        <HistoryBack fallback="/ajustes" />
+        <HistoryBack fallback="/" />
       )}
 
       <header className="flex flex-col items-center gap-4 text-center">

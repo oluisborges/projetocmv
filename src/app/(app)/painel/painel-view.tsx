@@ -158,7 +158,7 @@ export function PainelView({ data }: { data: Dashboard }) {
           </>
         ) : (
           <p className="text-sm text-muted">
-            Cadastre seus custos fixos e a equipe para ver quanto precisa vender. <Link href="/ajustes/custos" className="font-semibold text-primary underline">Abrir Custos fixos e equipe</Link>
+            Cadastre seus custos fixos e a equipe para ver quanto precisa vender. <Link href="/custos" className="font-semibold text-primary underline">Abrir Custos fixos e equipe</Link>
           </p>
         )}
       </section>

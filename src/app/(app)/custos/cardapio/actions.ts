@@ -52,7 +52,7 @@ export async function saveMenuLink(productId: string, target: string, rawUnits: 
   const { data, error } = await supabase.from("menu_products").update(patch).eq("id", id.data).eq("org_id", orgId).select("id");
   if (error || !data?.length) return { ok: false, error: "Não foi possível salvar o vínculo." };
 
-  revalidatePath("/ajustes/cardapio");
+  revalidatePath("/custos/cardapio");
   revalidatePath("/mes");
   return { ok: true };
 }

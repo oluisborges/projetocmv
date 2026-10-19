@@ -471,7 +471,7 @@ export function RecipeEditor({
   initialItems: EditorItem[];
   ingredients: EditorIngredient[];
   canWrite: boolean;
-  /** Margem de segurança sobre os insumos, vinda dos Ajustes (fração). */
+  /** Margem de segurança sobre os insumos, vinda de Custos, aba Impostos e meta (fração). */
   safetyMarginPct: number;
 }) {
   const router = useRouter();
@@ -632,7 +632,7 @@ export function RecipeEditor({
             {safetyMarginPct > 0 ? (
               <p className="text-xs text-muted">
                 Inclui {formatNumber(safetyMarginPct * 100, 1)}% de margem de segurança nos insumos.{" "}
-                <Link href="/ajustes/impostos" className="tap-area font-semibold text-primary underline">
+                <Link href="/custos/impostos" className="tap-area font-semibold text-primary underline">
                   Alterar
                 </Link>
               </p>

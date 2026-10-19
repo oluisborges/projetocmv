@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { SubmitButton } from "@/components/submit-button";
 
-/** Menu da conta no cabeçalho: tira o "Sair" (botão de risco) do lugar nobre e guarda o acesso da equipe Shogun e a saída da conta (Ajustes, senha e privacidade ficam no hub Ajustes). */
+/** Menu da conta no cabeçalho: tira o "Sair" (botão de risco) do lugar nobre e guarda o acesso da equipe Shogun a troca de senha, a privacidade e a saída da conta. */
 export function AccountMenu({ isAdmin, alertCount = 0, signOutAction }: { isAdmin: boolean; /** cardápios parados (só equipe Shogun) */ alertCount?: number; signOutAction: () => Promise<void> }) {
   const ref = useRef<HTMLDetailsElement>(null);
 
@@ -40,7 +40,13 @@ export function AccountMenu({ isAdmin, alertCount = 0, signOutAction }: { isAdmi
             Painel Shogun{alertCount > 0 ? ` (${alertCount} ${alertCount === 1 ? "alerta" : "alertas"})` : ""}
           </Link>
         ) : null}
-        <form action={signOutAction} className={isAdmin ? "border-t border-border pt-1" : undefined}>
+        <Link href="/conta/senha" className={item}>
+          Trocar minha senha
+        </Link>
+        <Link href="/privacidade" className={item}>
+          Como seus dados são tratados
+        </Link>
+        <form action={signOutAction} className="border-t border-border pt-1">
           <SubmitButton pendingLabel="Saindo…" className={`${item} w-full text-danger`}>
             Sair da conta
           </SubmitButton>

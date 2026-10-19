@@ -4,9 +4,7 @@ import { AccountMenu } from "@/components/account-menu";
 import { ActivityTracker } from "@/components/activity-tracker";
 import { AdminAlertBanner } from "@/components/admin-alert-banner";
 import { BottomNav } from "@/components/bottom-nav";
-import { GlobalSearch } from "@/components/global-search";
-import { SettingsLink } from "@/components/settings-link";
-import { menuVisibilityFrom } from "@/lib/menu-visibility";
+import { menuLocksFrom, type MenuLock } from "@/lib/menu-locks";
 import { NoticesBell } from "@/components/notices-bell";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadMenuAlerts } from "@/lib/menu/server/alerts";
@@ -15,8 +13,8 @@ import { createClient } from "@/lib/supabase/server";
 import { exitViewAs, signOut } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 
-/** Menus no momento certo: "Mês" depois da primeira marmita; "Painel" depois do primeiro preço de venda. */
-async function menuVisibility(orgId: string): Promise<{ mes: boolean; painel: boolean }> {
+/** Menus travados (sempre visíveis): "Mês" até a primeira marmita; "Painel" até o primeiro preço de venda. */
+async function menuLocks(orgId: string): Promise<{ mes: MenuLock | null; painel: MenuLock | null }> {
   const supabase = await createClient();
   const unit = await activeUnit(orgId);
   const [recipes, priced] = await Promise.all([
@@ -26,7 +24,7 @@ async function menuVisibility(orgId: string): Promise<{ mes: boolean; painel: bo
         supabase.from("recipe_prices").select("recipe_id, recipes!inner(active)", { count: "exact", head: true }).eq("unit_id", unit.id).gt("current_price", 0).eq("recipes.active", true)
       : Promise.resolve({ count: 0, error: null }),
   ]);
-  return menuVisibilityFrom(recipes, priced);
+  return menuLocksFrom(recipes, priced);
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const orgName = active?.orgName;
   // Equipe Shogun (fora do "ver como"): cardápios que pararam de importar aparecem em qualquer tela.
   // O aviso é um extra: se falhar (chave de serviço ausente, banco lento), a tela continua funcionando.
-  const show = active ? await menuVisibility(active.orgId).catch(() => ({ mes: true, painel: true })) : { mes: true, painel: true };
+  const locks = active ? await menuLocks(active.orgId).catch(() => ({ mes: null, painel: null })) : { mes: null, painel: null };
   const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts().catch(() => []) : [];
 
   return (
@@ -64,9 +62,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex shrink-0 items-center gap-1.5">
           {active ? (
             <>
-              <GlobalSearch />
               <NoticesBell orgId={active.orgId} />
-              <SettingsLink />
             </>
           ) : null}
           {/* Em "ver como", a barra é a da marmitaria: sem menu de conta nem atalhos de admin; a saída é o botão da faixa laranja. */}
@@ -78,7 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <ActivityTracker />
-      <BottomNav show={show} />
+      <BottomNav locks={locks} />
     </div>
   );
 }

@@ -16,8 +16,8 @@ export type PricingContext = {
   unit: { id: string; name: string };
   settings: PricingSettings;
   /**
-   * Despesa fixa calculada a partir dos custos cadastrados em Ajustes, Custos fixos e equipe (+ faturamento mensal informado).
-   * Quando existe, ela SUBSTITUI o percentual digitado à mão em Ajustes.
+   * Despesa fixa calculada a partir dos custos cadastrados em Custos, aba Custos fixos (+ faturamento mensal informado).
+   * Quando existe, ela SUBSTITUI o percentual digitado à mão em Custos.
    */
   fixedAuto: boolean;
   /** Custos fixos ÷ faturamento (fração), mesmo quando passa de 100% e por isso NÃO é usado no preço. */
@@ -32,7 +32,7 @@ export type PricingContext = {
   fixedTotal: number;
   /** Parte do total acima que é equipe (salário + encargos). */
   staffTotal: number;
-  /** Os lucros mostrados são só estimativa? `tax`: faltam os impostos nos Ajustes; `expenses`: há contas cadastradas, mas falta o faturamento (ou elas passam dele) para ratear nas margens. */
+  /** Os lucros mostrados são só estimativa? `tax`: faltam os impostos em Custos; `expenses`: há contas cadastradas, mas falta o faturamento (ou elas passam dele) para ratear nas margens. */
   estimateReason: "tax" | "expenses" | null;
   estimate: boolean;
   /** O dono já salvou os ajustes ao menos uma vez? Se não, impostos e despesas ainda são zero e a margem é só estimativa. */
@@ -79,7 +79,7 @@ export async function loadSafetyMargin(orgId: string): Promise<number> {
 
 /**
  * Faturamento e unidades "de um mês normal": a média dos meses FECHADOS (até 12) em que o dono informou faturamento em
- * Resultado do mês, como na planilha de precificação. O mês em andamento fica de fora: um valor parcial derrubaria a média. Sem nenhum mês informado, vale o número digitado em Ajustes, Custos fixos e equipe.
+ * Resultado do mês, como na planilha de precificação. O mês em andamento fica de fora: um valor parcial derrubaria a média. Sem nenhum mês informado, vale o número digitado em Custos, aba Custos fixos.
  */
 async function monthlyAverages(orgId: string, unitId: string): Promise<{ revenue: number; units: number | null; months: number } | null> {
   const supabase = await createClient();

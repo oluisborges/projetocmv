@@ -16,10 +16,9 @@ const EXACT: Record<string, string> = {
   "/marmitas": "Abriu Marmitas",
   "/marmitas/nova": "Abriu a criação de ficha",
   "/marmitas/combos": "Abriu Combos",
-  "/ajustes": "Abriu Ajustes",
-  "/ajustes/custos": "Abriu Custos fixos",
-  "/ajustes/impostos": "Abriu os ajustes de preço",
-  "/ajustes/cardapio": "Abriu os vínculos do cardápio",
+  "/custos": "Abriu Custos fixos",
+  "/custos/impostos": "Abriu impostos e meta de lucro",
+  "/custos/cardapio": "Abriu os vínculos do cardápio",
   "/avisos": "Abriu Avisos",
   "/conta/senha": "Abriu Trocar senha",
 };

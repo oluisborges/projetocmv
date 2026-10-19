@@ -61,7 +61,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
   if (error) return { error: "Não foi possível salvar os ajustes." };
 
   recordSnapshot();
-  revalidatePath("/ajustes/impostos");
+  revalidatePath("/custos/impostos");
   revalidatePath("/marmitas");
   return { ok: "Ajustes salvos." };
 }
@@ -88,7 +88,7 @@ export async function addChannel(_prev: FormState, formData: FormData): Promise<
   if (error) return { error: error.code === "23505" ? "Já existe um canal com esse nome." : "Não foi possível adicionar o canal." };
 
   recordSnapshot();
-  revalidatePath("/ajustes/impostos");
+  revalidatePath("/custos/impostos");
   revalidatePath("/marmitas");
   return { ok: `${input.name} adicionado.` };
 }
@@ -106,7 +106,7 @@ export async function updateChannel(_prev: FormState, formData: FormData): Promi
   if (error || !data) return { error: error?.code === "23505" ? "Já existe um canal com esse nome." : "Não foi possível salvar." };
 
   recordSnapshot();
-  revalidatePath("/ajustes/impostos");
+  revalidatePath("/custos/impostos");
   revalidatePath("/marmitas");
   return { ok: "Salvo." };
 }
@@ -119,6 +119,6 @@ export async function deleteChannel(formData: FormData): Promise<void> {
   const supabase = await createClient();
   await supabase.from("sales_channels").delete().eq("id", id.data).eq("org_id", orgId);
   recordSnapshot();
-  revalidatePath("/ajustes/impostos");
+  revalidatePath("/custos/impostos");
   revalidatePath("/marmitas");
 }

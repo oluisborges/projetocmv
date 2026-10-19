@@ -4,7 +4,6 @@ import { Hint } from "@/components/hint";
 import { MarmitasTabs } from "@/components/marmitas-tabs";
 import { SubmitButton } from "@/components/submit-button";
 import { requireMember } from "@/lib/auth";
-import { loadCombos } from "@/lib/combos-data";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { hasMenuConnection, loadMenuAveragePrices } from "@/lib/menu-data";
 import { DEFAULT_SETTINGS, loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
@@ -18,11 +17,10 @@ export const metadata = { title: "Marmitas" };
 export default async function RecipesPage() {
   const { orgId, canWrite } = await requireMember();
   const ctx = await loadPricingContext(orgId, canWrite);
-  const [ingredients, { recipes, items }, archived, combos, prices] = await Promise.all([
+  const [ingredients, { recipes, items }, archived, prices] = await Promise.all([
     loadIngredients(),
     loadRecipes(),
     loadArchivedRecipes(),
-    loadCombos(orgId),
     ctx ? loadCurrentPrices(ctx.unit.id) : Promise.resolve(new Map<string, number>()),
   ]);
   const byId = new Map(ingredients.map((i) => [i.id, i]));
@@ -60,7 +58,7 @@ export default async function RecipesPage() {
         Impostos, taxas e meta de lucro
         <Hint>O mínimo que você quer que sobre de cada venda, depois de pagar tudo.</Hint>
       </span>
-      <Link href="/ajustes/impostos" className="tap-area shrink-0 text-primary">
+      <Link href="/custos/impostos" className="tap-area shrink-0 text-primary">
         Ajustar →
       </Link>
     </div>
@@ -74,7 +72,7 @@ export default async function RecipesPage() {
         <p className="text-muted">Cada produto com o custo por porção, o preço de venda e quanto sobra.</p>
       </section>
 
-      <MarmitasTabs active="marmitas" showCombos={combos.length > 0} />
+      <MarmitasTabs active="marmitas" showCombos />
 
       {canWrite ? (
         <Link href="/marmitas/nova" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">
@@ -109,12 +107,6 @@ export default async function RecipesPage() {
       )}
 
       {taxFirst ? null : taxCard}
-
-      {combos.length === 0 && canWrite && rows.length > 0 ? (
-        <Link href="/marmitas/combos" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
-          Vende combos ou kits? Monte um combo
-        </Link>
-      ) : null}
 
       {archived.length > 0 ? (
         <details className="card px-4">

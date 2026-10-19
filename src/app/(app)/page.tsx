@@ -51,7 +51,7 @@ export default async function HomePage() {
           : ctx.fixedAuto
             ? "Falta só informar os impostos para o lucro mostrado ser o real."
             : "Sem isso o lucro mostrado é só uma estimativa.",
-        href: "/ajustes/impostos",
+        href: "/custos/impostos",
         cta: "Informar agora",
         done: ctx.configured,
       },
@@ -65,7 +65,7 @@ export default async function HomePage() {
               ? "Cadastrados: o app já usa isso no preço e mostra seu ponto de equilíbrio."
               : "Cadastrados. Informe também o faturamento do mês para o app usar no preço."
             : "Aluguel, energia, equipe… para descobrir quanto precisa vender para empatar.",
-        href: "/ajustes/custos",
+        href: "/custos",
         cta: ctx.fixedTotal > 0 ? "Completar" : "Cadastrar custos",
         done: ctx.fixedAuto,
       },

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { resumeMenuImport } from "@/app/(app)/ajustes/cardapio/actions";
+import { resumeMenuImport } from "@/app/(app)/custos/cardapio/actions";
 import { Spinner } from "@/components/spinner";
 
 const EVERY_MS = 20_000;

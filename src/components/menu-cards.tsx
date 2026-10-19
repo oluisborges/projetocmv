@@ -42,7 +42,7 @@ export function MenuProfitCard({
         Quanto sobrou das vendas
         <Hint>
           O que os clientes pagaram (já sem o cupom), menos o custo da comida e da embalagem das fichas, menos impostos e outras taxas. O cardápio digital cobra mensalidade fixa, não
-          porcentagem por pedido: ela é um custo fixo e entra em Ajustes → Custos fixos e equipe.
+          porcentagem por pedido: ela é um custo fixo e entra em Custos, aba Custos fixos.
         </Hint>
       </h2>
 

@@ -61,7 +61,7 @@ export async function saveMonthlyNumbers(_prev: FormState, formData: FormData): 
   if (error) return { error: "Não foi possível salvar." };
 
   recordSnapshot();
-  revalidatePath("/ajustes/custos");
+  revalidatePath("/custos");
   revalidatePath("/marmitas");
   return { ok: "Salvo." };
 }
@@ -83,7 +83,7 @@ export async function addFixedCost(_prev: FormState, formData: FormData): Promis
   if (error) return { error: "Não foi possível adicionar." };
 
   recordSnapshot();
-  revalidatePath("/ajustes/custos");
+  revalidatePath("/custos");
   revalidatePath("/marmitas");
   return { ok: `${name} adicionado.` };
 }
@@ -102,7 +102,7 @@ export async function updateFixedCostAmount(id: string, raw: string): Promise<Re
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
   recordSnapshot();
-  revalidatePath("/ajustes/custos");
+  revalidatePath("/custos");
   revalidatePath("/marmitas");
   return { ok: true, amount: Number(data.monthly_amount) };
 }
@@ -115,7 +115,7 @@ export async function deleteFixedCost(formData: FormData): Promise<void> {
   const supabase = await createClient();
   await supabase.from("fixed_costs").delete().eq("id", id.data).eq("org_id", orgId);
   recordSnapshot();
-  revalidatePath("/ajustes/custos");
+  revalidatePath("/custos");
   revalidatePath("/marmitas");
 }
 
@@ -142,7 +142,7 @@ export async function addStaff(_prev: FormState, formData: FormData): Promise<Fo
   if (error) return { error: "Não foi possível adicionar." };
 
   recordSnapshot();
-  revalidatePath("/ajustes/custos");
+  revalidatePath("/custos");
   revalidatePath("/marmitas");
   return { ok: `${name} adicionado(a).` };
 }
@@ -169,7 +169,7 @@ export async function updateStaffPay(id: string, rawSalary: string, rawCharges: 
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
   recordSnapshot();
-  revalidatePath("/ajustes/custos");
+  revalidatePath("/custos");
   revalidatePath("/marmitas");
   return { ok: true, salary: Number(data.monthly_salary), charges: Number(data.charges_pct) };
 }
@@ -182,6 +182,6 @@ export async function deleteStaff(formData: FormData): Promise<void> {
   const supabase = await createClient();
   await supabase.from("staff").delete().eq("id", id.data).eq("org_id", orgId);
   recordSnapshot();
-  revalidatePath("/ajustes/custos");
+  revalidatePath("/custos");
   revalidatePath("/marmitas");
 }

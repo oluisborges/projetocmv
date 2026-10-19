@@ -28,13 +28,16 @@ const nextConfig: NextConfig = {
       to("/fichas", "/marmitas"),
       to("/fichas/:path*", "/marmitas/:path*"),
       to("/precificacao", "/marmitas"),
-      to("/precificacao/ajustes", "/ajustes/impostos"),
+      to("/precificacao/ajustes", "/custos/impostos"),
       to("/precificacao/:id([0-9a-fA-F-]{36})", "/marmitas/:id/preco"),
       to("/custos/mes", "/mes"),
       to("/custos/estoque", "/mes/estoque"),
-      to("/custos/cardapio", "/ajustes/cardapio"),
-      to("/custos", "/ajustes/custos"),
       to("/painel/historico", "/mes/historico"),
+      // O hub Ajustes durou pouco: Custos voltou a ser menu.
+      to("/ajustes", "/custos"),
+      to("/ajustes/custos", "/custos"),
+      to("/ajustes/impostos", "/custos/impostos"),
+      to("/ajustes/cardapio", "/custos/cardapio"),
     ];
   },
   async headers() {

@@ -42,7 +42,7 @@ export function closeMonthChecklist(input: {
       title: "Vendas do cardápio digital",
       done: input.menuOrders > 0,
       detail: input.menuOrders > 0 ? `${input.menuOrders.toLocaleString("pt-BR")} pedidos · ${brl(input.menuRevenue)} já importados, sem digitar nada.` : "Ainda não chegou nenhum pedido deste mês.",
-      href: input.menuOrders > 0 ? undefined : "/ajustes/cardapio",
+      href: input.menuOrders > 0 ? undefined : "/custos/cardapio",
       cta: input.menuOrders > 0 ? undefined : "Ver vínculos",
     });
   }
@@ -95,7 +95,7 @@ export function closeMonthChecklist(input: {
     title: "Contas fixas e equipe",
     done: input.hasFixedCosts,
     detail: input.hasFixedCosts ? "Cadastradas (valem para todos os meses até você mudar)." : "Aluguel, energia, salários… sem isso não dá para saber quanto sobrou.",
-    href: input.hasFixedCosts ? undefined : "/ajustes/custos",
+    href: input.hasFixedCosts ? undefined : "/custos",
     cta: input.hasFixedCosts ? undefined : "Cadastrar",
   });
 

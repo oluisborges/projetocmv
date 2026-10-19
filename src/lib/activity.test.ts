@@ -12,7 +12,7 @@ describe("describePath", () => {
 
   it("telas novas e preço de um produto", () => {
     expect(describePath("/mes/historico")).toBe("Abriu o Histórico");
-    expect(describePath("/ajustes/custos")).toBe("Abriu Custos fixos");
+    expect(describePath("/custos")).toBe("Abriu Custos fixos");
     expect(describePath("/marmitas/3f2b8c1e-1111-4222-8333-444455556666/preco")).toBe("Abriu o preço de um produto");
   });
 

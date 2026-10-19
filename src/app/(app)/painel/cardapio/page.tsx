@@ -82,8 +82,8 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
             {data.menuConnected ? (
               <>
                 Vincule os produtos do cardápio digital às fichas em{" "}
-                <Link href="/ajustes/cardapio" className="tap-area font-semibold text-primary">
-                  Ajustes, Cardápio digital
+                <Link href="/custos/cardapio" className="tap-area font-semibold text-primary">
+                  Custos, aba Cardápio digital
                 </Link>{" "}
                 e complete as fichas que ainda estão sem custo.
               </>

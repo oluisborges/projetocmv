@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
 import { ConfirmButton } from "@/components/confirm-button";
-import { addChannel, deleteChannel, saveSettings, updateChannel } from "../actions";
+import { addChannel, deleteChannel, saveSettings, updateChannel } from "./actions";
 
 const pct = (fraction: number) => String(Number((fraction * 100).toFixed(2))).replace(".", ",");
 
@@ -74,15 +74,15 @@ export function SettingsForm({
         <div className="flex flex-col gap-1 card p-4 text-sm">
           <p className="font-medium">Despesas fixas: {pct(settings.fixedExpensePct)}% do que você vende</p>
           <p className="text-muted">Calculado sozinho a partir das suas contas e da sua equipe.</p>
-          <Link href="/ajustes/custos" className="inline-flex min-h-11 items-center font-semibold text-primary">
+          <Link href="/custos" className="inline-flex min-h-11 items-center font-semibold text-primary">
             Ver ou alterar em Custos fixos e equipe →
           </Link>
         </div>
       ) : (
         <div className="flex flex-col gap-1 card p-4 text-sm">
           <p className="font-medium">Despesas fixas (aluguel, luz, equipe…)</p>
-          <p className="text-muted">Conte quanto paga por mês e quanto vende em Ajustes, na tela Custos fixos e equipe: o app calcula esse percentual para você.</p>
-          <Link href="/ajustes/custos" className="inline-flex min-h-11 items-center font-semibold text-primary">
+          <p className="text-muted">Conte quanto paga por mês e quanto vende em Custos, na aba Custos fixos: o app calcula esse percentual para você.</p>
+          <Link href="/custos" className="inline-flex min-h-11 items-center font-semibold text-primary">
             Informar em Custos fixos e equipe →
           </Link>
         </div>
@@ -113,7 +113,7 @@ export function SettingsForm({
               inputMode="decimal"
               defaultValue={pct(settings.fixedExpensePct)}
               required={false}
-              hint={<Hint>Só se não quiser informar as contas em Ajustes, na tela Custos fixos e equipe. Digite uma estimativa do quanto de cada venda vai para despesas fixas.</Hint>}
+              hint={<Hint>Só se não quiser informar as contas em Custos, na aba Custos fixos. Digite uma estimativa do quanto de cada venda vai para despesas fixas.</Hint>}
             />
           ) : null}
         </div>

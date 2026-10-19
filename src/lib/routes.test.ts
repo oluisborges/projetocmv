@@ -70,13 +70,13 @@ describe("links internos", () => {
   const links = internalLinks();
 
   it("o app tem as rotas esperadas do menu novo", () => {
-    for (const r of ["/", "/marmitas", "/marmitas/[id]", "/marmitas/[id]/preco", "/insumos", "/mes", "/mes/estoque", "/mes/historico", "/painel", "/ajustes", "/ajustes/custos", "/ajustes/impostos", "/avisos"]) {
+    for (const r of ["/", "/marmitas", "/marmitas/[id]", "/marmitas/[id]/preco", "/insumos", "/mes", "/mes/estoque", "/mes/historico", "/painel", "/custos", "/custos/impostos", "/custos/cardapio", "/avisos"]) {
       expect(routes, `falta a rota ${r}`).toContain(r);
     }
   });
 
   it("nenhuma rota do menu antigo continua existindo como página (viraram redirects)", () => {
-    for (const r of ["/fichas", "/precificacao", "/custos", "/custos/mes", "/custos/estoque", "/painel/historico"]) {
+    for (const r of ["/fichas", "/precificacao", "/ajustes", "/ajustes/custos", "/custos/mes", "/custos/estoque", "/painel/historico"]) {
       expect(routes, `a rota antiga ${r} ainda existe`).not.toContain(r);
     }
   });
@@ -94,7 +94,7 @@ describe("links internos", () => {
   });
 
   it("nenhum link do código aponta mais para as URLs antigas (só os redirects as conhecem)", () => {
-    const old = links.filter(({ link }) => /^\/(fichas|precificacao|custos)(\/|$)/.test(link) || link === "/painel/historico");
+    const old = links.filter(({ link }) => /^\/(fichas|precificacao|ajustes)(\/|$)/.test(link) || /^\/custos\/(mes|estoque)/.test(link) || link === "/painel/historico");
     expect(
       old.map((b) => `${b.file} -> ${b.link}`),
       "links para URLs antigas",
