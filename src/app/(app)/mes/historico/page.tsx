@@ -166,7 +166,7 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
         <p className="text-xs text-muted">
           {entry.hasSnapshot
             ? "Os números são médias do mês: cada custo ou preço conta pelo tempo em que valeu. O app registra uma mudança sempre que alguém altera algo; o que foi feito antes do primeiro registro do mês é tratado como valendo desde o dia 1."
-            : "O app ainda não tinha guardado os custos e os preços deste mês: aqui só aparece o que foi informado em Resultado do mês."}
+            : "O app ainda não tinha guardado os custos e os preços deste mês: aqui só aparece o que foi informado em Fechar o mês."}
         </p>
       </div>
     </details>

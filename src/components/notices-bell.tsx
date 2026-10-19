@@ -26,6 +26,12 @@ export function NoticesBell({ orgId }: { orgId: string }) {
 
   useEffect(() => {
     let alive = true;
+    // Na tela de Avisos a lista já é fresca: o número do sino acompanha, sem esperar o cache vencer.
+    if (pathname.startsWith("/avisos")) {
+      try {
+        sessionStorage.removeItem(cacheKey(orgId));
+      } catch {}
+    }
     const cached = readCache(orgId);
     const load: Promise<number> =
       cached !== null

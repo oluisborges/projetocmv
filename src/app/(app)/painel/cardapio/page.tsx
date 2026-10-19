@@ -93,7 +93,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
                 <Link href={`/mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary">
                   Fechar o mês
                 </Link>{" "}
-                (e o preço de cada uma em Marmitas, na tela Preço) para ver a análise.
+                (e o preço de cada uma em Marmitas, na aba Preço de venda) para ver a análise.
               </>
             )}
           </p>
@@ -172,7 +172,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
             <p className="rounded-xl bg-warning/10 p-3 text-sm">
               {formatNumber(data.skippedManualUnits, 0)} marmitas que você digitou em fichas sem preço cadastrado não entraram. Cadastre o preço em{" "}
               <Link href="/marmitas" className="tap-area font-semibold text-primary">
-                Marmitas, na tela Preço
+                Marmitas, na aba Preço de venda
               </Link>
               .
             </p>

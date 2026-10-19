@@ -13,7 +13,7 @@ const LIMIT = 8;
 export async function searchAll(q: string): Promise<SearchResponse> {
   const { orgId } = await requireMember();
   // Tira os caracteres que têm sentido no filtro do PostgREST/ilike; sobra só o texto digitado.
-  const term = String(q ?? "").replace(/[%_\,()*]/g, " ").trim().slice(0, 60);
+  const term = String(q ?? "").replace(/[%_\\,()*]/g, " ").trim().slice(0, 60);
   if (term.length < 2) return { results: [], total: 0 };
 
   const supabase = await createClient();

@@ -34,6 +34,15 @@ export async function loadMenuMonth(unitId: string, month: string): Promise<Menu
   return loadMenuRange(unitId, start, end);
 }
 
+/** Só quantos pedidos o cardápio importou no mês (uma consulta leve, sem as linhas por produto). */
+export async function loadMenuOrders(unitId: string, month: string): Promise<number> {
+  const { start, end } = monthBounds(month);
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("menu_month_orders", { p_unit: unitId, p_start: start.toISOString(), p_end: end.toISOString() });
+  const t = (data as { orders: number | string }[] | null)?.[0];
+  return Number(t?.orders ?? 0);
+}
+
 /** O mesmo, para qualquer intervalo (ex.: os 4 meses importados). */
 export async function loadMenuRange(unitId: string, start: Date, end: Date): Promise<MenuMonthData> {
   const supabase = await createClient();

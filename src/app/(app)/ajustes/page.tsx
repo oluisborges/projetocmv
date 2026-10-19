@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SubmitButton } from "@/components/submit-button";
-import { requireMember } from "@/lib/auth";
+import { getActiveOrg, requireMember } from "@/lib/auth";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatPct } from "@/lib/format";
 import { hasMenuConnection } from "@/lib/menu-data";
@@ -13,6 +13,8 @@ type Item = { href: string; title: string; description: string; status?: string 
 
 export default async function SettingsPage() {
   const { orgId, canWrite } = await requireMember();
+  // No "ver como", sair e trocar senha são da equipe Shogun, não da marmitaria: a saída é o botão da faixa laranja.
+  const viewingAs = Boolean((await getActiveOrg())?.viewingAs);
   const [ctx, connected, unit] = await Promise.all([loadPricingContext(orgId, canWrite), hasMenuConnection(orgId), activeUnit(orgId)]);
   const [fixedCosts, staff] = unit ? await Promise.all([loadFixedCosts(unit.id), loadStaff(unit.id)]) : [[], []];
 
@@ -32,7 +34,7 @@ export default async function SettingsPage() {
     ...(connected
       ? [{ href: "/ajustes/cardapio", title: "Cardápio digital", description: "Ligar o que o cardápio vende às suas fichas.", status: "Conectado" }]
       : []),
-    { href: "/conta/senha", title: "Minha conta", description: "Trocar a senha de acesso." },
+    ...(viewingAs ? [] : [{ href: "/conta/senha", title: "Minha conta", description: "Trocar a senha de acesso." }]),
     { href: "/privacidade", title: "Privacidade", description: "Como seus dados são tratados." },
   ];
 
@@ -60,11 +62,13 @@ export default async function SettingsPage() {
         ))}
       </ul>
 
-      <form action={signOut}>
-        <SubmitButton pendingLabel="Saindo…" className="flex h-12 w-full items-center justify-center rounded-xl border border-border bg-surface px-4 font-semibold text-danger">
-          Sair da conta
-        </SubmitButton>
-      </form>
+      {viewingAs ? null : (
+        <form action={signOut}>
+          <SubmitButton pendingLabel="Saindo…" className="flex h-12 w-full items-center justify-center rounded-xl border border-border bg-surface px-4 font-semibold text-danger">
+            Sair da conta
+          </SubmitButton>
+        </form>
+      )}
     </>
   );
 }

@@ -11,7 +11,11 @@ export function ImportMenu({ buttonClass }: { buttonClass: string }) {
     const close = (e: Event) => {
       if (ref.current?.open && e.target instanceof Node && !ref.current.contains(e.target)) ref.current.open = false;
     };
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && ref.current && (ref.current.open = false);
+    const esc = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !ref.current?.open) return;
+      ref.current.open = false;
+      ref.current.querySelector("summary")?.focus(); // devolve o foco ao botão para quem usa teclado
+    };
     document.addEventListener("pointerdown", close);
     document.addEventListener("keydown", esc);
     return () => {

@@ -17,8 +17,8 @@ const BADGE = {
 } as const;
 
 export default async function NoticesPage() {
-  const { orgId, canWrite } = await requireMember();
-  const notices = await loadNotices(orgId, canWrite);
+  const { orgId } = await requireMember();
+  const notices = await loadNotices(orgId, false); // só leitura: abrir Avisos não grava nada
 
   return (
     <>

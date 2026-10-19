@@ -10,7 +10,10 @@ export function MonthChips({ months, current, basePath }: { months: string[]; cu
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    ref.current?.querySelector<HTMLElement>('[aria-current="page"]')?.scrollIntoView({ inline: "center", block: "nearest" });
+    // Rola só a lista de pílulas (scrollIntoView rolaria a página inteira junto).
+    const box = ref.current;
+    const el = box?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (box && el) box.scrollLeft = el.offsetLeft - (box.clientWidth - el.clientWidth) / 2;
   }, [current]);
 
   return (

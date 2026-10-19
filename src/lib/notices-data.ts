@@ -1,6 +1,6 @@
 import "server-only";
 import { loadDashboard } from "@/lib/dashboard-data";
-import { hasMenuConnection, loadMenuMonth } from "@/lib/menu-data";
+import { hasMenuConnection, loadMenuOrders } from "@/lib/menu-data";
 import { currentMonthStart, lastMonths, monthLabel } from "@/lib/month-view";
 import { buildNotices, type Notice } from "@/lib/notices";
 import { createClient } from "@/lib/supabase/server";
@@ -26,7 +26,7 @@ export async function loadNotices(orgId: string, canWrite: boolean): Promise<Not
   const revenue = Number(period?.revenue ?? 0);
   const purchases = Number(period?.purchases ?? 0);
   // Quem vende pelo cardápio digital não digita faturamento: pedidos importados contam como venda do mês.
-  const menuOrders = (await hasMenuConnection(orgId)) ? (await loadMenuMonth(data.ctx.unit.id, month)).orders : 0;
+  const menuOrders = (await hasMenuConnection(orgId)) ? await loadMenuOrders(data.ctx.unit.id, month) : 0;
 
   return buildNotices({
     increases: data.increases,
@@ -36,7 +36,7 @@ export async function loadNotices(orgId: string, canWrite: boolean): Promise<Not
     previousMonth: {
       label: monthLabel(month).split(" de ")[0],
       month,
-      // Fechado = tem venda (digitada ou do cardápio) E compras lançadas, como no checklist de Fechar o mês.
+      // Fechado = tem venda (digitada ou do cardápio) E compras lançadas. O checklist de Fechar o mês é mais exigente (fichas completas, contas fixas): o aviso só cobra o essencial.
       closed: (revenue > 0 || menuOrders > 0) && purchases > 0,
       soldOrRevenue: revenue > 0 || purchases > 0 || sold || menuOrders > 0,
     },

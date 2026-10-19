@@ -20,8 +20,8 @@ function SearchBody({ onPick }: { onPick: () => void }) {
 
   useEffect(() => {
     const q = query.trim();
+    const id = ++seq.current; // também ao apagar o texto: resposta atrasada de um termo antigo é descartada
     if (q.length < 2) return;
-    const id = ++seq.current;
     const timer = setTimeout(() => {
       startTransition(async () => {
         const found = await searchAll(q).catch((): SearchResponse => ({ results: [], total: 0 }));

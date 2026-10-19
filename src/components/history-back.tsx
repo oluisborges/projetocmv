@@ -8,7 +8,12 @@ export function HistoryBack({ fallback = "/" }: { fallback?: string }) {
   return (
     <button
       type="button"
-      onClick={() => (window.history.length > 1 ? router.back() : router.push(fallback))}
+      onClick={() => {
+        // Só volta no histórico se a página anterior é deste app (aba nova com link colado não tem de onde voltar).
+        const fromApp = window.history.length > 1 && document.referrer.startsWith(window.location.origin);
+        if (fromApp) router.back();
+        else router.push(fallback);
+      }}
       className="inline-flex min-h-11 items-center text-sm font-semibold text-primary"
     >
       ← Voltar

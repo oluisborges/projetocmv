@@ -22,7 +22,7 @@ import { PeriodForm, SalesRow } from "./month-forms";
 import { MenuProfitCard } from "@/components/menu-cards";
 import { MenuSalesCard } from "@/components/menu-sales-card";
 
-export const metadata = { title: "Resultado do mês" };
+export const metadata = { title: "Fechar o mês" };
 
 export default async function MonthPage(props: PageProps<"/mes">) {
   const { orgId, canWrite } = await requireMember();
