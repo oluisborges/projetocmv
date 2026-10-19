@@ -10,7 +10,7 @@ import { productsForShare, QUADRANT_INFO, summarizeQuadrants, type Quadrant } fr
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
 import { MenuMatrix } from "./matrix";
 
-export const metadata = { title: "Análise do cardápio" };
+export const metadata = { title: "Por marmita" };
 
 const SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const BADGE: Record<Quadrant, string> = { star: "bg-success/10 text-success", plowhorse: "bg-warning/10 text-warning", puzzle: "bg-primary/10 text-primary", dog: "bg-danger/10 text-danger" };
@@ -29,8 +29,8 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
   const header = (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Painel</h1>
-        <p className="text-muted">Quais marmitas valem destaque, reajuste ou saída do cardápio.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">Por marmita</h1>
+        <p className="text-muted">Quais marmitas valem destaque, reajuste ou saída do cardápio digital.</p>
       </section>
       <PainelTabs active="cardapio" showCoupons={await hasMenuConnection(orgId)} />
     </>
@@ -81,19 +81,19 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
           <p className="text-muted">
             {data.menuConnected ? (
               <>
-                Vincule os produtos do cardápio às fichas em{" "}
-                <Link href="/ajustes/cardapio" className="font-semibold text-primary">
-                  Ajustes → Cardápio
+                Vincule os produtos do cardápio digital às fichas em{" "}
+                <Link href="/ajustes/cardapio" className="tap-area font-semibold text-primary">
+                  Ajustes, Cardápio digital
                 </Link>{" "}
                 e complete as fichas que ainda estão sem custo.
               </>
             ) : (
               <>
                 Informe quantas marmitas vendeu de cada ficha em{" "}
-                <Link href={`/mes?mes=${month.slice(0, 7)}`} className="font-semibold text-primary">
+                <Link href={`/mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary">
                   Fechar o mês
                 </Link>{" "}
-                (e o preço de cada uma em Marmitas → Preço) para ver a análise.
+                (e o preço de cada uma em Marmitas, na tela Preço) para ver a análise.
               </>
             )}
           </p>
@@ -162,7 +162,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
                 .map((u) => u.name)
                 .join(", ")}
               {result.unclassified.length > 4 ? "…" : ""}. Complete em{" "}
-              <Link href="/marmitas" className="font-semibold text-primary">
+              <Link href="/marmitas" className="tap-area font-semibold text-primary">
                 Marmitas
               </Link>
               .
@@ -171,8 +171,8 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
           {data.skippedManualUnits > 0 ? (
             <p className="rounded-xl bg-warning/10 p-3 text-sm">
               {formatNumber(data.skippedManualUnits, 0)} marmitas que você digitou em fichas sem preço cadastrado não entraram. Cadastre o preço em{" "}
-              <Link href="/marmitas" className="font-semibold text-primary">
-                Marmitas → Preço
+              <Link href="/marmitas" className="tap-area font-semibold text-primary">
+                Marmitas, na tela Preço
               </Link>
               .
             </p>

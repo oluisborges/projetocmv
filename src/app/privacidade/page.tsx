@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { HistoryBack } from "@/components/history-back";
 
 export const metadata = { title: "Como seus dados são tratados" };
 
@@ -7,9 +7,7 @@ export const metadata = { title: "Como seus dados são tratados" };
 export default function PrivacyPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-6 px-4 py-10">
-      <Link href="/login" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Voltar
-      </Link>
+      <HistoryBack fallback="/" />
 
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold tracking-tight">Como seus dados são tratados</h1>

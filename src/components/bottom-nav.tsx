@@ -17,9 +17,9 @@ type Item = { href: string; label: string; icon: keyof typeof ICONS; match: (p: 
 
 const ITEMS: Item[] = [
   { href: "/", label: "Início", icon: "home", match: (p) => p === "/" },
-  { href: "/marmitas", label: "Marmitas", icon: "recipe", match: (p) => p.startsWith("/marmitas") || p.startsWith("/fichas") || p.startsWith("/precificacao") },
+  { href: "/marmitas", label: "Marmitas", icon: "recipe", match: (p) => p.startsWith("/marmitas") },
   { href: "/insumos", label: "Insumos", icon: "basket", match: (p) => p.startsWith("/insumos") },
-  { href: "/mes", label: "Mês", icon: "calendar", match: (p) => p.startsWith("/mes") || p.startsWith("/custos/mes"), key: "mes" },
+  { href: "/mes", label: "Mês", icon: "calendar", match: (p) => p.startsWith("/mes"), key: "mes" },
   { href: "/painel", label: "Painel", icon: "chart", match: (p) => p.startsWith("/painel"), key: "painel" },
 ];
 
@@ -34,7 +34,7 @@ function NavLabel({ label, icon, active }: { label: string; icon: keyof typeof I
           {ICONS[icon]}
         </svg>
       </span>
-      <span className="text-[11px] leading-none">{label}</span>
+      <span className="text-xs leading-none">{label}</span>
       {pending ? <span className="sr-only"> carregando</span> : null}
     </>
   );
@@ -45,7 +45,7 @@ export function BottomNav({ show }: { show: { mes: boolean; painel: boolean } })
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Principal" className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-16px_rgb(28_59_51/0.3)] backdrop-blur">
+    <nav aria-label="Menu principal" className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-16px_rgb(28_59_51/0.3)] backdrop-blur">
       <ul className="mx-auto flex max-w-3xl">
         {ITEMS.map((item) => {
           const active = item.match(pathname);

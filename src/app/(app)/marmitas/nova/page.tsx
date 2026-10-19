@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { redirect } from "next/navigation";
 import { requireMember } from "@/lib/auth";
 import { NewRecipeForm } from "./new-recipe-form";
@@ -11,9 +11,7 @@ export default async function NewRecipePage() {
 
   return (
     <>
-      <Link href="/marmitas" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Fichas
-      </Link>
+      <BackLink href="/marmitas">Marmitas</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Nova ficha técnica</h1>
         <p className="text-muted">Primeiro o básico. Os ingredientes você adiciona na próxima tela.</p>

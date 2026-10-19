@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { ImportMenu } from "./import-menu";
 import { PriceList, type IngredientRow } from "./price-list";
 
 export const metadata = { title: "Insumos" };
@@ -33,7 +34,7 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
 
       {importado === "fichas" ? (
         <p role="status" className="rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
-          Fichas criadas em <Link href="/marmitas" className="font-semibold underline">Marmitas</Link>, com os insumos e as embalagens delas. Preencha aqui o preço que você paga em cada
+          Fichas criadas em <Link href="/marmitas" className="tap-area font-semibold underline">Marmitas</Link>, com os insumos e as embalagens delas. Preencha aqui o preço que você paga em cada
           insumo e confira as gramas de cada produto.
         </p>
       ) : importado ? (
@@ -60,24 +61,8 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
             <Link href="/insumos/novo" className={`${button} ${primary}`}>
               + Novo insumo
             </Link>
-            {/* Importar: nota fiscal e catálogo. Com poucos insumos o catálogo é o caminho mais curto e fica à vista. */}
-            <details className="group relative">
-              <summary className={`${button} ${secondary} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>Importar ▾</summary>
-              <div className="absolute inset-x-0 top-[calc(100%+0.25rem)] z-10 flex flex-col card p-1 shadow-xl">
-                <Link href="/insumos/nfe" className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-primary active:bg-primary/10">
-                  Nota fiscal (XML)
-                </Link>
-                <Link href="/insumos/catalogo" className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-primary active:bg-primary/10">
-                  Catálogo de insumos
-                </Link>
-              </div>
-            </details>
+            <ImportMenu buttonClass={`${button} ${secondary}`} />
           </div>
-          {items.length < 10 ? (
-            <Link href="/insumos/catalogo" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">
-              Escolher do catálogo de insumos
-            </Link>
-          ) : null}
           <details className="text-center">
             <summary className="inline-flex min-h-11 cursor-pointer items-center justify-center text-sm font-semibold text-muted">Mais opções</summary>
             <div className="flex flex-col">

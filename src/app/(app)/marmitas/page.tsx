@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ExportLinks } from "@/components/export-links";
+import { Hint } from "@/components/hint";
 import { MarmitasTabs } from "@/components/marmitas-tabs";
 import { SubmitButton } from "@/components/submit-button";
 import { requireMember } from "@/lib/auth";
 import { loadCombos } from "@/lib/combos-data";
 import { formatBRL, formatNumber } from "@/lib/format";
 import { hasMenuConnection, loadMenuAveragePrices } from "@/lib/menu-data";
-import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
+import { DEFAULT_SETTINGS, loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings, type CostItem } from "@/lib/recipe-cost";
 import { loadArchivedRecipes, loadIngredients, loadRecipes } from "@/lib/recipes-data";
 import { restoreRecipe } from "./actions";
@@ -32,7 +33,7 @@ export default async function RecipesPage() {
     const costItems: CostItem[] = items
       .filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id))
       .map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope }));
-    const view = computeRecipe(recipeCostSettings(r, ctx?.settings.safetyMarginPct ?? 0), costItems);
+    const view = computeRecipe(recipeCostSettings(r, ctx?.settings.safetyMarginPct ?? DEFAULT_SETTINGS.safetyMarginPct ?? 0), costItems);
     return {
       id: r.id,
       name: r.name,
@@ -53,6 +54,19 @@ export default async function RecipesPage() {
     };
   });
 
+  const taxCard = (
+    <div className="flex min-h-11 items-center justify-between gap-3 card px-4 text-sm font-semibold">
+      <span className="flex items-center gap-1">
+        Impostos, taxas e meta de lucro
+        <Hint>O mínimo que você quer que sobre de cada venda, depois de pagar tudo.</Hint>
+      </span>
+      <Link href="/ajustes/impostos" className="tap-area shrink-0 text-primary">
+        Ajustar →
+      </Link>
+    </div>
+  );
+  const taxFirst = ctx?.estimateReason === "tax";
+
   return (
     <>
       <section className="flex flex-col gap-1">
@@ -64,14 +78,11 @@ export default async function RecipesPage() {
 
       {canWrite ? (
         <Link href="/marmitas/nova" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">
-          + Nova ficha
+          + Nova marmita
         </Link>
       ) : null}
 
-      <Link href="/ajustes/impostos" className="flex h-11 items-center justify-between card px-4 text-sm font-semibold">
-        <span>Impostos, taxas e meta de lucro</span>
-        <span className="text-primary">Ajustar →</span>
-      </Link>
+      {taxFirst ? taxCard : null}
 
       {rows.length > 0 ? <ExportLinks base="/marmitas/exportar" label="Baixar todas as fichas" hint="PDF com uma ficha por página (para a cozinha) ou Excel (cópia de segurança, no mesmo formato da planilha de importação)." /> : null}
 
@@ -96,6 +107,8 @@ export default async function RecipesPage() {
           </ul>
         </>
       )}
+
+      {taxFirst ? null : taxCard}
 
       {combos.length === 0 && canWrite && rows.length > 0 ? (
         <Link href="/marmitas/combos" className="inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary">

@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
 import { requireMember } from "@/lib/auth";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatPct } from "@/lib/format";
 import { hasMenuConnection } from "@/lib/menu-data";
 import { activeUnit, loadPricingContext } from "@/lib/pricing-data";
+import { signOut } from "../actions";
 
 export const metadata = { title: "Ajustes" };
 
@@ -19,7 +21,7 @@ export default async function SettingsPage() {
       href: "/ajustes/custos",
       title: "Custos fixos e equipe",
       description: "Aluguel, energia, salários.",
-      status: fixedCosts.length + staff.length > 0 && ctx ? `${fixedCosts.length} ${fixedCosts.length === 1 ? "conta" : "contas"} · ${staff.length} ${staff.length === 1 ? "pessoa" : "pessoas"} · ${formatBRL(ctx.fixedTotal)}/mês` : "Nada cadastrado ainda",
+      status: fixedCosts.length + staff.length > 0 ? `${fixedCosts.length} ${fixedCosts.length === 1 ? "conta" : "contas"} · ${staff.length} ${staff.length === 1 ? "pessoa" : "pessoas"}${ctx ? ` · ${formatBRL(ctx.fixedTotal)}/mês` : ""}` : "Nada cadastrado ainda",
     },
     {
       href: "/ajustes/impostos",
@@ -57,6 +59,12 @@ export default async function SettingsPage() {
           </li>
         ))}
       </ul>
+
+      <form action={signOut}>
+        <SubmitButton pendingLabel="Saindo…" className="flex h-12 w-full items-center justify-center rounded-xl border border-border bg-surface px-4 font-semibold text-danger">
+          Sair da conta
+        </SubmitButton>
+      </form>
     </>
   );
 }

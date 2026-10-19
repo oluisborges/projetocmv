@@ -127,7 +127,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
         <Kpi
           label="Gasto com insumos"
           value={month.cmvRealPct !== null ? formatPct(month.cmvRealPct) : "—"}
-          hint={month.cmvRealPct !== null ? "do faturamento neste mês" : "informe o mês na aba Mês"}
+          hint={month.cmvRealPct !== null ? "do faturamento neste mês" : "toque em Mês, no menu de baixo"}
           href="/mes"
         />
         <Kpi

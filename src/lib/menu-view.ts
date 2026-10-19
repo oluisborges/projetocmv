@@ -16,7 +16,7 @@ export type MenuProductLink = {
  */
 export type MenuProductSales = { product_id: string; qty: number; revenue: number; net: number };
 
-/** Custo e marmitas de uma ficha ou combo, vindos das telas de Fichas/Combos. `cost` nulo = ficha incompleta. */
+/** Custo e marmitas de uma ficha ou combo, vindos das telas de Marmitas e Combos. `cost` nulo = ficha incompleta. */
 export type LinkTarget = { cost: number | null; units?: number };
 
 export type MenuMonthView = {

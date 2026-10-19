@@ -1,8 +1,9 @@
 /** Esqueleto de carregamento: mesma "forma" das telas (título, abas opcionais e cartões), em cinza pulsando. */
-export function PageSkeleton({ tabs = false }: { tabs?: boolean }) {
+export function PageSkeleton({ tabs = false, back = false }: { tabs?: boolean; /** reserva a altura do botão "← Voltar" (44 px) */ back?: boolean }) {
   return (
     <div role="status" aria-live="polite" className="flex flex-col gap-5">
       <span className="sr-only">Carregando…</span>
+      {back ? <div className="h-11" /> : null}
       <div className="flex flex-col gap-2">
         <div className="h-8 w-2/5 animate-pulse rounded-lg bg-border" />
         <div className="h-4 w-3/4 animate-pulse rounded bg-border" />

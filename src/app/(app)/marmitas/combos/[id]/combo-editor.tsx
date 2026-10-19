@@ -441,7 +441,7 @@ export function ComboEditor({ combo, initialGroups, recipes, weights, settings, 
 
       {recipes.length === 0 ? (
         <p className="text-sm text-muted">
-          Você ainda não tem marmitas. Crie em <Link href="/marmitas/nova" className="font-semibold text-primary underline">Fichas → Nova ficha</Link>.
+          Você ainda não tem marmitas. Crie em <Link href="/marmitas/nova" className="tap-area font-semibold text-primary underline">Marmitas, no botão + Nova marmita</Link>.
         </p>
       ) : (
         <p className="text-xs text-muted">

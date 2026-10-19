@@ -40,6 +40,12 @@
   --font-display: var(--font-heading);
 }
 
+/* Foco visível para quem navega pelo teclado; os campos têm o próprio anel de foco. */
+:where(a, button, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Cartão padrão do app: borda fina, cantos generosos e uma sombra suave que "levanta" do fundo. */
 /* Aumenta a área de toque de um link ou botão pequeno no meio do texto para 44 px, sem mudar o visual. */
 @utility tap-area {

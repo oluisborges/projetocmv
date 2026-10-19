@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { redirect } from "next/navigation";
 import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -17,9 +17,7 @@ export default async function NewIngredientPage() {
 
   return (
     <>
-      <Link href="/insumos" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Insumos
-      </Link>
+      <BackLink href="/insumos">Insumos</BackLink>
       <h1 className="text-2xl font-extrabold tracking-tight">Novo insumo</h1>
       <IngredientForm action={createIngredient} submitLabel="Salvar insumo" categories={categories} />
     </>

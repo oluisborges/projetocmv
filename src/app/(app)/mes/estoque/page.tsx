@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MonthChips } from "@/components/month-chips";
 import { MonthTabs } from "@/components/month-tabs";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
@@ -8,8 +9,6 @@ import { loadStockMonth } from "@/lib/stock-data";
 import { FinishedStockForm, StockRowCard } from "./stock-forms";
 
 export const metadata = { title: "Estoque do mês" };
-
-const SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 export default async function StockPage(props: PageProps<"/mes/estoque">) {
   const { orgId, canWrite } = await requireMember();
@@ -25,7 +24,7 @@ export default async function StockPage(props: PageProps<"/mes/estoque">) {
   const header = (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Mês</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Estoque do mês</h1>
         <p className="text-muted">O que você comprou, o que as fichas gastaram e o que sobrou de verdade.</p>
       </section>
       <MonthTabs active="estoque" />
@@ -48,25 +47,7 @@ export default async function StockPage(props: PageProps<"/mes/estoque">) {
     <>
       {header}
 
-      <div>
-        <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Mês</p>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {months.map((m) => {
-            const [y, mm] = m.split("-").map(Number);
-            const on = m === month;
-            return (
-              <Link
-                key={m}
-                href={`/mes/estoque?mes=${m.slice(0, 7)}`}
-                aria-current={on ? "page" : undefined}
-                className={`flex h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`}
-              >
-                {SHORT[mm - 1]}/{String(y).slice(2)}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      <MonthChips months={months} current={month} basePath="/mes/estoque" />
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
       {result ? (
@@ -130,7 +111,7 @@ export default async function StockPage(props: PageProps<"/mes/estoque">) {
       {data.recipesWithoutUsage > 0 ? (
         <p className="rounded-xl bg-warning/10 p-3 text-sm">
           {data.recipesWithoutUsage} {data.recipesWithoutUsage === 1 ? "marmita vendida está" : "marmitas vendidas estão"} com a ficha incompleta e não {data.recipesWithoutUsage === 1 ? "entra" : "entram"} no uso esperado. Complete em{" "}
-          <Link href="/marmitas" className="font-semibold text-primary underline">
+          <Link href="/marmitas" className="tap-area font-semibold text-primary underline">
             Marmitas
           </Link>
           .
@@ -155,11 +136,11 @@ export default async function StockPage(props: PageProps<"/mes/estoque">) {
         {data.rows.length === 0 ? (
           <p className="card p-4 text-sm text-muted">
             Ainda não há compras nem vendas com ficha neste mês. Importe as{" "}
-            <Link href="/insumos/nfe" className="font-semibold text-primary underline">
+            <Link href="/insumos/nfe" className="tap-area font-semibold text-primary underline">
               notas fiscais
             </Link>{" "}
             e informe as vendas em{" "}
-            <Link href={`/mes?mes=${month.slice(0, 7)}`} className="font-semibold text-primary underline">
+            <Link href={`/mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary underline">
               Fechar o mês
             </Link>
             .

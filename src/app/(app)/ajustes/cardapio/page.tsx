@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { loadCombos } from "@/lib/combos-data";
@@ -23,10 +24,7 @@ export default async function MenuLinksPage() {
 
   const header = (
     <>
-      {/* TODO(orquestrador): trocar por <BackLink href="/ajustes"> de @/components/back-link quando existir */}
-      <Link href="/ajustes" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Ajustes
-      </Link>
+      <BackLink href="/ajustes">Ajustes</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Cardápio digital</h1>
         <p className="text-muted">Ligar o que o cardápio vende às suas fichas: diga a qual ficha cada produto corresponde.</p>
@@ -122,8 +120,8 @@ export default async function MenuLinksPage() {
         ) : (
           <p className="text-sm">
             <strong>Tudo vinculado.</strong> O lucro do cardápio já considera tudo que você vendeu. Veja o resultado em{" "}
-            <Link href="/mes" className="font-semibold text-primary">
-              Mês → Fechar
+            <Link href="/mes" className="tap-area font-semibold text-primary">
+              Mês, Fechar o mês
             </Link>
             .
           </p>
@@ -132,8 +130,8 @@ export default async function MenuLinksPage() {
 
       <p className="text-xs text-muted">
         Os valores aqui já são o que os clientes realmente pagaram, com a parte do cupom de cada pedido descontada. O CardápioWeb e a Prefiro cobram mensalidade fixa, sem porcentagem por pedido: cadastre a mensalidade em{" "}
-        <Link href="/ajustes/custos" className="font-semibold text-primary">
-          Custos fixos
+        <Link href="/ajustes/custos" className="tap-area font-semibold text-primary">
+          Ajustes, Custos fixos e equipe
         </Link>
         .
       </p>

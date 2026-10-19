@@ -11,7 +11,7 @@ function Pending({ children }: { children: React.ReactNode }) {
 export function MarmitasTabs({ active, showCombos = true }: { active: "marmitas" | "combos"; /** Sem nenhum combo cadastrado a aba some; o atalho fica no fim da lista. */ showCombos?: boolean }) {
   const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
   return (
-    <nav aria-label="Marmitas" className="flex gap-1 rounded-xl bg-border/60 p-1">
+    <nav aria-label="Marmitas e combos" className="flex gap-1 rounded-xl bg-border/60 p-1">
       <Link href="/marmitas" aria-current={active === "marmitas" ? "page" : undefined} className={item(active === "marmitas")}>
         <Pending>Marmitas</Pending>
       </Link>

@@ -151,7 +151,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
 
   const qty = new Map(salesRows.map((r) => [r.recipe_id as string, Number(r.qty_sold)]));
 
-  // Cardápio digital: o faturamento digitado é só a venda de fora; o total é cardápio + digitado (veja Custos → Fechar o mês).
+  // Cardápio digital: o faturamento digitado é só a venda de fora; o total é cardápio + digitado (veja Mês → Fechar o mês).
   const typedOutside = Number(period?.revenue ?? 0);
   let menu: Dashboard["menu"] = null;
   let menuLines: MenuLine[] = [];

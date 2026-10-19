@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { redirect } from "next/navigation";
 import { requireMember } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -20,9 +20,7 @@ export default async function AdjustPage() {
 
   return (
     <>
-      <Link href="/insumos" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Insumos
-      </Link>
+      <BackLink href="/insumos">Insumos</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Reajustar preços</h1>
         <p className="text-muted">O fornecedor aumentou tudo? Atualize vários preços de uma vez, sem editar um por um.</p>

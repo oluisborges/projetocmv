@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   // O logo do PDF é lido do disco no servidor: sem isto, a Vercel não leva a pasta public junto com a função.
   outputFileTracingIncludes: {
     "/painel/exportar": ["./public/brand/logo-horizontal.png"],
-    "/fichas/exportar": ["./public/brand/logo-horizontal.png"],
+    "/marmitas/exportar": ["./public/brand/logo-horizontal.png"],
   },
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
   // URLs antigas (favoritos, links enviados) continuam funcionando depois da reorganização do menu.
@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
       to("/fichas/:path*", "/marmitas/:path*"),
       to("/precificacao", "/marmitas"),
       to("/precificacao/ajustes", "/ajustes/impostos"),
-      to("/precificacao/:id([0-9a-f-]{36})", "/marmitas/:id/preco"),
+      to("/precificacao/:id([0-9a-fA-F-]{36})", "/marmitas/:id/preco"),
       to("/custos/mes", "/mes"),
       to("/custos/estoque", "/mes/estoque"),
       to("/custos/cardapio", "/ajustes/cardapio"),

@@ -38,7 +38,7 @@ export function buildNotices(input: NoticesInput): Notice[] {
       title: `${plural(input.belowTarget.length, "marmita abaixo", "marmitas abaixo")} da meta de lucro`,
       detail: names,
       href: "/marmitas",
-      cta: "Ajustar preços",
+      cta: "Ver marmitas",
     });
   }
 

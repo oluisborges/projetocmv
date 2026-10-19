@@ -75,7 +75,7 @@ export async function reportToXlsx(report: Report): Promise<Buffer> {
     ["Compras de insumos", report.purchases, pctOf(report.purchases), "Notas fiscais importadas + compras informadas"],
     ["Mão de obra (equipe)", report.staffValue, pctOf(report.staffValue), "Salários e encargos cadastrados em Custos fixos"],
     ["Contas fixas", report.fixedValue, pctOf(report.fixedValue), "Aluguel, energia, mensalidade do cardápio…"],
-    ["Impostos e taxas", report.taxesValue, pctOf(report.taxesValue), "Percentuais definidos em Preços → ajustes"],
+    ["Impostos e taxas", report.taxesValue, pctOf(report.taxesValue), "Percentuais definidos em Ajustes → Impostos, taxas e meta"],
     ["Resultado estimado", report.result?.value ?? null, report.result?.pct ?? null, "Faturamento − compras − equipe − contas fixas − impostos e taxas"],
   ];
   rows.forEach(([label, value, pct, how], i) => {

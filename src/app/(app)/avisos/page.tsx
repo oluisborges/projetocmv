@@ -10,6 +10,12 @@ const TONE = {
   info: "border-border bg-surface",
 } as const;
 
+const BADGE = {
+  bad: { label: "Urgente", cls: "bg-danger text-white" },
+  warn: { label: "Atenção", cls: "bg-warning text-white" },
+  info: { label: "Informação", cls: "bg-border text-foreground" },
+} as const;
+
 export default async function NoticesPage() {
   const { orgId, canWrite } = await requireMember();
   const notices = await loadNotices(orgId, canWrite);
@@ -31,6 +37,7 @@ export default async function NoticesPage() {
             <li key={n.key}>
               <Link href={n.href} className={`flex min-h-14 items-center justify-between gap-3 rounded-2xl border p-4 ${TONE[n.tone]}`}>
                 <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className={`self-start rounded-full px-2 py-0.5 text-xs font-bold ${BADGE[n.tone].cls}`}>{BADGE[n.tone].label}</span>
                   <span className="font-bold leading-snug">{n.title}</span>
                   <span className="text-sm text-muted">{n.detail}</span>
                 </span>

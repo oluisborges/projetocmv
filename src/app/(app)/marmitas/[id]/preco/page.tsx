@@ -1,3 +1,4 @@
+import { BackLink } from "@/components/back-link";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -33,9 +34,7 @@ export default async function RecipePricingPage(props: PageProps<"/marmitas/[id]
 
   return (
     <>
-      <Link href="/marmitas" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Marmitas
-      </Link>
+      <BackLink href="/marmitas">Marmitas</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
         {view.ok ? (

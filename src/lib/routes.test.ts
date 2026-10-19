@@ -100,4 +100,32 @@ describe("links internos", () => {
       "links para URLs antigas",
     ).toEqual([]);
   });
+
+  it("todo destino de redirect do next.config.ts é uma rota que existe", () => {
+    const text = fs.readFileSync(path.join(process.cwd(), "next.config.ts"), "utf-8");
+    const destinations = [...text.matchAll(/to\("([^"]+)",\s*"([^"]+)"\)/g)].map((m) => m[2]);
+    expect(destinations.length).toBeGreaterThan(5);
+    const broken = destinations.filter((d) => {
+      const concrete = d.replace(/:path\*/g, "x").replace(/:[a-z]+/gi, "x");
+      return !matchers.some((re) => re.test(concrete));
+    });
+    expect(broken, "redirects que levam a uma rota inexistente").toEqual([]);
+  });
+
+  it("toda chave de outputFileTracingIncludes é uma rota que existe (o logo do PDF depende disso na Vercel)", () => {
+    const text = fs.readFileSync(path.join(process.cwd(), "next.config.ts"), "utf-8");
+    const block = text.match(/outputFileTracingIncludes:\s*\{([\s\S]*?)\},\s*experimental/)?.[1] ?? "";
+    const keys = [...block.matchAll(/"(\/[^"]+)":/g)].map((m) => m[1]);
+    expect(keys.length).toBeGreaterThan(0);
+    const missing = keys.filter((k) => !routes.includes(k));
+    expect(missing, "chaves que não são rotas").toEqual([]);
+  });
+
+  it("os links base dos botões de exportar apontam para rotas de verdade", () => {
+    const bases = walk(SRC)
+      .filter((f) => /\.tsx$/.test(f) && !/\.test\./.test(f))
+      .flatMap((f) => [...fs.readFileSync(f, "utf-8").matchAll(/ExportLinks[^>]*base="(\/[^"]+)"/g)].map((m) => m[1]));
+    expect(bases.length).toBeGreaterThan(1);
+    expect(bases.filter((b) => !routes.includes(b))).toEqual([]);
+  });
 });

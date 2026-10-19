@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MonthChips } from "@/components/month-chips";
 import { MonthTabs } from "@/components/month-tabs";
 import { ExportLinks } from "@/components/export-links";
 import { Hint } from "@/components/hint";
@@ -23,8 +24,6 @@ import { MenuSalesCard } from "@/components/menu-sales-card";
 
 export const metadata = { title: "Resultado do mês" };
 
-const SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-
 export default async function MonthPage(props: PageProps<"/mes">) {
   const { orgId, canWrite } = await requireMember();
   const sp = await props.searchParams;
@@ -36,7 +35,7 @@ export default async function MonthPage(props: PageProps<"/mes">) {
   if (!ctx) {
     return (
       <>
-        <h1 className="text-2xl font-extrabold tracking-tight">Mês</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Fechar o mês</h1>
         <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com o suporte do Precificaí.</p>
       </>
     );
@@ -162,35 +161,15 @@ export default async function MonthPage(props: PageProps<"/mes">) {
   return (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Mês</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Fechar o mês</h1>
         <p className="text-muted">Quanto você gastou no mês, comparado com o que deveria.</p>
       </section>
 
       <MonthTabs active="fechar" />
 
-      <div>
-        <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Mês</p>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {months.map((m) => {
-            const [y, mm] = m.split("-").map(Number);
-            const on = m === month;
-            return (
-              <Link
-                key={m}
-                href={`/mes?mes=${m.slice(0, 7)}`}
-                aria-current={on ? "page" : undefined}
-                className={`flex h-11 shrink-0 items-center rounded-full border px-4 text-sm font-medium ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`}
-              >
-                {SHORT[mm - 1]}/{String(y).slice(2)}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      <MonthChips months={months} current={month} basePath="/mes" />
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
-
-      {hasData ? <ExportLinks base="/painel/exportar" params={`mes=${month.slice(0, 7)}`} label="Relatório do mês" hint="PDF e Excel com o resultado, as marmitas e os insumos deste mês, prontos para o contador." /> : null}
 
       <section aria-label="Para fechar o mês" className={`flex flex-col gap-3 rounded-2xl border-2 p-4 ${close.ready ? "border-success/40 bg-success/10" : "border-border bg-surface"}`}>
         <div className="flex items-baseline justify-between gap-3">
@@ -220,6 +199,11 @@ export default async function MonthPage(props: PageProps<"/mes">) {
             </li>
           ))}
         </ul>
+        {hasData ? (
+          <a href="#resultado-do-mes" className="tap-area self-start text-sm font-semibold text-primary underline">
+            Ver o resultado do mês ↓
+          </a>
+        ) : null}
       </section>
 
       {menuOn && menuView && menuData ? <MenuSalesCard orders={menuData.orders} revenue={menuData.revenue} discount={menuData.discount} summary={menuView.summary} unlinkedProducts={menuView.unlinkedProducts} importing={isImporting(menuStatus)} pending={menuStatus.reduce((n, c) => n + c.pending_orders, 0)} /> : null}
@@ -233,11 +217,11 @@ export default async function MonthPage(props: PageProps<"/mes">) {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-          2. {menuOn ? "Marmitas vendidas por fora do cardápio" : "Marmitas vendidas avulsas"} ({formatNumber(looseUnits, 0)})
+          {canWrite ? "2" : "1"}. {menuOn ? "Marmitas vendidas por fora do cardápio" : "Marmitas vendidas avulsas"} ({formatNumber(looseUnits, 0)})
         </h2>
         {dishes.length === 0 ? (
           <p className="text-sm text-muted">
-            Ainda não há fichas. Monte em <Link href="/marmitas" className="font-semibold text-primary">Marmitas</Link>.
+            Ainda não há fichas. Monte em <Link href="/marmitas" className="tap-area font-semibold text-primary">Marmitas</Link>.
           </p>
         ) : (
           <ul className="divide-y divide-border card px-4">
@@ -250,7 +234,7 @@ export default async function MonthPage(props: PageProps<"/mes">) {
 
       {comboRows.length > 0 ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">3. Combos vendidos ({formatNumber(comboRows.reduce((n, c) => n + c.qty, 0), 0)})</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{canWrite ? "3" : "2"}. Combos vendidos ({formatNumber(comboRows.reduce((n, c) => n + c.qty, 0), 0)})</h2>
           <ul className="divide-y divide-border card px-4">
             {comboRows.map((c) => (
               <SalesRow key={`${c.id}-${month}`} month={month} recipe={{ id: c.id, name: c.name, cost: c.cost }} initialQty={c.qty} canWrite={canWrite} combo />
@@ -264,7 +248,7 @@ export default async function MonthPage(props: PageProps<"/mes">) {
 
       {/* resultado depois dos passos de preenchimento */}
       {hasData ? (
-        <section aria-live="polite" className="flex flex-col gap-3 card p-4">
+        <section id="resultado-do-mes" aria-live="polite" className="flex scroll-mt-20 flex-col gap-3 card p-4">
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <dt className="text-muted">
@@ -340,6 +324,7 @@ export default async function MonthPage(props: PageProps<"/mes">) {
         </p>
       )}
 
+      {hasData ? <ExportLinks base="/painel/exportar" params={`mes=${month.slice(0, 7)}`} label="Relatório do mês" hint="PDF e Excel com o resultado, as marmitas e os insumos deste mês, prontos para o contador." /> : null}
     </>
   );
 }

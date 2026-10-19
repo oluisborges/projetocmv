@@ -19,7 +19,7 @@ export default async function CombosPage() {
 
   const header = (
     <section className="flex flex-col gap-1">
-      <h1 className="text-2xl font-extrabold tracking-tight">Fichas técnicas</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight">Combos</h1>
       <p className="text-muted">Combos: o que você vende em kit, com o preço de cada marmita dentro dele.</p>
     </section>
   );

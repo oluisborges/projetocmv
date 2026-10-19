@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { HistoryBack } from "@/components/history-back";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/(app)/actions";
 import { getSession } from "@/lib/auth";
@@ -16,9 +16,7 @@ export default async function ChangePasswordPage() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 px-4 py-10">
       {forced ? null : (
-        <Link href="/" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-          ← Voltar
-        </Link>
+        <HistoryBack fallback="/ajustes" />
       )}
 
       <header className="flex flex-col items-center gap-4 text-center">

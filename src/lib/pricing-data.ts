@@ -16,7 +16,7 @@ export type PricingContext = {
   unit: { id: string; name: string };
   settings: PricingSettings;
   /**
-   * Despesa fixa calculada a partir dos custos cadastrados em Custos (+ faturamento mensal informado).
+   * Despesa fixa calculada a partir dos custos cadastrados em Ajustes, Custos fixos e equipe (+ faturamento mensal informado).
    * Quando existe, ela SUBSTITUI o percentual digitado à mão em Ajustes.
    */
   fixedAuto: boolean;
@@ -79,7 +79,7 @@ export async function loadSafetyMargin(orgId: string): Promise<number> {
 
 /**
  * Faturamento e unidades "de um mês normal": a média dos meses FECHADOS (até 12) em que o dono informou faturamento em
- * Resultado do mês, como na planilha de precificação. O mês em andamento fica de fora: um valor parcial derrubaria a média. Sem nenhum mês informado, vale o número digitado em Custos.
+ * Resultado do mês, como na planilha de precificação. O mês em andamento fica de fora: um valor parcial derrubaria a média. Sem nenhum mês informado, vale o número digitado em Ajustes, Custos fixos e equipe.
  */
 async function monthlyAverages(orgId: string, unitId: string): Promise<{ revenue: number; units: number | null; months: number } | null> {
   const supabase = await createClient();

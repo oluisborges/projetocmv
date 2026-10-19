@@ -189,10 +189,10 @@ function Chart({ entries }: { entries: HistoryEntry[] }) {
           const r = e.summary.result;
           return (
             <li key={e.month} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
-              <span className="tabular text-[10px] font-semibold text-muted">{formatNumber(e.summary.revenue / 1000, 1)} mil</span>
+              <span className="tabular text-[11px] font-semibold text-muted">{formatNumber(e.summary.revenue / 1000, 1)} mil</span>
               <span className="w-full rounded-t-md bg-primary" style={{ height: `${Math.max(6, (e.summary.revenue / max) * 70)}%` }} />
               <span className="text-xs font-medium">{SHORT[m - 1]}</span>
-              {r ? <span className={`tabular text-[10px] font-bold ${r.value >= 0 ? "text-success" : "text-danger"}`}>{formatPct(r.pct, 0)}</span> : <span className="text-[10px]">&nbsp;</span>}
+              {r ? <span className={`tabular text-[11px] font-bold ${r.value >= 0 ? "text-success" : "text-danger"}`}>{formatPct(r.pct, 0)}</span> : <span className="text-[11px]">&nbsp;</span>}
             </li>
           );
         })}
@@ -256,7 +256,7 @@ export default async function HistoricoPage() {
   return (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Mês</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Histórico</h1>
         <p className="text-muted">O que aconteceu em cada mês.</p>
       </section>
       <MonthTabs active="historico" />
@@ -264,7 +264,7 @@ export default async function HistoricoPage() {
       {!history || history.entries.length === 0 ? (
         <p className="card p-4 text-sm">
           O histórico começa a se formar quando você informa o faturamento do mês em{" "}
-          <Link href="/mes" className="font-semibold text-primary underline">
+          <Link href="/mes" className="tap-area font-semibold text-primary underline">
             Mês → Fechar
           </Link>
           . A cada mês, o app guarda também os seus custos e preços daquele momento.

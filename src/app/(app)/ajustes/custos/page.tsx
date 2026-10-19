@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Hint } from "@/components/hint";
+import { BackLink } from "@/components/back-link";
 import { requireMember } from "@/lib/auth";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
@@ -18,10 +20,7 @@ export default async function CostsPage() {
   if (!ctx) {
     return (
       <>
-      {/* TODO(orquestrador): trocar por <BackLink href="/ajustes"> de @/components/back-link quando existir */}
-      <Link href="/ajustes" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Ajustes
-      </Link>
+      <BackLink href="/ajustes">Ajustes</BackLink>
         <h1 className="text-2xl font-extrabold tracking-tight">Custos fixos e equipe</h1>
         <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com o suporte do Precificaí.</p>
       </>
@@ -89,7 +88,7 @@ export default async function CostsPage() {
           <>
             <MonthlyNumbersForm revenue={ctx.monthlyRevenue} units={ctx.monthlyUnits} />
             <p className="text-xs text-muted">
-              Quando você informar o faturamento de cada mês em <Link href="/mes" className="font-semibold text-primary underline">Mês</Link>, o app passa a usar a média desses meses.
+              Quando você informar o faturamento de cada mês em <Link href="/mes" className="tap-area font-semibold text-primary underline">Mês</Link>, o app passa a usar a média desses meses.
             </p>
           </>
         ) : (
@@ -137,17 +136,17 @@ export default async function CostsPage() {
 
   return (
     <>
-      {/* TODO(orquestrador): trocar por <BackLink href="/ajustes"> de @/components/back-link quando existir */}
-      <Link href="/ajustes" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Ajustes
-      </Link>
+      <BackLink href="/ajustes">Ajustes</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Custos fixos e equipe</h1>
         <p className="text-muted">O que você paga todo mês, venda ou não venda.</p>
       </section>
 
       <section aria-live="polite" className="flex flex-col gap-2 rounded-2xl bg-primary p-5 text-primary-foreground">
-        <p className="text-xs font-semibold uppercase tracking-wider opacity-90">Para não ter prejuízo, você precisa vender</p>
+        <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-90">
+          Para não ter prejuízo, você precisa vender
+          <Hint label="O que é ponto de equilíbrio?">Quanto você precisa vender por mês só para pagar todas as contas, sem lucro e sem prejuízo.</Hint>
+        </p>
         {summary.breakEven ? (
           <>
             <p className="tabular text-3xl font-extrabold tracking-tight">{formatNumber(summary.breakEven.units, 0)} unidades por mês</p>

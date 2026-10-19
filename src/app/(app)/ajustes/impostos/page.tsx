@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { requireMember } from "@/lib/auth";
 import { Hint } from "@/components/hint";
 import { loadPricingContext } from "@/lib/pricing-data";
@@ -12,9 +12,7 @@ export default async function PricingSettingsPage() {
 
   return (
     <>
-      <Link href="/ajustes" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Ajustes
-      </Link>
+      <BackLink href="/ajustes">Ajustes</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Impostos, taxas e meta de lucro</h1>
         <p className="text-muted">Esses números entram na conta do lucro de todos os produtos.</p>

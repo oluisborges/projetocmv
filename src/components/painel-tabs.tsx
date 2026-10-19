@@ -17,12 +17,12 @@ export function PainelTabs({
 }) {
   const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg px-1 text-sm font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
   return (
-    <nav aria-label="Painel" className="flex gap-1 rounded-xl bg-border/60 p-1">
+    <nav aria-label="Partes do painel" className="flex gap-1 rounded-xl bg-border/60 p-1">
       <Link href="/painel" aria-current={active === "resumo" ? "page" : undefined} className={item(active === "resumo")}>
         <Pending>Resumo</Pending>
       </Link>
       <Link href="/painel/cardapio" aria-current={active === "cardapio" ? "page" : undefined} className={item(active === "cardapio")}>
-        <Pending>Cardápio</Pending>
+        <Pending>Por marmita</Pending>
       </Link>
       {showCoupons ? (
         <Link href="/painel/cupons" aria-current={active === "cupons" ? "page" : undefined} className={item(active === "cupons")}>

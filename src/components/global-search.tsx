@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Sheet } from "@/components/sheet";
-import { searchAll, type SearchResult } from "@/app/(app)/search-actions";
+import { searchAll, type SearchResponse } from "@/app/(app)/search-actions";
 
-const TYPE_LABEL = { insumo: "Insumo", marmita: "Marmita" } as const;
+const TYPE_LABEL = { insumo: "Insumo", marmita: "Marmita", combo: "Combo" } as const;
 
 function SearchBody({ onPick }: { onPick: () => void }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[] | null>(null);
+  const [results, setResults] = useState<SearchResponse | null>(null);
   const [pending, startTransition] = useTransition();
   const seq = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,7 +24,7 @@ function SearchBody({ onPick }: { onPick: () => void }) {
     const id = ++seq.current;
     const timer = setTimeout(() => {
       startTransition(async () => {
-        const found = await searchAll(q).catch(() => []);
+        const found = await searchAll(q).catch((): SearchResponse => ({ results: [], total: 0 }));
         if (id === seq.current) setResults(found);
       });
     }, 250);
@@ -46,40 +46,47 @@ function SearchBody({ onPick }: { onPick: () => void }) {
           setQuery(e.target.value);
           if (e.target.value.trim().length < 2) setResults(null);
         }}
-        placeholder="Buscar insumo ou marmita"
-        aria-label="Buscar insumo ou marmita"
+        placeholder="Buscar insumo, marmita ou combo"
+        aria-label="Buscar insumo, marmita ou combo"
         className="h-12 w-full rounded-xl border border-border bg-background px-4 text-base"
       />
       {!ready ? (
-        <p className="text-sm text-muted">Digite pelo menos 2 letras.</p>
-      ) : pending || results === null ? (
+        <p className="text-sm text-muted">Digite pelo menos 2 letras. Por exemplo: frango, arroz, marmita fit.</p>
+      ) : results === null ? (
         <p role="status" className="text-sm text-muted">
           Buscando…
         </p>
-      ) : results.length === 0 ? (
+      ) : results.results.length === 0 ? (
         <p role="status" className="text-sm text-muted">
-          Nada encontrado para “{q}”.
+          {pending ? "Buscando…" : `Nada encontrado para “${q}”.`}
         </p>
       ) : (
-        <ul className="divide-y divide-border">
-          {results.map((r) => (
-            <li key={`${r.type}-${r.id}`}>
-              <Link href={r.href} onClick={onPick} className="flex min-h-12 items-center justify-between gap-3 py-2">
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold">{r.name}</span>
-                  <span className="block truncate text-xs text-muted">{r.detail}</span>
-                </span>
-                <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{TYPE_LABEL[r.type]}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className={pending ? "opacity-60" : undefined} aria-busy={pending}>
+          <ul className="divide-y divide-border">
+            {results.results.map((r) => (
+              <li key={`${r.type}-${r.id}`}>
+                <Link href={r.href} onClick={onPick} className="flex min-h-12 items-center justify-between gap-3 py-2">
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold">{r.name}</span>
+                    <span className="block truncate text-xs text-muted">{r.detail}</span>
+                  </span>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{TYPE_LABEL[r.type]}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {results.total > results.results.length ? (
+            <p role="status" className="pt-3 text-sm text-muted">
+              Mostrando {results.results.length} de {results.total}. Digite mais letras para afinar.
+            </p>
+          ) : null}
+        </div>
       )}
     </div>
   );
 }
 
-/** Lupa no cabeçalho: abre a busca de insumos e marmitas. */
+/** Lupa no cabeçalho: abre a busca de insumos, marmitas e combos. */
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   return (

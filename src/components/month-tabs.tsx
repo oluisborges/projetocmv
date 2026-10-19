@@ -9,11 +9,11 @@ function Pending({ children }: { children: React.ReactNode }) {
 
 /** Alternância dentro de Mês: fechar o mês, contar o estoque e ver o histórico mês a mês. */
 export function MonthTabs({ active }: { active: "fechar" | "estoque" | "historico" }) {
-  const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg px-1 text-sm font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
+  const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg px-1 text-[13px] font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
   return (
-    <nav aria-label="Mês" className="flex gap-1 rounded-xl bg-border/60 p-1">
+    <nav aria-label="Partes do mês" className="flex gap-1 rounded-xl bg-border/60 p-1">
       <Link href="/mes" aria-current={active === "fechar" ? "page" : undefined} className={item(active === "fechar")}>
-        <Pending>Fechar</Pending>
+        <Pending>Fechar o mês</Pending>
       </Link>
       <Link href="/mes/estoque" aria-current={active === "estoque" ? "page" : undefined} className={item(active === "estoque")}>
         <Pending>Estoque</Pending>

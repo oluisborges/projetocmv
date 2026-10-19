@@ -11,7 +11,7 @@ function Pending({ children }: { children: React.ReactNode }) {
 export function ProductTabs({ id, active }: { id: string; active: "ficha" | "preco" }) {
   const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
   return (
-    <nav aria-label="Seções da marmita" className="flex gap-1 rounded-xl bg-border/60 p-1">
+    <nav aria-label="Partes da marmita" className="flex gap-1 rounded-xl bg-border/60 p-1">
       <Link href={`/marmitas/${id}`} aria-current={active === "ficha" ? "page" : undefined} className={item(active === "ficha")}>
         <Pending>Ficha</Pending>
       </Link>

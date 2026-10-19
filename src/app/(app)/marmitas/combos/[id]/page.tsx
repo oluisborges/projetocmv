@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -22,9 +22,7 @@ export default async function ComboPage(props: PageProps<"/marmitas/combos/[id]"
 
   return (
     <>
-      <Link href="/marmitas/combos" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Combos
-      </Link>
+      <BackLink href="/marmitas/combos">Combos</BackLink>
       <h1 className="text-2xl font-extrabold tracking-tight">{combo.name}</h1>
 
       <ComboEditor

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/back-link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { ConfirmButton } from "@/components/confirm-button";
@@ -27,9 +27,7 @@ export default async function RecipePage(props: PageProps<"/marmitas/[id]">) {
 
   return (
     <>
-      <Link href="/marmitas" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary">
-        ← Marmitas
-      </Link>
+      <BackLink href="/marmitas">Marmitas</BackLink>
       <div className="flex flex-col gap-0.5">
         <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
         {recipe.updated_at ? (

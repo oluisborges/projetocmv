@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { SubmitButton } from "@/components/submit-button";
 
-/** Menu da conta no cabeçalho: tira o "Sair" (botão de risco) do lugar nobre e reúne o que é de uso raro. */
+/** Menu da conta no cabeçalho: tira o "Sair" (botão de risco) do lugar nobre e guarda o acesso da equipe Shogun e a saída da conta (Ajustes, senha e privacidade ficam no hub Ajustes). */
 export function AccountMenu({ isAdmin, alertCount = 0, signOutAction }: { isAdmin: boolean; /** cardápios parados (só equipe Shogun) */ alertCount?: number; signOutAction: () => Promise<void> }) {
   const ref = useRef<HTMLDetailsElement>(null);
 
@@ -28,7 +28,7 @@ export function AccountMenu({ isAdmin, alertCount = 0, signOutAction }: { isAdmi
         aria-label="Menu da conta"
         className="relative flex size-11 cursor-pointer list-none items-center justify-center rounded-xl border border-white/25 bg-white/10 text-white [&::-webkit-details-marker]:hidden"
       >
-        {alertCount > 0 ? <span aria-label={`${alertCount} alertas`} className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[11px] font-bold leading-5 text-white">{alertCount}</span> : null}
+        {alertCount > 0 ? <span aria-label={`${alertCount} alertas`} className="absolute -right-1 -top-1 flex min-w-5 items-center justify-center rounded-full bg-danger px-1 text-xs font-bold leading-5 text-white">{alertCount}</span> : null}
         <svg viewBox="0 0 24 24" className="size-5" aria-hidden fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5" />
@@ -40,16 +40,7 @@ export function AccountMenu({ isAdmin, alertCount = 0, signOutAction }: { isAdmi
             Painel Shogun{alertCount > 0 ? ` (${alertCount} ${alertCount === 1 ? "alerta" : "alertas"})` : ""}
           </Link>
         ) : null}
-        <Link href="/ajustes" className={item}>
-          Ajustes
-        </Link>
-        <Link href="/conta/senha" className={item}>
-          Trocar minha senha
-        </Link>
-        <Link href="/privacidade" className={item}>
-          Como seus dados são tratados
-        </Link>
-        <form action={signOutAction} className="border-t border-border pt-1">
+        <form action={signOutAction} className={isAdmin ? "border-t border-border pt-1" : undefined}>
           <SubmitButton pendingLabel="Saindo…" className={`${item} w-full text-danger`}>
             Sair da conta
           </SubmitButton>
