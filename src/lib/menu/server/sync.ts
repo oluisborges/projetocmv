@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { mapOrder as cwMapOrder } from "../cardapioweb";
 import { mapOrder as pfMapOrder, orderState } from "../prefiro";
 import type { MappedOrder, Raw } from "../types";
+import { listPages } from "../window";
 import { AuthError, RangeRefusedError, TransientError, cardapiowebClient, prefiroClient } from "./http";
 import { recordError } from "@/lib/errors/record";
 import { knownOrderIds, removeOrders, saveOrders, type Connection } from "./store";
@@ -15,6 +16,7 @@ const DETAIL_BATCH = 25;
 const MAX_ATTEMPTS = 3;
 const CW_SPAN_DAYS = 30; // janela do histórico; a API recusa intervalos longos
 const CW_MIN_SPAN_DAYS = 7;
+const CW_PAGE_COST_MS = 14_000; // uma página do histórico: espera do limite (12,5 s) + a chamada
 const PF_SPAN_DAYS = 15; // a Prefiro lista 15 dias por padrão
 const PF_OVERLAP_MS = 15 * 60_000;
 /** Sem conferir há mais que isso: volta a listar por janelas (uma consulta só poderia ser recusada pela API). */
@@ -42,7 +44,7 @@ type Creds = { api_key: string; config: { hash?: string } };
 type Fetched = { order: MappedOrder | null; gone: boolean } | null; // null = não encontrado
 
 const COLUMNS =
-  "id, org_id, unit_id, provider, status, phase, history_cursor, lookback_from, last_incremental_at, last_sync_at, last_error, merchant_name, orders_imported, pending_orders, locked_until";
+  "id, org_id, unit_id, provider, status, phase, history_cursor, history_page, lookback_from, last_incremental_at, last_sync_at, last_error, merchant_name, orders_imported, pending_orders, locked_until";
 
 async function setState(db: SupabaseClient, id: string, patch: Record<string, unknown>) {
   await db.from("menu_connections").update(patch).eq("id", id);
@@ -162,15 +164,26 @@ async function syncCardapioweb(db: SupabaseClient, conn: Connection, creds: Cred
   let span = CW_SPAN_DAYS;
   let note: string | undefined;
 
-  const listWindow = async (start: Date, end: Date) => {
-    for (let page = 1; ; page++) {
-      const body = await cw.history(start.toISOString(), end.toISOString(), page);
-      const ids = (body?.orders ?? []).map((o) => String(o.id));
-      const known = await knownOrderIds(db, conn.id, ids.map((x) => `cw:${x}`));
-      await enqueue(db, conn, ids.filter((x) => !known.has(`cw:${x}`)));
-      if (page >= (body?.pagination?.total_pages ?? 1)) break;
-    }
+  // Cada página do histórico leva ~12 s (limite de chamadas da API): lista até onde o tempo deixa e guarda a página,
+  // para o próximo ciclo continuar dali em vez de recomeçar a janela (e nunca terminar).
+  const listWindow = async (start: Date, end: Date, startPage: number, persist: boolean): Promise<boolean> => {
+    const r = await listPages({
+      startPage,
+      deadline: deadline - SAFETY_MS,
+      pageCostMs: CW_PAGE_COST_MS,
+      fetchPage: async (page) => {
+        const body = await cw.history(start.toISOString(), end.toISOString(), page);
+        const ids = (body?.orders ?? []).map((o) => String(o.id));
+        const known = await knownOrderIds(db, conn.id, ids.map((x) => `cw:${x}`));
+        await enqueue(db, conn, ids.filter((x) => !known.has(`cw:${x}`)));
+        return body?.pagination?.total_pages ?? 1;
+      },
+      onPage: persist ? (next) => setState(db, conn.id, { history_page: next }) : undefined,
+    });
+    if (!r.complete && persist) await setState(db, conn.id, { history_page: r.nextPage });
+    return r.complete;
   };
+  let page = conn.history_page ?? 1;
 
   while (Date.now() < deadline - SAFETY_MS) {
     if (phase === "history") {
@@ -182,18 +195,26 @@ async function syncCardapioweb(db: SupabaseClient, conn: Connection, creds: Cred
       }
       const end = new Date(Math.min(cursor.getTime() + span * DAY_MS, now.getTime()));
       try {
-        await listWindow(cursor, end);
+        const complete = await listWindow(cursor, end, page, true);
+        if (!complete) {
+          // sem tempo para listar mais: grava o que já está na fila e o próximo ciclo continua desta página
+          saved += await drainQueue(db, conn, fetchOne, deadline);
+          break;
+        }
       } catch (e) {
         if (!(e instanceof RangeRefusedError)) throw e;
         if (span > CW_MIN_SPAN_DAYS) {
-          span = CW_MIN_SPAN_DAYS; // a API recusou: tenta janelas menores
+          span = CW_MIN_SPAN_DAYS; // a API recusou: tenta janelas menores (e recomeça a janela)
+          page = 1;
+          await setState(db, conn.id, { history_page: 1 });
           continue;
         }
         // nem a janela mínima: pula o trecho e avisa (nada fica escondido)
         note = `O CardápioWeb recusou o trecho de ${cursor.toISOString().slice(0, 10)} a ${end.toISOString().slice(0, 10)}: ${e.message.replace(/\s+/g, " ").slice(0, 100)}`;
       }
       cursor = end;
-      await setState(db, conn.id, { history_cursor: cursor.toISOString() });
+      page = 1;
+      await setState(db, conn.id, { history_cursor: cursor.toISOString(), history_page: 1 });
       // grava o que já foi listado, para os meses recentes aparecerem sem esperar a carga inteira
       saved += await drainQueue(db, conn, fetchOne, Math.min(deadline, Date.now() + 30_000));
     } else {
@@ -208,9 +229,10 @@ async function syncCardapioweb(db: SupabaseClient, conn: Connection, creds: Cred
       }
       const startedAt = new Date();
       await enqueueLegacyCoupons(db, conn);
-      await listWindow(from, new Date());
+      const complete = await listWindow(from, new Date(), 1, false);
       saved += await drainQueue(db, conn, fetchOne, deadline);
-      await setState(db, conn.id, { last_incremental_at: startedAt.toISOString() });
+      // só marca a conferência como feita se listou tudo; senão a próxima repete a janela
+      if (complete) await setState(db, conn.id, { last_incremental_at: startedAt.toISOString() });
       break;
     }
   }
@@ -333,7 +355,7 @@ export async function runConnection(db: SupabaseClient, connectionId: string, de
       ordersSaved: r.saved,
       phase: r.phase,
       pending: pending ?? 0,
-      progressed: r.saved > 0 || r.phase !== conn.phase || after?.history_cursor !== conn.history_cursor,
+      progressed: r.saved > 0 || r.phase !== conn.phase || after?.history_cursor !== conn.history_cursor || after?.history_page !== conn.history_page,
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

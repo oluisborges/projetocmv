@@ -10,6 +10,7 @@ export type Connection = {
   status: "connected" | "error";
   phase: "history" | "done";
   history_cursor: string | null;
+  history_page: number;
   lookback_from: string;
   last_incremental_at: string | null;
   last_sync_at: string | null;

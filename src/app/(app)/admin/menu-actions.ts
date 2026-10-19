@@ -119,9 +119,11 @@ export async function connectMenu(_prev: AdminState, formData: FormData): Promis
   if (credError) return failure("Não foi possível guardar a chave.");
 
   // começa a carga já: ela roda sozinha, em ciclos, na própria função desta conexão
-  await dispatchRun(await requestOrigin(), connectionId);
+  const started = await dispatchRun(await requestOrigin(), connectionId);
   revalidatePath("/admin");
-  return { ok: `${PROVIDER_LABEL[provider]} conectado${merchant ? ` (${merchant})` : ""}. A importação dos últimos 4 meses começou e continua sozinha; acompanhe o status aqui.` };
+  const base = `${PROVIDER_LABEL[provider]} conectado${merchant ? ` (${merchant})` : ""}.`;
+  if (!started) return { ok: `${base} Não consegui iniciar a importação sozinha (falta a variável CRON_SECRET na Vercel). Toque em “Atualizar agora” para importar.` };
+  return { ok: `${base} A importação dos últimos 4 meses começou e continua sozinha; acompanhe o status aqui.` };
 }
 
 /** Roda um ciclo agora (até ~50 s). A carga do histórico continua sozinha nos ciclos seguintes. */

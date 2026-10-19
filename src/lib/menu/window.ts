@@ -39,3 +39,29 @@ export function needsKick(c: { status: string; phase: "history" | "done"; pendin
   if (c.locked_until && Date.parse(c.locked_until) > now.getTime()) return false;
   return !c.last_sync_at || now.getTime() - Date.parse(c.last_sync_at) > 45_000;
 }
+
+/**
+ * Lista as páginas de uma janela de pedidos sem estourar o tempo: cada página é uma chamada lenta (a API limita o ritmo),
+ * então antes de pedir a próxima confere se ainda cabe. Se não couber, devolve a página onde continuar (guardada no banco).
+ */
+export async function listPages(opts: {
+  startPage: number;
+  /** Busca e processa uma página; devolve o total de páginas da janela. */
+  fetchPage: (page: number) => Promise<number>;
+  /** Tempo que uma página costuma levar (inclui a espera do limite de chamadas). */
+  pageCostMs: number;
+  deadline: number;
+  now?: () => number;
+  /** Chamado depois de cada página concluída, com a próxima a buscar. */
+  onPage?: (nextPage: number) => Promise<void>;
+}): Promise<{ complete: boolean; nextPage: number }> {
+  const now = opts.now ?? Date.now;
+  let page = Math.max(1, opts.startPage);
+  for (;;) {
+    if (now() + opts.pageCostMs > opts.deadline) return { complete: false, nextPage: page };
+    const total = await opts.fetchPage(page);
+    if (page >= total) return { complete: true, nextPage: 1 };
+    page += 1;
+    await opts.onPage?.(page);
+  }
+}

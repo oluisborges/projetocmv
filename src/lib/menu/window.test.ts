@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isStale, MAX_CHAIN_DEPTH, menuLookbackStart, needsKick, shouldChain } from "./window";
+import { isStale, listPages, MAX_CHAIN_DEPTH, menuLookbackStart, needsKick, shouldChain } from "./window";
 
 describe("janela da carga inicial", () => {
   it("mês atual + 3 anteriores, a partir do dia 1 em Brasília", () => {
@@ -46,4 +46,34 @@ describe("importação parada", () => {
   it("ciclo muito recente = espera", () => expect(needsKick({ ...base, last_sync_at: "2026-10-17T14:59:30Z" }, now)).toBe(false));
   it("conexão com erro de chave não é retomada", () => expect(needsKick({ ...base, status: "error" }, now)).toBe(false));
   it("trava vencida não impede", () => expect(needsKick({ ...base, locked_until: "2026-10-17T14:50:00Z" }, now)).toBe(true));
+});
+
+describe("listPages (listar pedidos sem estourar o tempo)", () => {
+  it("lista tudo quando cabe", async () => {
+    const seen: number[] = [];
+    const r = await listPages({ startPage: 1, pageCostMs: 10, deadline: 1000, now: () => 0, fetchPage: async (p) => (seen.push(p), 3) });
+    expect(seen).toEqual([1, 2, 3]);
+    expect(r).toEqual({ complete: true, nextPage: 1 });
+  });
+
+  it("para antes de uma página que não cabe e devolve onde continuar", async () => {
+    let clock = 0;
+    const seen: number[] = [];
+    const saved: number[] = [];
+    const r = await listPages({
+      startPage: 1, pageCostMs: 12_500, deadline: 30_000, now: () => clock,
+      fetchPage: async (p) => { seen.push(p); clock += 12_500; return 10; },
+      onPage: async (n) => { saved.push(n); },
+    });
+    expect(seen).toEqual([1, 2]);
+    expect(r).toEqual({ complete: false, nextPage: 3 });
+    expect(saved).toEqual([2, 3]);
+  });
+
+  it("retoma da página guardada", async () => {
+    const seen: number[] = [];
+    const r = await listPages({ startPage: 4, pageCostMs: 1, deadline: 1000, now: () => 0, fetchPage: async (p) => (seen.push(p), 5) });
+    expect(seen).toEqual([4, 5]);
+    expect(r.complete).toBe(true);
+  });
 });
