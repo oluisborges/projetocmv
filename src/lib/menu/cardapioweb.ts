@@ -1,6 +1,6 @@
 // Tradução dos pedidos da API do CardápioWeb (parceiros v1) para o nosso modelo. PURO: sem rede e sem banco.
 // Referência: projetosecreto/replica/cardapioweb-integracao.md e https://docs.cardapioweb.com/llms.txt
-import { cents, money, num, productKey, text, type MappedLine, type MappedOrder } from "./types";
+import { cents, label, money, num, productKey, text, type MappedLine, type MappedOrder } from "./types";
 
 export type CwOption = { name?: string | null; option_id?: number | string | null; quantity?: number | string | null; unit_price?: number | string | null };
 export type CwItem = {
@@ -30,13 +30,13 @@ export type CwOrderDetail = {
 export function mapLines(items: CwItem[] | null | undefined): MappedLine[] {
   const out: MappedLine[] = [];
   for (const it of items ?? []) {
-    const name = text(it?.name);
+    const name = label(it?.name);
     if (!name) continue;
     const qty = num(it.quantity) || 1;
     const options = (it.options ?? []).filter((o) => text(o?.name));
     const optionLines: MappedLine[] = options.map((o) => {
       const oq = (num(o.quantity) || 1) * qty;
-      return { key: productKey(o.option_id, text(o.name)), name: text(o.name), kind: "option", qty: oq, total: money(num(o.unit_price) * oq) };
+      return { key: productKey(o.option_id, label(o.name)), name: label(o.name), kind: "option", qty: oq, total: money(num(o.unit_price) * oq) };
     });
     const own = num(it.total_price) || num(it.unit_price) * qty;
     const optionsTotal = optionLines.reduce((s, l) => s + l.total, 0);

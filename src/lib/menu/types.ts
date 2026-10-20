@@ -38,6 +38,9 @@ export const money = (n: number) => Math.max(0, cents(n));
 
 export const text = (v: unknown): string => (typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "");
 
+/** Nome de produto como a tabela aceita (1 a 200 caracteres): textos longos, como observações no lugar do nome, são cortados. */
+export const label = (v: unknown): string => text(v).slice(0, 200).trim();
+
 export const num = (v: unknown): number => {
   const n = Number(typeof v === "string" ? v.replace(",", ".") : v);
   return Number.isFinite(n) ? n : 0;
@@ -46,7 +49,7 @@ export const num = (v: unknown): number => {
 /** Chave do produto: o id do cardápio quando existe; senão o nome normalizado (marcado para não colidir com ids). */
 export function productKey(id: unknown, name: string): string {
   const raw = text(id);
-  return raw ? `id:${raw}` : `nm:${normalizeName(name)}`;
+  return (raw ? `id:${raw}` : `nm:${normalizeName(name)}`).slice(0, 200);
 }
 
 /** Comparação em tempo constante do token do webhook. */

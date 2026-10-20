@@ -144,3 +144,23 @@ describe("comum", () => {
     expect(sameToken("", "")).toBe(false);
   });
 });
+
+describe("nomes longos de produto (limite de 200 caracteres da tabela)", () => {
+  const longo = "Observação do cliente ".repeat(30); // > 200
+
+  it("CardápioWeb: nome de item e de opção são cortados em 200", () => {
+    const lines = cw.mapLines([{ item_id: 1, name: longo, quantity: 1, total_price: 10, options: [{ option_id: 2, name: longo, quantity: 1, unit_price: 1 }] }]);
+    expect(lines).toHaveLength(2);
+    for (const l of lines) {
+      expect(l.name.length).toBeLessThanOrEqual(200);
+      expect(l.name.length).toBeGreaterThan(0);
+      expect(l.key.length).toBeLessThanOrEqual(200);
+    }
+  });
+
+  it("Prefiro: complemento sem id usa o nome na chave, também limitada a 200", () => {
+    const lines = pf.mapLines([{ produto_id: 1, nome: "Marmita", quantidade: 1, valor_total: 20, complementos: [{ nome: longo, quantidade: 1, valor_unitario: 0 }] }]);
+    expect(lines[1].name.length).toBeLessThanOrEqual(200);
+    expect(lines[1].key.length).toBeLessThanOrEqual(200);
+  });
+});

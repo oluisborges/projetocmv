@@ -1,6 +1,6 @@
 // Tradução dos pedidos da API da Prefiro Delivery (v2, autenticação Basic) para o nosso modelo. PURO: sem rede e sem banco.
 // Documentação pública: https://documenter.getpostman.com/view/11644806/UVsEUokz (referência de campos: projetosecreto/src/lib/prefiro.ts)
-import { cents, money, num, productKey, text, type MappedLine, type MappedOrder, type Raw } from "./types";
+import { cents, label, money, num, productKey, text, type MappedLine, type MappedOrder, type Raw } from "./types";
 
 export const PREFIRO_API_HOST = "api.prefirodelivery.com";
 
@@ -50,18 +50,18 @@ export function toIso(raw: unknown): string | null {
 export function mapLines(itens: unknown): MappedLine[] {
   const out: MappedLine[] = [];
   for (const i of (Array.isArray(itens) ? itens : []) as Raw[]) {
-    const name = text(i?.nome);
+    const name = label(i?.nome);
     if (!name) continue;
     const qty = num(i.quantidade) || 1;
     const options: MappedLine[] = [];
     for (const c of (Array.isArray(i.complementos) ? i.complementos : []) as Raw[]) {
-      const n = text(c?.nome);
+      const n = label(c?.nome);
       if (!n) continue;
       const oq = (num(c.quantidade) || 1) * qty;
       options.push({ key: productKey(c.opcao_id ?? c.produto_id, n), name: n, kind: "option", qty: oq, total: money(num(c.valor_unitario) * oq) });
     }
     for (const s of (Array.isArray(i.sabores) ? i.sabores : []) as Raw[]) {
-      const n = text(s?.nome ?? s?.sabor);
+      const n = label(s?.nome ?? s?.sabor);
       if (!n) continue;
       options.push({ key: productKey(s.sabor_id ?? s.produto_id ?? s.id, n), name: n, kind: "option", qty: (num(s.quantidade) || 1) * qty, total: money(num(s.valor_total ?? s.valor)) });
     }
