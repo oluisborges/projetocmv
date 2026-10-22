@@ -59,3 +59,8 @@ export function sameToken(a: string, b: string): boolean {
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
+
+/** O mesmo pedido pode vir duas vezes no mesmo lote (lista sobreposta); o banco recusa linhas repetidas num único upsert. Fica a última. */
+export function dedupeOrders<T extends { externalId: string }>(orders: T[]): T[] {
+  return [...new Map(orders.map((o) => [o.externalId, o])).values()];
+}

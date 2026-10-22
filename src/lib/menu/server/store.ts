@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { MappedLine, MappedOrder, MenuProvider } from "../types";
+import { dedupeOrders, type MappedLine, type MappedOrder, type MenuProvider } from "../types";
 
 export type Connection = {
   id: string;
@@ -42,7 +42,8 @@ function mergeLines(lines: MappedLine[]): MappedLine[] {
  * Grava pedidos já traduzidos (idempotente: reprocessar o mesmo pedido atualiza valores e refaz as linhas).
  * Produtos novos nascem sem vínculo; os existentes mantêm o vínculo que o dono fez.
  */
-export async function saveOrders(db: SupabaseClient, conn: Pick<Connection, "id" | "org_id" | "unit_id" | "provider">, orders: MappedOrder[]) {
+export async function saveOrders(db: SupabaseClient, conn: Pick<Connection, "id" | "org_id" | "unit_id" | "provider">, incoming: MappedOrder[]) {
+  const orders = dedupeOrders(incoming);
   if (orders.length === 0) return;
 
   // 1) produtos (nome e visto-por-último atualizam; o vínculo não é tocado)

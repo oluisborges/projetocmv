@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as cw from "./cardapioweb";
 import * as pf from "./prefiro";
-import { productKey, sameToken } from "./types";
+import { dedupeOrders, productKey, sameToken } from "./types";
 
 describe("CardápioWeb", () => {
   const order: cw.CwOrderDetail = {
@@ -162,5 +162,16 @@ describe("nomes longos de produto (limite de 200 caracteres da tabela)", () => {
     const lines = pf.mapLines([{ produto_id: 1, nome: "Marmita", quantidade: 1, valor_total: 20, complementos: [{ nome: longo, quantidade: 1, valor_unitario: 0 }] }]);
     expect(lines[1].name.length).toBeLessThanOrEqual(200);
     expect(lines[1].key.length).toBeLessThanOrEqual(200);
+  });
+});
+
+describe("pedido repetido no mesmo lote", () => {
+  it("fica uma só vez (a última versão), senão o upsert do banco falha", () => {
+    const out = dedupeOrders([
+      { externalId: "cw:1", total: 10 },
+      { externalId: "cw:2", total: 20 },
+      { externalId: "cw:1", total: 12 },
+    ]);
+    expect(out).toEqual([{ externalId: "cw:1", total: 12 }, { externalId: "cw:2", total: 20 }]);
   });
 });
