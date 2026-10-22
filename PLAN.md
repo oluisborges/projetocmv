@@ -1,7 +1,7 @@
 # Shogun Precificação — Plano do projeto
 
 ## Estado atual (fases 0 a 8 no ar, em plano gratuito)
-Produção: https://projetocmv-livid.vercel.app · Supabase `shogun-precificacao-dev` (sa-east-1) · GitHub `oluisborges/projetocmv`.
+Produção: https://meuprecificai.vercel.app (antigo: projetocmv-livid.vercel.app, continua funcionando) · Supabase `shogun-precificacao-dev` (sa-east-1) · GitHub `oluisborges/projetocmv`.
 
 | Fase | Estado | Observação |
 |---|---|---|
