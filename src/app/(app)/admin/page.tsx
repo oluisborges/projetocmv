@@ -26,14 +26,16 @@ export default async function AdminPage() {
   const admin = createAdminClient();
   const supabase = await createClient(); // sessão do admin: a função de atividade confere quem pergunta
 
-  const [{ data: orgs }, { data: memberships }, { data: usersPage }, { data: menuConns }, { data: menuCreds }, { data: activityRows }] = await Promise.all([
+  const [{ data: orgs }, { data: memberships }, { data: usersPage }, { data: menuConns }, { data: menuCreds }, { data: activityRows }, { data: blockedRows }] = await Promise.all([
     admin.from("organizations").select("id, name, slug, created_at").order("name"),
     admin.from("memberships").select("org_id, user_id, role"),
     admin.auth.admin.listUsers({ perPage: 1000 }),
     admin.from("menu_connections").select("id, org_id, provider, status, phase, merchant_name, store_code, last_sync_at, last_error, orders_imported, pending_orders, locked_until").order("created_at"),
     admin.from("menu_credentials").select("connection_id, webhook_token"),
     supabase.rpc("admin_org_activity"),
+    admin.from("profiles").select("id").not("blocked_at", "is", null),
   ]);
+  const blockedIds = new Set((blockedRows ?? []).map((r) => r.id as string));
   const webhookTokens = new Map((menuCreds ?? []).map((c) => [c.connection_id as string, c.webhook_token as string]));
   const activity = new Map(((activityRows as Activity[] | null) ?? []).map((a) => [a.org_id, a]));
   // importação parada no meio? abrir o painel retoma (a corrente de ciclos pode quebrar se uma função for encerrada)
@@ -79,6 +81,7 @@ export default async function AdminPage() {
       name: userName(m.user_id) ?? m.user_id,
       email: users.get(m.user_id)?.email ?? "",
       role: m.role as UserRow["role"],
+      blocked: blockedIds.has(m.user_id),
     }));
     const menuRows: MenuConnectionRow[] = conns.map((c) => ({
       id: c.id as string,

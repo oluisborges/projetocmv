@@ -10,7 +10,7 @@ export const metadata = { title: "Criar minha senha" };
 
 export default async function ChangePasswordPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session || session.blocked) redirect("/sair");
   const forced = session.mustChangePassword;
 
   return (

@@ -55,6 +55,8 @@ export async function signIn(_prev: LoginState, formData: FormData): Promise<Log
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   // Mesma mensagem para e-mail inexistente e senha errada (não revela quais e-mails existem).
   if (error) {
+    // O Auth só diz que o usuário está bloqueado depois de conferir a senha: quem chegou aqui sabe a senha certa.
+    if (error.code === "user_banned") return { error: "O seu acesso está bloqueado. Fale com o Grupo Shogun.", email: parsed.data.email };
     await recordLoginFailure(keys);
     return { error: "E-mail ou senha incorretos.", email: parsed.data.email };
   }

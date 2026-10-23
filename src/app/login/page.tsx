@@ -2,7 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { LoginForm } from "./login-form";
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const blocked = (await searchParams).motivo === "bloqueado";
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-7 px-4 py-10">
       <header className="flex flex-col items-center gap-6 text-center">
@@ -13,6 +14,11 @@ export default function LoginPage() {
           <p className="text-muted">Entre com o e-mail e a senha que o Grupo Shogun passou para você.</p>
         </div>
       </header>
+      {blocked ? (
+        <p role="alert" className="rounded-xl bg-danger/10 px-4 py-3 text-center text-sm font-medium text-danger">
+          O seu acesso está bloqueado. Fale com o Grupo Shogun.
+        </p>
+      ) : null}
       <div className="card p-5">
         <LoginForm />
       </div>

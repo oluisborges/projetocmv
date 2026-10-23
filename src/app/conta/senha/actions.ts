@@ -16,7 +16,7 @@ const schema = z.object({
 /** Cada pessoa cria a própria senha. A senha provisória que o Grupo Shogun passou deixa de valer. */
 export async function changePassword(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
   const session = await getSession(); // não passa por requireUser: esta é a tela que resolve a troca obrigatória
-  if (!session) redirect("/login");
+  if (!session || session.blocked) redirect("/sair");
 
   const parsed = schema.safeParse({ password: String(formData.get("password") ?? ""), confirm: String(formData.get("confirm") ?? "") });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Confira os campos." };

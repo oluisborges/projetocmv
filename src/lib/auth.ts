@@ -13,6 +13,8 @@ export type Session = {
   isPlatformAdmin: boolean;
   /** A senha atual foi definida por outra pessoa (admin Shogun): precisa criar a própria antes de usar o app. */
   mustChangePassword: boolean;
+  /** Acesso bloqueado pelo admin Shogun. */
+  blocked: boolean;
   memberships: Membership[];
 };
 
@@ -25,7 +27,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (!user) return null;
 
   const [{ data: profile }, { data: memberships }] = await Promise.all([
-    supabase.from("profiles").select("full_name, is_platform_admin, must_change_password").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("full_name, is_platform_admin, must_change_password, blocked_at").eq("id", user.id).maybeSingle(),
     // Ordem fixa: se um dia houver mais de uma organização, a "ativa" é sempre a mais antiga.
     supabase.from("memberships").select("role, organizations(id, name)").eq("user_id", user.id).order("created_at"),
   ]);
@@ -36,6 +38,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
     fullName: profile?.full_name ?? null,
     isPlatformAdmin: profile?.is_platform_admin ?? false,
     mustChangePassword: profile?.must_change_password ?? false,
+    blocked: Boolean(profile?.blocked_at),
     memberships: (memberships ?? []).flatMap((m) => {
       const org = Array.isArray(m.organizations) ? m.organizations[0] : m.organizations;
       return org ? [{ role: m.role as Membership["role"], org: { id: org.id, name: org.name } }] : [];
@@ -45,7 +48,9 @@ export const getSession = cache(async (): Promise<Session | null> => {
 
 export async function requireUser(): Promise<Session> {
   const session = await getSession();
-  if (!session) redirect("/login");
+  // Sessão que o Auth não aceita mais (usuário bloqueado ou removido): encerra e volta ao login.
+  if (!session) redirect("/sair");
+  if (session.blocked) redirect("/sair?motivo=bloqueado");
   // Senha provisória: nada do app abre antes de a pessoa criar a própria (a tela de troca fica fora deste guarda).
   if (session.mustChangePassword) redirect("/conta/senha");
   return session;

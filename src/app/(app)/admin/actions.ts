@@ -135,3 +135,51 @@ export async function resetPassword(_prev: AdminState, formData: FormData): Prom
 
   return { ok: "Senha provisória definida. Passe para o cliente: no primeiro acesso ele cria a própria senha." };
 }
+
+/** Troca o e-mail de login. Já fica confirmado (o admin é quem garante que o endereço é da pessoa). */
+export async function changeUserEmail(_prev: AdminState, formData: FormData): Promise<AdminState> {
+  await requireAdmin();
+
+  const parsed = z.object({ userId: z.uuid(), email }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return fail("Digite um e-mail válido.");
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(parsed.data.userId, { email: parsed.data.email, email_confirm: true });
+  if (error) {
+    const taken = /already|registered|exists|duplicate/i.test(error.message);
+    return fail(taken ? "Esse e-mail já tem conta." : "Não foi possível trocar o e-mail.");
+  }
+
+  revalidatePath("/admin");
+  return { ok: `E-mail trocado. A pessoa entra agora com ${parsed.data.email} (a senha continua a mesma).` };
+}
+
+/** Bloqueia ou libera o acesso de um usuário. O bloqueio vale já: no login, na renovação da sessão e no banco (RLS). */
+export async function setUserBlocked(_prev: AdminState, formData: FormData): Promise<AdminState> {
+  const me = await requireAdmin();
+
+  const parsed = z.object({ userId: z.uuid(), blocked: z.enum(["1", "0"]) }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return fail("Pedido inválido.");
+  const { userId } = parsed.data;
+  const block = parsed.data.blocked === "1";
+  if (block && userId === me.userId) return fail("Você não pode bloquear a si mesmo.");
+
+  const admin = createAdminClient();
+  const { data: target } = await admin.from("profiles").select("is_platform_admin").eq("id", userId).maybeSingle();
+  if (!target) return fail("Usuário não encontrado.");
+  if (block && target.is_platform_admin) return fail("Não dá para bloquear um admin Shogun.");
+
+  // Primeiro o banco (fecha o acesso pela API), depois o Auth (não deixa entrar nem renovar). Se o Auth falhar, desfaz.
+  const { error: flagError } = await admin.from("profiles").update({ blocked_at: block ? new Date().toISOString() : null }).eq("id", userId);
+  if (flagError) return fail("Não foi possível alterar o acesso.");
+  const { error: banError } = await admin.auth.admin.updateUserById(userId, { ban_duration: block ? BAN_FOREVER : "none" });
+  if (banError) {
+    await admin.from("profiles").update({ blocked_at: block ? null : new Date().toISOString() }).eq("id", userId);
+    return fail("Não foi possível alterar o acesso.");
+  }
+
+  revalidatePath("/admin");
+  return { ok: block ? "Acesso bloqueado. A pessoa não consegue mais entrar nem usar o app." : "Acesso liberado. A pessoa já pode entrar de novo." };
+}
+
+const BAN_FOREVER = "876000h"; // ~100 anos; "none" tira o bloqueio
