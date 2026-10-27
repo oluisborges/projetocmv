@@ -7,8 +7,8 @@ import { Hint } from "@/components/hint";
 import { Spinner } from "@/components/spinner";
 import { formatBRL, formatNumber, parseDecimal } from "@/lib/format";
 import { computeReceita } from "@/lib/recipe-cost";
-import { removeRecipeItem, updateRecipeSettings } from "../../actions";
-import { AddItem, ItemRow, type EditorIngredient, type EditorItem } from "../../[id]/recipe-editor";
+import { removeRecipeItem, updateRecipeSettings } from "@/app/(app)/marmitas/actions";
+import { AddItem, ItemRow, type EditorIngredient, type EditorItem } from "@/app/(app)/marmitas/[id]/recipe-editor";
 
 const inputClass = "h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
 const fmt = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(Number(n.toFixed(4))).replace(".", ","));

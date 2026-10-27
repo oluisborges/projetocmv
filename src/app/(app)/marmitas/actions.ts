@@ -152,8 +152,8 @@ export async function createReceita(_prev: FormState, formData: FormData): Promi
     .single();
   if (error || !data) return { error: "Não foi possível criar a receita." };
 
-  revalidatePath("/marmitas/receitas");
-  redirect(`/marmitas/receitas/${data.id}`);
+  revalidatePath("/insumos");
+  redirect(`/insumos/receitas/${data.id}`);
 }
 
 export async function updateRecipeSettings(input: {
@@ -201,7 +201,7 @@ export async function updateRecipeSettings(input: {
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
   revalidatePath("/marmitas");
-  revalidatePath("/marmitas/receitas");
+  revalidatePath("/insumos");
   return { ok: true };
 }
 
@@ -351,7 +351,7 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/marmitas");
-  redirect(recipe.kind === "receita" ? `/marmitas/receitas/${copy.id}` : `/marmitas/${copy.id}`);
+  redirect(recipe.kind === "receita" ? `/insumos/receitas/${copy.id}` : `/marmitas/${copy.id}`);
 }
 
 export async function archiveRecipe(formData: FormData): Promise<void> {
@@ -362,7 +362,7 @@ export async function archiveRecipe(formData: FormData): Promise<void> {
   const supabase = await createClient();
   const { data: archived } = await supabase.from("recipes").update({ active: false }).eq("id", id.data).eq("org_id", orgId).select("kind").maybeSingle();
   revalidatePath("/marmitas");
-  redirect(archived?.kind === "receita" ? "/marmitas/receitas" : "/marmitas");
+  redirect(archived?.kind === "receita" ? "/insumos" : "/marmitas");
 }
 
 export async function restoreRecipe(formData: FormData): Promise<void> {
@@ -373,5 +373,5 @@ export async function restoreRecipe(formData: FormData): Promise<void> {
   const supabase = await createClient();
   const { data: restored } = await supabase.from("recipes").update({ active: true }).eq("id", id.data).eq("org_id", orgId).select("kind").maybeSingle();
   revalidatePath("/marmitas");
-  redirect(restored?.kind === "receita" ? `/marmitas/receitas/${id.data}` : `/marmitas/${id.data}`);
+  redirect(restored?.kind === "receita" ? `/insumos/receitas/${id.data}` : `/marmitas/${id.data}`);
 }

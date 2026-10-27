@@ -6,12 +6,12 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { isPurchaseUnit, baseUnitOf } from "@/lib/calc";
 import { requireMember } from "@/lib/auth";
 import { loadIngredients, loadRecipe, loadRecipes } from "@/lib/recipes-data";
-import { archiveRecipe, duplicateRecipe } from "../../actions";
+import { archiveRecipe, duplicateRecipe } from "@/app/(app)/marmitas/actions";
 import { ReceitaEditor } from "./receita-editor";
 
 export const metadata = { title: "Receita" };
 
-export default async function ReceitaPage(props: PageProps<"/marmitas/receitas/[id]">) {
+export default async function ReceitaPage(props: PageProps<"/insumos/receitas/[id]">) {
   const { canWrite } = await requireMember();
   const { id } = await props.params;
   if (!z.uuid().safeParse(id).success) notFound();
@@ -28,7 +28,7 @@ export default async function ReceitaPage(props: PageProps<"/marmitas/receitas/[
 
   return (
     <>
-      <BackLink href="/marmitas/receitas">Receitas</BackLink>
+      <BackLink href="/insumos">Insumos</BackLink>
       <div className="flex flex-col gap-0.5">
         <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
         <p className="text-xs text-muted">Receita em lote. As marmitas usam por grama pronto.</p>
@@ -65,7 +65,7 @@ export default async function ReceitaPage(props: PageProps<"/marmitas/receitas/[
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Onde é usada</h2>
         {usedBy.length === 0 ? (
-          <p className="text-sm text-muted">Nenhuma marmita usa esta receita ainda. Abra uma marmita e toque em &quot;Adicionar receita&quot;.</p>
+          <p className="text-sm text-muted">Nenhuma marmita usa esta receita ainda. Abra uma marmita e adicione esta receita junto com os insumos.</p>
         ) : (
           <ul className="flex flex-col gap-1">
             {usedBy.map((r) => (

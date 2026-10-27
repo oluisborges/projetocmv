@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { Hint } from "@/components/hint";
+import { SubmitButton } from "@/components/submit-button";
 import { requireMember } from "@/lib/auth";
+import { formatBRL, formatNumber } from "@/lib/format";
+import { loadArchivedRecipes, loadReceitas } from "@/lib/recipes-data";
 import { createClient } from "@/lib/supabase/server";
+import { restoreRecipe } from "../marmitas/actions";
 import { ImportMenu } from "./import-menu";
 import { PriceList, type IngredientRow } from "./price-list";
 
@@ -21,6 +26,7 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
     .eq("org_id", orgId)
     .is("archived_at", null)
     .order("name");
+  const [receitas, archivedReceitas] = await Promise.all([loadReceitas(), loadArchivedRecipes("receita")]);
   const items = (data ?? []) as IngredientRow[];
   const pricedCount = items.filter((i) => Number(i.purchase_price) > 0).length;
   const missing = items.length - pricedCount;
@@ -61,7 +67,10 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
             <Link href="/insumos/novo" className={`${button} ${primary}`}>
               + Novo insumo
             </Link>
-            <ImportMenu buttonClass={`${button} ${secondary}`} />
+            <Link href="/insumos/receitas/nova" className={`${button} ${primary}`}>
+              + Nova receita
+            </Link>
+            <ImportMenu buttonClass={`${button} ${secondary} col-span-2`} />
           </div>
           <details className="text-center">
             <summary className="inline-flex min-h-11 cursor-pointer items-center justify-center text-sm font-semibold text-muted">Mais opções</summary>
@@ -72,6 +81,33 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
             </div>
           </details>
         </div>
+      ) : null}
+
+      {receitas.length > 0 ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+            Receitas
+            <Hint>O que você faz em lote (arroz, estrogonofe, purê) e usa em várias marmitas. O sal e o tempero ficam dentro do custo por kg.</Hint>
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {receitas.map((r) => (
+              <li key={r.id}>
+                <Link href={`/insumos/receitas/${r.id}`} className="flex flex-col gap-0.5 card p-4">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 truncate font-semibold">{r.name}</span>
+                    {r.costPerKg !== null ? <span className="tabular shrink-0 font-extrabold">{formatBRL(r.costPerKg)}/kg</span> : <span className="shrink-0 text-xs text-warning">incompleta</span>}
+                  </span>
+                  <span className="text-xs text-muted">
+                    {r.readyWeightGrams ? `rende ${formatNumber(r.readyWeightGrams / 1000, 2)} kg pronto` : "informe quanto rende"}
+                    {r.batchCost !== null ? ` · lote ${formatBRL(r.batchCost)}` : ""}
+                    {" · "}
+                    {r.usedIn === 0 ? "ainda não usada" : `usada em ${r.usedIn} ${r.usedIn === 1 ? "marmita" : "marmitas"}`}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {items.length === 0 ? (
@@ -87,8 +123,32 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
           ) : null}
         </div>
       ) : (
-        <PriceList items={items} canWrite={canWrite} />
+        <>
+          {receitas.length > 0 ? <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Insumos e embalagens</h2> : null}
+          <PriceList items={items} canWrite={canWrite} />
+        </>
       )}
+
+      {archivedReceitas.length > 0 ? (
+        <details className="card px-4">
+          <summary className="flex h-12 cursor-pointer items-center text-sm font-semibold text-muted">Receitas arquivadas ({archivedReceitas.length})</summary>
+          <ul className="divide-y divide-border">
+            {archivedReceitas.map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-3 py-3">
+                <span className="min-w-0 truncate text-sm">{a.name}</span>
+                {canWrite ? (
+                  <form action={restoreRecipe}>
+                    <input type="hidden" name="id" value={a.id} />
+                    <SubmitButton pendingLabel="Restaurando…" className="h-11 shrink-0 px-2 text-sm font-semibold text-primary">
+                      Restaurar
+                    </SubmitButton>
+                  </form>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </>
   );
 }

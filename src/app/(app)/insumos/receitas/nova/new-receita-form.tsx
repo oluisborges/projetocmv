@@ -2,7 +2,7 @@
 
 import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
-import { createReceita } from "../actions";
+import { createReceita } from "@/app/(app)/marmitas/actions";
 
 /** Receita nova: o nome e quanto ela rende pronta. Os ingredientes entram na tela seguinte. */
 export function NewReceitaForm() {
