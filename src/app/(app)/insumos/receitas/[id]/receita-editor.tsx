@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { D, fromBaseQty, toBaseQty, type PurchaseUnit } from "@/lib/calc";
 import { Hint } from "@/components/hint";
@@ -44,16 +44,30 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
     [items, readyGrams, byId],
   );
 
-  async function save(over: { ready?: string; unit?: "g" | "kg" } = {}) {
+  async function save(over: { ready?: string; unit?: "g" | "kg" } = {}): Promise<boolean> {
     setStatus({ kind: "saving" });
     const result = await updateRecipeSettings({ id: recipe.id, name, portions: "1", portionWeight: over.ready ?? ready, portionWeightUnit: over.unit ?? unit, cookingLoss: "0" });
     if (result.ok) {
       setStatus({ kind: "saved" });
       setTimeout(() => setStatus((s) => (s.kind === "saved" ? { kind: "idle" } : s)), 2000);
       router.refresh();
-      return;
+      return true;
     }
     setStatus({ kind: "error", message: result.error });
+    return false;
+  }
+
+  const emptyDialog = useRef<HTMLDialogElement>(null);
+
+  async function leave() {
+    if (canWrite && !(await save())) return;
+    router.push("/insumos?aba=receitas");
+  }
+
+  // Receita sem ingrediente ou sem o peso que rende: confirma antes de concluir (o custo por kg fica incompleto).
+  function finish() {
+    if (canWrite && !cost) emptyDialog.current?.showModal();
+    else void leave();
   }
 
   // Trocar kg/g não muda o peso: 12,5 kg vira 12.500 g.
@@ -181,6 +195,43 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
           </div>
         </div>
       </section>
+
+      <button type="button" onClick={finish} className="h-12 rounded-xl bg-primary text-base font-semibold text-primary-foreground">
+        Concluído
+      </button>
+
+      <dialog
+        ref={emptyDialog}
+        aria-labelledby="empty-receita-title"
+        onClick={(e) => e.target === emptyDialog.current && emptyDialog.current?.close()}
+        className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-surface p-0 text-foreground shadow-xl backdrop:bg-black/50"
+      >
+        <div className="flex flex-col gap-4 p-5">
+          <div className="flex flex-col gap-1.5">
+            <h2 id="empty-receita-title" className="text-lg font-extrabold">
+              Concluir assim mesmo?
+            </h2>
+            <p className="text-sm leading-relaxed text-muted">
+              {rows.length === 0 ? "Esta receita está sem nenhum ingrediente." : "Falta informar quanto a receita rende pronta."} Sem isso, ela não tem custo por kg e as marmitas que a usam ficam incompletas. Dá para voltar e completar depois.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => emptyDialog.current?.close()} className="h-12 card font-semibold">
+              Voltar e completar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                emptyDialog.current?.close();
+                void leave();
+              }}
+              className="h-12 rounded-xl bg-primary font-semibold text-white"
+            >
+              Concluir
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
   );
 }

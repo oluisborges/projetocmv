@@ -438,7 +438,7 @@ export function AddItem({
               <li key={o.id} role="option" aria-selected={o.id === ingredientId}>
                 <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => choose(o.id)} className="flex min-h-12 w-full items-center px-4 text-left font-normal active:bg-tint">
                   {o.name}
-                  {o.kind === "receita" ? <span className="ml-2 rounded-full bg-tint px-2 py-0.5 text-xs font-semibold text-primary">receita</span> : null}
+                  <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${o.kind === "receita" ? "bg-tint text-primary" : "bg-border/70 text-muted"}`}>{o.kind === "receita" ? "receita" : o.kind === "embalagem" ? "embalagem" : "insumo"}</span>
                   {o.unit_cost <= 0 ? <span className="ml-1 text-xs text-warning">({o.kind === "receita" ? "incompleta" : "sem preço"})</span> : null}
                 </button>
               </li>
