@@ -129,6 +129,33 @@ export async function createRecipe(_prev: FormState, formData: FormData): Promis
   redirect(`/marmitas/${data.id}`);
 }
 
+/** Receita nova (arroz, estrogonofe…): um lote que rende 1 "porção", que é o peso total pronto. */
+export async function createReceita(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { orgId, canWrite } = await requireMember();
+  if (!canWrite) return { error: NO_PERMISSION };
+
+  const read = readSettings({
+    name: formData.get("name"),
+    portions: "1",
+    portionWeight: formData.get("ready_weight"),
+    portionWeightUnit: formData.get("ready_unit"),
+    cookingLoss: "0",
+  });
+  if (!read.ok) return { error: read.error };
+  if (read.value.portionWeight === null) return { error: "Informe quanto a receita rende pronta (o peso total depois de cozida)." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("recipes")
+    .insert({ ...toRow(read.value), org_id: orgId, mode: "batch", kind: "receita" })
+    .select("id")
+    .single();
+  if (error || !data) return { error: "Não foi possível criar a receita." };
+
+  revalidatePath("/marmitas/receitas");
+  redirect(`/marmitas/receitas/${data.id}`);
+}
+
 export async function updateRecipeSettings(input: {
   id: string;
   name: string;
@@ -144,8 +171,10 @@ export async function updateRecipeSettings(input: {
   if (!id.success) return { ok: false, error: "Ficha inválida." };
 
   const supabase = await createClient();
-  const { data: current } = await supabase.from("recipes").select("mode").eq("id", id.data).eq("org_id", orgId).maybeSingle();
+  const { data: current } = await supabase.from("recipes").select("mode, kind").eq("id", id.data).eq("org_id", orgId).maybeSingle();
   if (!current) return { ok: false, error: "Ficha não encontrada." };
+  // Receita: sempre 1 "porção" (o lote inteiro) e sem perda de cocção à parte; o que vale é o peso pronto informado.
+  if (current.kind === "receita") input = { ...input, portions: "1", cookingLoss: "0" };
 
   if (current.mode === "serving") {
     // Ficha por unidade: porções e perda de cocção não existem; só o nome muda.
@@ -172,6 +201,7 @@ export async function updateRecipeSettings(input: {
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
   revalidatePath("/marmitas");
+  revalidatePath("/marmitas/receitas");
   return { ok: true };
 }
 
@@ -216,20 +246,23 @@ export async function addRecipeItem(input: { recipeId: string; ingredientId: str
   if (!ids.success) return { ok: false, error: "Item inválido." };
 
   const supabase = await createClient();
-  const { data: ing } = await supabase.from("ingredients").select("kind, purchase_unit").eq("id", ids.data.ingredientId).eq("org_id", orgId).maybeSingle();
+  const { data: found } = await supabase.from("ingredients").select("kind, purchase_unit").eq("id", ids.data.ingredientId).eq("org_id", orgId).maybeSingle();
+  // Não é um insumo? Pode ser uma Receita (o item é pesado em gramas prontas).
+  const { data: receita } = found ? { data: null } : await supabase.from("recipes").select("id").eq("id", ids.data.ingredientId).eq("org_id", orgId).eq("kind", "receita").maybeSingle();
+  const ing = found ?? (receita ? { kind: "receita", purchase_unit: "g" } : null);
   if (!ing) return { ok: false, error: "Insumo não encontrado." };
 
   const base = toBase(input.qty, input.unit, ing.purchase_unit);
   if ("error" in base) return { ok: false, error: base.error };
 
-  // Insumo entra no lote; embalagem é por porção. O servidor decide, não o navegador.
+  // Insumo e receita entram no lote; embalagem é por porção. O servidor decide, não o navegador.
   const scope = ing.kind === "embalagem" ? "portion" : "batch";
   const { data, error } = await supabase
     .from("recipe_items")
     .insert({
       org_id: orgId,
       recipe_id: ids.data.recipeId,
-      ingredient_id: ids.data.ingredientId,
+      ...(receita ? { receita_id: receita.id } : { ingredient_id: ids.data.ingredientId }),
       net_qty: base.qty,
       qty_unit: base.unit,
       scope,
@@ -237,7 +270,7 @@ export async function addRecipeItem(input: { recipeId: string; ingredientId: str
     })
     .select("id")
     .single();
-  if (error || !data) return { ok: false, error: "Não foi possível adicionar o item." };
+  if (error || !data) return { ok: false, error: receita ? "Não foi possível adicionar a receita (só marmitas usam receitas)." : "Não foi possível adicionar o item." };
 
   revalidatePath("/marmitas");
   return { ok: true, itemId: data.id, qty: base.qty, unit: base.unit };
@@ -251,8 +284,13 @@ export async function updateRecipeItemQty(itemId: string, rawQty: string, unit: 
   if (!id.success) return { ok: false, error: "Item inválido." };
 
   const supabase = await createClient();
-  const { data: item } = await supabase.from("recipe_items").select("ingredient_id").eq("id", id.data).eq("org_id", orgId).maybeSingle();
-  const { data: ing } = item ? await supabase.from("ingredients").select("purchase_unit").eq("id", item.ingredient_id).eq("org_id", orgId).maybeSingle() : { data: null };
+  const { data: item } = await supabase.from("recipe_items").select("ingredient_id, receita_id").eq("id", id.data).eq("org_id", orgId).maybeSingle();
+  // Item de receita é sempre em gramas prontas; o resto segue a unidade do insumo.
+  const { data: ing } = !item
+    ? { data: null }
+    : item.receita_id
+      ? { data: { purchase_unit: "g" } }
+      : await supabase.from("ingredients").select("purchase_unit").eq("id", item.ingredient_id).eq("org_id", orgId).maybeSingle();
   if (!item || !ing) return { ok: false, error: "Item não encontrado." };
 
   const base = toBase(rawQty, unit, ing.purchase_unit);
@@ -292,8 +330,8 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
 
   const supabase = await createClient();
   const [{ data: recipe }, { data: items }] = await Promise.all([
-    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("id", id.data).eq("org_id", orgId).maybeSingle(),
-    supabase.from("recipe_items").select("ingredient_id, net_qty, qty_unit, scope, counts_for_yield").eq("recipe_id", id.data),
+    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode, kind").eq("id", id.data).eq("org_id", orgId).maybeSingle(),
+    supabase.from("recipe_items").select("ingredient_id, receita_id, net_qty, qty_unit, scope, counts_for_yield").eq("recipe_id", id.data).eq("org_id", orgId),
   ]);
   if (!recipe) return;
 
@@ -313,7 +351,7 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/marmitas");
-  redirect(`/marmitas/${copy.id}`);
+  redirect(recipe.kind === "receita" ? `/marmitas/receitas/${copy.id}` : `/marmitas/${copy.id}`);
 }
 
 export async function archiveRecipe(formData: FormData): Promise<void> {
@@ -322,9 +360,9 @@ export async function archiveRecipe(formData: FormData): Promise<void> {
   if (!canWrite || !id.success) return;
 
   const supabase = await createClient();
-  await supabase.from("recipes").update({ active: false }).eq("id", id.data).eq("org_id", orgId);
+  const { data: archived } = await supabase.from("recipes").update({ active: false }).eq("id", id.data).eq("org_id", orgId).select("kind").maybeSingle();
   revalidatePath("/marmitas");
-  redirect("/marmitas");
+  redirect(archived?.kind === "receita" ? "/marmitas/receitas" : "/marmitas");
 }
 
 export async function restoreRecipe(formData: FormData): Promise<void> {
@@ -333,7 +371,7 @@ export async function restoreRecipe(formData: FormData): Promise<void> {
   if (!canWrite || !id.success) return;
 
   const supabase = await createClient();
-  await supabase.from("recipes").update({ active: true }).eq("id", id.data).eq("org_id", orgId);
+  const { data: restored } = await supabase.from("recipes").update({ active: true }).eq("id", id.data).eq("org_id", orgId).select("kind").maybeSingle();
   revalidatePath("/marmitas");
-  redirect(`/marmitas/${id.data}`);
+  redirect(restored?.kind === "receita" ? `/marmitas/receitas/${id.data}` : `/marmitas/${id.data}`);
 }

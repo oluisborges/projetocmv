@@ -93,3 +93,13 @@ export function recipeCost(r: RecipeInput): RecipeCost {
     costPerPortion: ingredientCostPerPortion.plus(packagingCostPerPortion),
   };
 }
+
+/**
+ * Custo por grama de uma Receita (preparo em lote: arroz, estrogonofe, purê) = custo do lote ÷ peso total pronto (g).
+ * É o que a marmita paga por grama usada dela: o sal e o tempero do lote já estão dentro do custo.
+ */
+export function receitaCostPerGram(batchCost: Num, readyWeightGrams: Num): Decimal {
+  const weight = D(readyWeightGrams);
+  if (weight.lte(0)) throw new RangeError("O peso pronto da receita precisa ser maior que zero");
+  return D(batchCost).div(weight);
+}

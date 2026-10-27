@@ -18,7 +18,7 @@ async function menuLocks(orgId: string): Promise<{ mes: MenuLock | null; painel:
   const supabase = await createClient();
   const unit = await activeUnit(orgId);
   const [recipes, priced] = await Promise.all([
-    supabase.from("recipes").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("active", true),
+    supabase.from("recipes").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("kind", "marmita").eq("active", true),
     unit
       ? // Só conta preço de marmita ativa: arquivar a única marmita com preço esconde o Painel de novo.
         supabase.from("recipe_prices").select("recipe_id, recipes!inner(active)", { count: "exact", head: true }).eq("unit_id", unit.id).gt("current_price", 0).eq("recipes.active", true)

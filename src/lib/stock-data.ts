@@ -4,7 +4,7 @@ import { hasMenuConnection, loadMenuRecipeSales } from "@/lib/menu-data";
 import { lastMonths, monthBounds } from "@/lib/month-view";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings, recipeUsage } from "@/lib/recipe-cost";
-import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
+import { loadIngredients, loadReceitaUsage, loadRecipes } from "@/lib/recipes-data";
 import { buildStock, stockResult, type StockResult, type StockRow } from "@/lib/stock-view";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,6 +63,8 @@ export async function loadStockMonth(orgId: string, canWrite: boolean, month: st
 
   // Uso esperado de cada insumo e custo esperado (sem margem de segurança: aqui interessa o que realmente sai da prateleira).
   const byIngredient = new Map(ingredients.map((i) => [i.id, i]));
+  // Receita usada na marmita (gramas prontos) vira o que ela gastou de verdade: arroz cru, sal, cebola…
+  const receitaUsage = await loadReceitaUsage(ingredients);
   const used = new Map<string, number>();
   let theoretical = 0;
   let counted = false;
@@ -84,7 +86,11 @@ export async function loadStockMonth(orgId: string, canWrite: boolean, month: st
     }
     theoretical += view.cost.costPerPortion.toNumber() * sold;
     counted = true;
-    for (const [ingredientId, perPortion] of usage) used.set(ingredientId, (used.get(ingredientId) ?? 0) + perPortion * sold);
+    for (const [ingredientId, perPortion] of usage) {
+      const parts = receitaUsage.get(ingredientId);
+      if (parts) for (const p of parts) used.set(p.ingredientId, (used.get(p.ingredientId) ?? 0) + perPortion * p.grossPerGram * sold);
+      else used.set(ingredientId, (used.get(ingredientId) ?? 0) + perPortion * sold);
+    }
   }
 
   const toMap = (rows: { ingredient_id: unknown; qty_base: unknown }[] | null) => {
@@ -96,7 +102,7 @@ export async function loadStockMonth(orgId: string, canWrite: boolean, month: st
   const purchasedManual = toMap((purchases ?? []).filter((p) => p.source === "manual"));
 
   const stockIngredients = ingredients
-    .filter((i) => !i.archived_at && isPurchaseUnit(i.purchase_unit))
+    .filter((i) => i.kind !== "receita" && !i.archived_at && isPurchaseUnit(i.purchase_unit))
     .map((i) => ({ id: i.id, name: i.name, purchaseUnit: i.purchase_unit, unitCost: i.unit_cost }));
   const rows = buildStock({ ingredients: stockIngredients, opening: toMap(prevCounts), purchasedNfe, purchasedManual, used, counts: toMap(counts) });
 

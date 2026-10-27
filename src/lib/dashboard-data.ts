@@ -15,7 +15,7 @@ import { priceIncreaseAlerts, type PriceIncreaseAlert } from "@/lib/price-alerts
 import { loadCurrentPrices, loadPricingContext, type PricingContext } from "@/lib/pricing-data";
 import { analyzePrice, type PriceAnalysis } from "@/lib/pricing-view";
 import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
-import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
+import { loadIngredients, loadReceitaUsage, loadRecipes } from "@/lib/recipes-data";
 import { STALE_DAYS } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -200,12 +200,16 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
   const recipesUsing = new Map<string, number>();
   const seen = new Set<string>();
   const activeRecipeIds = new Set(recipes.map((r) => r.id)); // fichas arquivadas não contam
+  // Marmita que usa uma Receita (arroz, estrogonofe…) também depende dos insumos dessa receita.
+  const receitaUsage = await loadReceitaUsage(ingredients);
   for (const it of items) {
     if (!activeRecipeIds.has(it.recipe_id)) continue;
-    const key = `${it.recipe_id}:${it.ingredient_id}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    recipesUsing.set(it.ingredient_id, (recipesUsing.get(it.ingredient_id) ?? 0) + 1);
+    for (const ingredientId of receitaUsage.get(it.ingredient_id)?.map((p) => p.ingredientId) ?? [it.ingredient_id]) {
+      const key = `${it.recipe_id}:${ingredientId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      recipesUsing.set(ingredientId, (recipesUsing.get(ingredientId) ?? 0) + 1);
+    }
   }
 
   const staleBefore = Date.now() - STALE_DAYS * 86_400_000;

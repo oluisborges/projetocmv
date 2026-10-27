@@ -20,7 +20,7 @@ export default async function RecipePricingPage(props: PageProps<"/marmitas/[id]
 
   const ctx = await loadPricingContext(orgId, canWrite);
   const [loaded, ingredients] = await Promise.all([loadRecipe(id), loadIngredients()]);
-  if (!ctx || !loaded) notFound();
+  if (!ctx || !loaded || loaded.recipe.kind !== "marmita") notFound();
 
   const prices = await loadCurrentPrices(ctx.unit.id);
   const menuAverage = (await hasMenuConnection(orgId)) ? (await loadMenuAveragePrices(ctx.unit.id)).get(id) : undefined;

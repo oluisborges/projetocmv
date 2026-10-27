@@ -1,5 +1,5 @@
 import { BackLink } from "@/components/back-link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { ConfirmButton } from "@/components/confirm-button";
 import { isPurchaseUnit, baseUnitOf } from "@/lib/calc";
@@ -20,6 +20,7 @@ export default async function RecipePage(props: PageProps<"/marmitas/[id]">) {
   const [loaded, ingredients, safetyMarginPct, all] = await Promise.all([loadRecipe(id), loadIngredients(), loadSafetyMargin(orgId), loadRecipes()]);
   if (!loaded) notFound();
   const { recipe, items } = loaded;
+  if (recipe.kind === "receita") redirect(`/marmitas/receitas/${recipe.id}`);
 
   // Em quantas fichas cada insumo é usado (avisa antes de mudar o preço de algo que vale para várias).
   const usedIn = new Map<string, Set<string>>();

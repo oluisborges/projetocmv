@@ -175,7 +175,7 @@ export async function addOption(input: { groupId: string; recipeId: string }): P
   const supabase = await createClient();
   const [{ data: group }, { data: recipe }, { data: last }] = await Promise.all([
     supabase.from("combo_groups").select("id, kind").eq("id", parsed.data.groupId).eq("org_id", orgId).maybeSingle(),
-    supabase.from("recipes").select("id").eq("id", parsed.data.recipeId).eq("org_id", orgId).eq("active", true).maybeSingle(),
+    supabase.from("recipes").select("id").eq("id", parsed.data.recipeId).eq("org_id", orgId).eq("kind", "marmita").eq("active", true).maybeSingle(),
     supabase.from("combo_group_options").select("position").eq("group_id", parsed.data.groupId).eq("org_id", orgId).order("position", { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (!group || !recipe) return { ok: false, error: "Marmita ou grupo não encontrado." };

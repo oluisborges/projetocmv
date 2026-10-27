@@ -1,7 +1,7 @@
 import "server-only";
 import { lastMonths, monthBounds } from "@/lib/month-view";
 import { contributionSummary, realMargin, type ClientMonth, type NetworkClient, type RateSet } from "@/lib/network-view";
-import { computeRecipe, recipeCostSettings, type CostIngredient } from "@/lib/recipe-cost";
+import { computeReceitas, computeRecipe, recipeCostSettings, type CostIngredient } from "@/lib/recipe-cost";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -53,14 +53,16 @@ export async function loadNetwork(month: string): Promise<NetworkData> {
     admin.from("menu_connections").select("org_id, status"),
   ]);
 
-  const [units, settings, channels, prices, ingredients, recipes, items] = await Promise.all([
+  const [units, settings, channels, prices, ingredients, recipes, receitas, items] = await Promise.all([
     admin.from("units").select("id, org_id, created_at").order("created_at"),
     admin.from("unit_settings").select("unit_id, org_id, tax_pct, other_pct, safety_margin_pct"),
     admin.from("sales_channels").select("unit_id, fee_pct"),
     fetchAll((from, to) => admin.from("recipe_prices").select("recipe_id, unit_id, current_price").order("recipe_id").range(from, to)),
     fetchAll((from, to) => admin.from("ingredients").select("id, org_id, purchase_unit, unit_cost, correction_factor, cooking_yield").order("id").range(from, to)),
-    fetchAll((from, to) => admin.from("recipes").select("id, org_id, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("active", true).order("id").range(from, to)),
-    fetchAll((from, to) => admin.from("recipe_items").select("recipe_id, ingredient_id, net_qty, scope").order("id").range(from, to)),
+    fetchAll((from, to) => admin.from("recipes").select("id, org_id, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode").eq("kind", "marmita").eq("active", true).order("id").range(from, to)),
+    // Receitas (arroz, estrogonofe…): entram como itens por grama, com o custo do lote ÷ peso pronto.
+    fetchAll((from, to) => admin.from("recipes").select("id, org_id, portion_weight").eq("kind", "receita").order("id").range(from, to)),
+    fetchAll((from, to) => admin.from("recipe_items").select("recipe_id, ingredient_id, receita_id, net_qty, scope").order("id").range(from, to)),
   ]);
 
   // ---- vendas por cliente e mês
@@ -101,10 +103,19 @@ export async function loadNetwork(month: string): Promise<NetworkData> {
   const ingredientsById = new Map<string, CostIngredient & { org_id: string }>(
     ingredients.map((i) => [i.id as string, { org_id: i.org_id as string, purchase_unit: i.purchase_unit as string, unit_cost: n(i.unit_cost), correction_factor: n(i.correction_factor), cooking_yield: n(i.cooking_yield) }]),
   );
+  const receitaCosts = computeReceitas(
+    receitas.map((r) => ({ id: r.id as string, portion_weight: r.portion_weight === null ? null : n(r.portion_weight) })),
+    items.map((i) => ({ recipe_id: i.recipe_id as string, ingredient_id: (i.ingredient_id as string | null) ?? null, net_qty: n(i.net_qty) })),
+    ingredientsById,
+  );
+  for (const r of receitas) {
+    const c = receitaCosts.get(r.id as string);
+    ingredientsById.set(r.id as string, { org_id: r.org_id as string, purchase_unit: "g", unit_cost: c?.costPerGram ?? 0, correction_factor: 1, cooking_yield: 1 });
+  }
   const itemsByRecipe = new Map<string, { ingredient_id: string; net_qty: number; scope: "batch" | "portion" }[]>();
   for (const it of items) {
     const list = itemsByRecipe.get(it.recipe_id as string) ?? [];
-    list.push({ ingredient_id: it.ingredient_id as string, net_qty: n(it.net_qty), scope: it.scope === "portion" ? "portion" : "batch" });
+    list.push({ ingredient_id: ((it.ingredient_id ?? it.receita_id) as string), net_qty: n(it.net_qty), scope: it.scope === "portion" ? "portion" : "batch" });
     itemsByRecipe.set(it.recipe_id as string, list);
   }
   const recipesByOrg = new Map<string, typeof recipes>();

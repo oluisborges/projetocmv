@@ -63,7 +63,7 @@ export async function fichasToPdf(report: FichasReport): Promise<Buffer> {
             <View key={`${l.ingredient}-${i}`} style={s.row} wrap={false}>
               <Text style={{ flex: 1 }}>
                 {l.ingredient}
-                {l.kind === "embalagem" ? "  (embalagem)" : ""}
+                {l.kind === "embalagem" ? "  (embalagem)" : l.kind === "receita" ? "  (receita)" : ""}
               </Text>
               <Text style={[s.right, { width: 90 }]}>
                 {formatNumber(l.qty, 3)} {l.unit}

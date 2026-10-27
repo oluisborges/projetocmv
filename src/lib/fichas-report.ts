@@ -6,7 +6,7 @@ import { analyzePrice } from "@/lib/pricing-view";
 import { computeRecipe, recipeCostSettings, recipeUsage } from "@/lib/recipe-cost";
 import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 
-export type FichaLine = { ingredient: string; kind: "insumo" | "embalagem"; qty: number; unit: string; cost: number };
+export type FichaLine = { ingredient: string; kind: "insumo" | "embalagem" | "receita"; qty: number; unit: string; cost: number };
 
 export type FichaReport = {
   name: string;

@@ -14,7 +14,8 @@ import { PendingLabel, Spinner } from "@/components/spinner";
 export type EditorIngredient = {
   id: string;
   name: string;
-  kind: "insumo" | "embalagem";
+  /** "receita": preparo em lote (arroz, estrogonofe) que entra na marmita por grama pronta. */
+  kind: "insumo" | "embalagem" | "receita";
   purchase_unit: string;
   unit_cost: number;
   correction_factor: number;
@@ -83,7 +84,7 @@ function UnitSelect({ value, options, onChange, disabled, label }: { value: stri
   );
 }
 
-function ItemRow({
+export function ItemRow({
   item,
   ingredient,
   canWrite,
@@ -148,9 +149,17 @@ function ItemRow({
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 font-medium leading-snug">{ingredient.name}</p>
           <p className="text-xs text-muted">
-            {ingredient.unit_cost <= 0 ? <span className="text-warning">sem preço</span> : formatBRL(cost)}
+            {ingredient.unit_cost <= 0 ? <span className="text-warning">{ingredient.kind === "receita" ? "receita incompleta" : "sem preço"}</span> : formatBRL(cost)}
+            {ingredient.kind === "receita" && ingredient.unit_cost > 0 ? ` · ${formatBRL(ingredient.unit_cost * 1000)} por kg` : ""}
             {ingredient.archived ? " · arquivado" : ""}
-            {canWrite ? (
+            {ingredient.kind === "receita" ? (
+              <>
+                {" · "}
+                <Link href={`/marmitas/receitas/${ingredient.id}`} className="tap-area font-semibold text-primary underline">
+                  ver receita
+                </Link>
+              </>
+            ) : canWrite ? (
               <>
                 {" · "}
                 <button type="button" onClick={() => setEditingPrice((v) => !v)} className="tap-area font-semibold text-primary underline">
@@ -293,7 +302,7 @@ function NewIngredientForm({ kind, initialName = "", onCreated, onCancel }: { ki
   );
 }
 
-function AddItem({
+export function AddItem({
   recipeId,
   kind,
   options,
@@ -306,7 +315,7 @@ function AddItem({
   onCreated,
 }: {
   recipeId: string;
-  kind: "insumo" | "embalagem";
+  kind: "insumo" | "embalagem" | "receita";
   options: EditorIngredient[];
   defaultQty: string;
   /** Texto de orientação dentro da lista ("Escolha o ingrediente"): não é uma opção, some ao escolher. */
@@ -417,7 +426,7 @@ function AddItem({
         />
         {listOpen && !creating && (matches.length > 0 || q !== "") ? (
           <ul id={`${listId}-list`} role="listbox" className="max-h-64 overflow-y-auto card py-1">
-            {q !== "" && !exact ? (
+            {q !== "" && !exact && kind !== "receita" ? (
               <li role="option" aria-selected={false}>
                 <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={startCreate} className="flex min-h-12 w-full items-center px-4 text-left font-semibold text-primary active:bg-tint">
                   + {kind === "embalagem" ? "Criar embalagem" : "Criar insumo"} &quot;{query.trim()}&quot;
@@ -433,11 +442,12 @@ function AddItem({
               </li>
             ))}
             {matches.length === 0 && exact ? <li className="px-4 py-3 font-normal text-muted">Esse item já está na ficha.</li> : null}
+            {matches.length === 0 && !exact && kind === "receita" ? <li className="px-4 py-3 font-normal text-muted">Nenhuma receita com esse nome. Crie em Marmitas → Receitas.</li> : null}
           </ul>
         ) : null}
       </div>
 
-      {creating ? <NewIngredientForm kind={kind} initialName={newName} onCreated={created} onCancel={() => setCreating(false)} /> : null}
+      {creating ? <NewIngredientForm kind={kind === "embalagem" ? "embalagem" : "insumo"} initialName={newName} onCreated={created} onCancel={() => setCreating(false)} /> : null}
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <input value={qty} onChange={(e) => setQty(e.target.value)} inputMode="decimal" aria-label="Quantidade" placeholder="Quantidade" className={`${inputClass} text-right`} />
@@ -558,6 +568,7 @@ export function RecipeEditor({
   }
 
   const hasBatch = items.some((i) => i.scope === "batch" && byId.has(i.ingredientId));
+  const hasReceitas = ingList.some((i) => i.kind === "receita" && !i.archived);
   const hasPack = items.some((i) => i.scope === "portion" && byId.has(i.ingredientId));
   const missingText = !hasBatch && !hasPack ? "sem nenhum ingrediente e sem embalagem" : !hasBatch ? "sem nenhum ingrediente" : "sem nenhuma embalagem";
 
@@ -568,7 +579,7 @@ export function RecipeEditor({
   }
 
   const usedIds = new Set(items.map((i) => i.ingredientId));
-  const available = (kind: "insumo" | "embalagem") => ingList.filter((i) => i.kind === kind && !i.archived && !usedIds.has(i.id));
+  const available = (kind: "insumo" | "embalagem" | "receita") => ingList.filter((i) => i.kind === kind && !i.archived && !usedIds.has(i.id));
 
   const ingredientCreated = (ing: EditorIngredient) => setIngList((prev) => [...prev, ing]);
   const priceSaved = (id: string, price: number) =>
@@ -582,19 +593,20 @@ export function RecipeEditor({
     else setStatus({ kind: "error", message: result.error });
   };
 
-  const itemsOf = (scope: "batch" | "portion") => items.filter((i) => i.scope === scope && byId.has(i.ingredientId));
+  const itemsOf = (scope: "batch" | "portion", receitas = false) =>
+    items.filter((i) => i.scope === scope && byId.has(i.ingredientId) && (byId.get(i.ingredientId)!.kind === "receita") === receitas);
 
-  const renderItems = (scope: "batch" | "portion") =>
-    itemsOf(scope).length > 0 ? (
+  const renderItems = (scope: "batch" | "portion", receitas = false) =>
+    itemsOf(scope, receitas).length > 0 ? (
       <ul className="divide-y divide-border card px-4">
-        {itemsOf(scope).map((item) => (
+        {itemsOf(scope, receitas).map((item) => (
           <ItemRow
             key={item.id}
             item={item}
             ingredient={byId.get(item.ingredientId)!}
             canWrite={canWrite}
             perPortion={scope === "portion"}
-            lockUnit={isServing || scope === "portion"}
+            lockUnit={isServing || scope === "portion" || byId.get(item.ingredientId)!.kind === "receita"}
             yieldFactor={isServing && scope === "batch" ? byId.get(item.ingredientId)!.cooking_yield : 1}
             onChange={(qty, unit) => setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, netQty: qty, unit } : i)))}
             onRemove={() => removeItem(item)}
@@ -666,6 +678,28 @@ export function RecipeEditor({
         Nome
         <input value={name} onChange={(e) => setName(e.target.value)} onBlur={() => saveSettings()} disabled={!canWrite} className={inputClass} />
       </label>
+
+      {hasReceitas || itemsOf("batch", true).length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+            Receitas prontas
+            <Hint>Arroz, estrogonofe, purê… feitos em lote e cadastrados em Marmitas → Receitas. Aqui você só diz quantos gramas de cada vai na marmita; o sal e o tempero do lote já estão no custo.</Hint>
+          </h2>
+          {renderItems("batch", true)}
+          {canWrite ? (
+            <AddItem recipeId={recipe.id} kind="receita" onCreated={ingredientCreated} options={available("receita")} defaultQty="" label="Escolha a receita" field="Receita" title="Adicionar receita" lockUnit onAdded={(item) => setItems((prev) => [...prev, item])} />
+          ) : null}
+          <p className="text-xs text-muted">Digite os gramas prontos que vão em cada marmita (ex.: 150 g de estrogonofe).</p>
+        </section>
+      ) : canWrite ? (
+        <p className="card p-3 text-sm text-muted">
+          Faz arroz, feijão ou estrogonofe em lote?{" "}
+          <Link href="/marmitas/receitas" className="font-semibold text-primary underline">
+            Cadastre como Receita
+          </Link>{" "}
+          e use por grama aqui, sem ratear o sal e o tempero.
+        </p>
+      ) : null}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Ingredientes de UMA unidade" : "Ingredientes do lote"}</h2>
