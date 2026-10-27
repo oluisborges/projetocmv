@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { daysSince, formatAge, formatPurchaseSize, STALE_DAYS } from "@/lib/format";
 import { updateIngredientPrice } from "./actions";
 import { Spinner } from "@/components/spinner";
@@ -21,7 +21,7 @@ const priceInput = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, ma
 
 type Status = "idle" | "saving" | "saved" | "error";
 
-function PriceRow({ item, canWrite }: { item: IngredientRow; canWrite: boolean }) {
+export function PriceRow({ item, canWrite }: { item: IngredientRow; canWrite: boolean }) {
   const [saved, setSaved] = useState(item.purchase_price);
   const [text, setText] = useState(item.purchase_price > 0 ? priceInput.format(item.purchase_price) : "");
   const [updatedAt, setUpdatedAt] = useState(item.price_updated_at);
@@ -111,59 +111,13 @@ function PriceRow({ item, canWrite }: { item: IngredientRow; canWrite: boolean }
   );
 }
 
-export function PriceList({ items, canWrite }: { items: IngredientRow[]; canWrite: boolean }) {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string>("");
-  const [onlyPending, setOnlyPending] = useState(false);
-
-  const categories = useMemo(() => [...new Set(items.map((i) => i.category).filter((c): c is string => Boolean(c)))].sort(), [items]);
-
-  const pendingCount = items.filter((i) => i.purchase_price <= 0 || daysSince(i.price_updated_at) > STALE_DAYS).length;
-
-  const visible = items.filter((i) => {
-    if (category && i.category !== category) return false;
-    if (onlyPending && !(i.purchase_price <= 0 || daysSince(i.price_updated_at) > STALE_DAYS)) return false;
-    if (query && !i.name.toLowerCase().includes(query.trim().toLowerCase())) return false;
-    return true;
-  });
-
-  const chip = (active: boolean) =>
-    `h-11 shrink-0 rounded-full border px-4 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`;
-
+/** Linhas de preço já filtradas (a busca e os filtros ficam na aba, em `InsumosLists`). */
+export function PriceRows({ items, canWrite }: { items: IngredientRow[]; canWrite: boolean }) {
   return (
-    <section className="flex flex-col gap-3">
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Buscar insumo…"
-        aria-label="Buscar insumo"
-        className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-      />
-
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        <button type="button" className={chip(onlyPending)} onClick={() => setOnlyPending((v) => !v)} aria-pressed={onlyPending}>
-          Precisa atualizar ({pendingCount})
-        </button>
-        <button type="button" className={chip(category === "")} onClick={() => setCategory("")}>
-          Todos
-        </button>
-        {categories.map((c) => (
-          <button key={c} type="button" className={chip(category === c)} onClick={() => setCategory(category === c ? "" : c)}>
-            {c}
-          </button>
-        ))}
-      </div>
-
-      {visible.length === 0 ? (
-        <p className="card p-4 text-sm text-muted">Nenhum insumo encontrado.</p>
-      ) : (
-        <ul className="divide-y divide-border card px-4">
-          {visible.map((item) => (
-            <PriceRow key={item.id} item={item} canWrite={canWrite} />
-          ))}
-        </ul>
-      )}
-    </section>
+    <ul className="divide-y divide-border card px-4">
+      {items.map((item) => (
+        <PriceRow key={item.id} item={item} canWrite={canWrite} />
+      ))}
+    </ul>
   );
 }
