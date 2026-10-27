@@ -50,6 +50,7 @@ export function InsumosLists({ tab, receitas, items, canWrite, hasReceitaTip }: 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [onlyPending, setOnlyPending] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const showReceitas = tab === "todos" || tab === "receitas";
   const showInsumos = tab === "todos" || tab === "insumos";
@@ -70,6 +71,8 @@ export function InsumosLists({ tab, receitas, items, canWrite, hasReceitaTip }: 
   const packsShown = showPacks ? packs.filter(pass) : [];
   const total = receitasShown.length + insumosShown.length + packsShown.length;
 
+  const canFilter = showFilters && inView.length > 0;
+  const activeFilters = (onlyPending ? 1 : 0) + (category ? 1 : 0);
   const chip = (active: boolean) => `h-11 shrink-0 rounded-full border px-4 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`;
   const heading = (text: string, count: number) =>
     tab === "todos" ? (
@@ -80,17 +83,31 @@ export function InsumosLists({ tab, receitas, items, canWrite, hasReceitaTip }: 
 
   return (
     <section className="flex flex-col gap-3">
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={tab === "receitas" ? "Buscar receita…" : tab === "insumos" ? "Buscar insumo…" : tab === "embalagens" ? "Buscar embalagem…" : "Buscar insumo, embalagem ou receita…"}
-        aria-label="Buscar"
-        className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-      />
+      <div className="flex gap-2">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={tab === "receitas" ? "Buscar receita…" : tab === "insumos" ? "Buscar insumo…" : tab === "embalagens" ? "Buscar embalagem…" : "Buscar insumo, embalagem ou receita…"}
+          aria-label="Buscar"
+          className="h-12 min-w-0 flex-1 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        />
+        {canFilter ? (
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+            aria-controls="insumos-filtros"
+            className={`flex h-12 shrink-0 items-center gap-1.5 rounded-xl border px-4 text-sm font-semibold ${filtersOpen || activeFilters > 0 ? "border-primary bg-tint text-primary" : "border-border bg-surface"}`}
+          >
+            Filtros
+            {activeFilters > 0 ? <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{activeFilters}</span> : null}
+          </button>
+        ) : null}
+      </div>
 
-      {showFilters && inView.length > 0 ? (
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      {canFilter && filtersOpen ? (
+        <div id="insumos-filtros" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           <button type="button" className={chip(onlyPending)} onClick={() => setOnlyPending((v) => !v)} aria-pressed={onlyPending}>
             Precisa atualizar ({pendingCount})
           </button>

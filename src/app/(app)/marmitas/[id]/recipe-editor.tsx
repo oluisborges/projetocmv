@@ -331,7 +331,10 @@ export function AddItem({
 }) {
   const [ingredientId, setIngredientId] = useState("");
   const [qty, setQty] = useState(defaultQty);
-  const [unit, setUnit] = useState<PurchaseUnit>("g");
+  // Embalagem é contada em unidades; o resto, em gramas até o dono escolher o item.
+  const startUnit: PurchaseUnit = kind === "embalagem" ? "un" : "g";
+  const [unit, setUnit] = useState<PurchaseUnit>(startUnit);
+  const [pickTab, setPickTab] = useState<"receitas" | "insumos" | null>(null);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
@@ -345,7 +348,7 @@ export function AddItem({
 
   const selected = options.find((o) => o.id === ingredientId) ?? (fresh && fresh.id === ingredientId ? fresh : undefined);
   // Receita é sempre em gramas prontos (o peso que vai na marmita).
-  const unitOptions: PurchaseUnit[] = selected ? (lockUnit || selected.kind === "receita" ? [baseOf(selected)] : unitsFor(baseOf(selected))) : ["g"];
+  const unitOptions: PurchaseUnit[] = selected ? (lockUnit || selected.kind === "receita" ? [baseOf(selected)] : unitsFor(baseOf(selected))) : [startUnit];
 
   function choose(id: string) {
     setIngredientId(id);
@@ -367,7 +370,16 @@ export function AddItem({
   const allOptions = [...options, ...(fresh && !options.some((o) => o.id === fresh.id) ? [fresh] : [])];
   const q = norm(query);
   // Item já escolhido: ao focar de novo mostra a lista toda, sem filtrar pelo nome inteiro.
-  const matches = (selected && norm(selected.name) === q ? allOptions : allOptions.filter((o) => norm(o.name).includes(q))).slice(0, 50);
+  const found = selected && norm(selected.name) === q ? allOptions : allOptions.filter((o) => norm(o.name).includes(q));
+  const byName = (a: EditorIngredient, b: EditorIngredient) => a.name.localeCompare(b.name, "pt-BR");
+  // Sempre receitas primeiro e insumos depois, cada grupo em ordem alfabética.
+  const foundReceitas = found.filter((o) => o.kind === "receita").sort(byName);
+  const foundOthers = found.filter((o) => o.kind !== "receita").sort(byName);
+  // Ao digitar, duas abas separam receitas e insumos para achar mais fácil (só quando há os dois tipos na ficha).
+  const typing = q !== "" && !(selected && norm(selected.name) === q);
+  const hasTabs = typing && allOptions.some((o) => o.kind === "receita") && allOptions.some((o) => o.kind !== "receita");
+  const activeTab = pickTab ?? (foundReceitas.length > 0 ? "receitas" : "insumos");
+  const matches = (hasTabs ? (activeTab === "receitas" ? foundReceitas : foundOthers) : [...foundReceitas, ...foundOthers]).slice(0, 50);
   const exact = q !== "" && allOptions.some((o) => norm(o.name) === q);
 
   function created(ing: EditorIngredient) {
@@ -391,6 +403,8 @@ export function AddItem({
     setQuery("");
     setFresh(null);
     setQty(defaultQty);
+    setUnit(startUnit);
+    setPickTab(null);
     setError(undefined);
     setOpen(false);
   }
@@ -421,12 +435,30 @@ export function AddItem({
           onChange={(e) => {
             setQuery(e.target.value);
             setIngredientId("");
+            setPickTab(null);
             setListOpen(true);
           }}
           className={inputClass}
         />
         {listOpen && !creating && (matches.length > 0 || q !== "") ? (
           <ul id={`${listId}-list`} role="listbox" className="max-h-64 overflow-y-auto card py-1">
+            {hasTabs ? (
+              <li role="presentation" className="sticky top-0 z-10 flex gap-1 bg-surface p-1">
+                {(["receitas", "insumos"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === t}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setPickTab(t)}
+                    className={`h-10 flex-1 rounded-lg text-sm font-semibold ${activeTab === t ? "bg-tint text-primary" : "text-muted"}`}
+                  >
+                    {t === "receitas" ? "Receitas" : "Insumos"} ({t === "receitas" ? foundReceitas.length : foundOthers.length})
+                  </button>
+                ))}
+              </li>
+            ) : null}
             {q !== "" && !exact ? (
               <li role="option" aria-selected={false}>
                 <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={startCreate} className="flex min-h-12 w-full items-center px-4 text-left font-semibold text-primary active:bg-tint">
@@ -683,7 +715,7 @@ export function RecipeEditor({
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">{isServing ? "Ingredientes de UMA unidade" : "Ingredientes do lote"}</h2>
         {renderItems("batch")}
         {canWrite ? (
-          <AddItem recipeId={recipe.id} kind="insumo" onCreated={ingredientCreated} options={available("insumo")} defaultQty="" label="Escolha o ingrediente ou a receita" field="Ingrediente ou receita" title="Adicionar ingrediente ou receita" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
+          <AddItem recipeId={recipe.id} kind="insumo" onCreated={ingredientCreated} options={available("insumo")} defaultQty="" label="Escolha o insumo ou a receita" field="Insumos" title="Adicionar insumo" lockUnit={isServing} onAdded={(item) => setItems((prev) => [...prev, item])} />
         ) : null}
         <p className="text-xs text-muted">
           {isServing ? "Digite as gramas PRONTAS, do jeito que vai na embalagem (arroz já cozido, frango já grelhado). Para uma receita (arroz, estrogonofe…), são os gramas dela que vão na marmita." : "Digite a quantidade do lote inteiro, já limpa. Dá para usar kg ou g. Receita: os gramas prontos dela."}

@@ -38,10 +38,10 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
 
   // O que aparece na lista de preços depende da aba (receitas têm lista própria, com custo por kg).
   const items = tab === "insumos" ? all.filter((i) => i.kind === "insumo") : tab === "embalagens" ? all.filter((i) => i.kind === "embalagem") : tab === "receitas" ? [] : all;
-  const pricedCount = items.filter((i) => Number(i.purchase_price) > 0).length;
-  const missing = items.length - pricedCount;
+  // A barra de preços é do conjunto todo (insumos e embalagens), não importa a aba aberta.
+  const pricedCount = all.filter((i) => Number(i.purchase_price) > 0).length;
+  const missing = all.length - pricedCount;
   const showReceitas = tab === "todos" || tab === "receitas";
-  const showPrices = tab !== "receitas";
   const optionLink = "inline-flex min-h-11 items-center justify-center text-sm font-semibold text-primary";
 
   return (
@@ -60,6 +60,18 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
         <p role="status" className="rounded-xl bg-success/10 px-4 py-3 text-sm text-success">
           Itens importados! Agora é só preencher o preço que você paga em cada um.
         </p>
+      ) : null}
+
+      {all.length > 0 ? (
+        <div className="flex flex-col gap-1.5" role="status">
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="font-semibold">{missing === 0 ? "Todos os preços preenchidos" : `${pricedCount} de ${all.length} com preço`}</span>
+            {missing > 0 ? <span className="text-muted">faltam {missing}</span> : <span className="text-success">✓</span>}
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-border" aria-hidden>
+            <div className="h-full rounded-full bg-success transition-all" style={{ width: `${(pricedCount / all.length) * 100}%` }} />
+          </div>
+        </div>
       ) : null}
 
       {canWrite ? (
@@ -94,18 +106,6 @@ export default async function IngredientsPage(props: PageProps<"/insumos">) {
         active={tab}
         items={TABS.map((t) => ({ key: t.key, label: t.label, href: t.key === "todos" ? "/insumos" : `/insumos?aba=${t.key}` }))}
       />
-
-      {showPrices && items.length > 0 ? (
-        <div className="flex flex-col gap-1.5" role="status">
-          <div className="flex items-baseline justify-between text-sm">
-            <span className="font-semibold">{missing === 0 ? "Todos os preços preenchidos" : `${pricedCount} de ${items.length} com preço`}</span>
-            {missing > 0 ? <span className="text-muted">faltam {missing}</span> : <span className="text-success">✓</span>}
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-border" aria-hidden>
-            <div className="h-full rounded-full bg-success transition-all" style={{ width: `${(pricedCount / items.length) * 100}%` }} />
-          </div>
-        </div>
-      ) : null}
 
       {tab === "receitas" && receitas.length === 0 ? (
         <p className="card p-4 text-sm text-muted">
