@@ -10,6 +10,13 @@ Next.js (App Router) + TypeScript estrito + Tailwind v4 + shadcn/ui · Supabase 
 ## Comandos
 - `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm test`
 
+## Fluxo de publicação (há clientes reais em produção)
+- Trabalho novo vai na branch `staging` (a Vercel gera um endereço de teste fixo para ela). **Nada vai direto para `main`**: só depois de o dono do projeto aprovar no endereço de teste, fazer merge de `staging` em `main`.
+- Só existe **um banco** (Supabase `shogun-precificacao-dev` = produção; o plano grátis não permite um segundo). No endereço de teste use SOMENTE a conta "Teste Shogun" (Painel Shogun → Ver como). Nunca opere uma marmitaria real por ele.
+- Migration: só aditiva e compatível com o código que está no ar (coluna nova com default, tabela nova; nunca apagar/renomear de uma vez). Antes de qualquer migration ou ajuste de dados reais, avisar o dono e exportar cópia das tabelas afetadas (o plano grátis não tem backup restaurável). Aplicar a migration no banco ANTES de subir o código que depende dela.
+- No endereço de teste o cron não roda e integrações só por botão manual; não conectar chaves reais de cliente em teste.
+- Antes do merge em `main`: `pnpm lint`, `pnpm test`, `tsc --noEmit` e `pnpm build` passando.
+
 ## Convenções
 - Interface em **pt-BR**, moeda BRL (`Intl.NumberFormat`), números com vírgula. Código, tabelas e colunas em inglês.
 - Cálculo **só** em `src/lib/calc` (funções puras, `decimal.js`, sem I/O). Todo cálculo novo nasce com teste Vitest usando casos reais de marmitaria.
