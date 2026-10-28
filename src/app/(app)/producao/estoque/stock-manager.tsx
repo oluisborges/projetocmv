@@ -209,7 +209,7 @@ function QuickCount({ rows, onClose, onDone }: { rows: StockRowData[]; onClose: 
   );
 }
 
-export function StockManager({ ingredients, finished, canWrite }: { ingredients: StockRowData[]; finished: FinishedRowData[]; canWrite: boolean }) {
+export function StockManager({ ingredients, finished, canWrite, focusIds, focusLabel }: { ingredients: StockRowData[]; finished: FinishedRowData[]; canWrite: boolean; focusIds: string[]; focusLabel: string | null }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [quick, setQuick] = useState(false);
@@ -221,6 +221,13 @@ export function StockManager({ ingredients, finished, canWrite }: { ingredients:
   const shownPacks = useMemo(() => ingredients.filter((i) => i.kind === "embalagem" && match(i.name)), [ingredients, q]); // eslint-disable-line react-hooks/exhaustive-deps
   const shownFinished = finished.filter((f) => match(f.name));
   const neverCounted = ingredients.filter((i) => !i.known).length;
+  const counted = ingredients.length - neverCounted;
+  // Com produção em montagem, o que ela usa vem primeiro e o resto fica recolhido (a busca abre tudo).
+  const focusSet = new Set(focusIds);
+  const focusRows = ingredients.filter((i) => focusSet.has(i.id));
+  const useFocus = focusRows.length > 0 && q === "";
+  const restIngredients = useFocus ? shownIngredients.filter((i) => !focusSet.has(i.id)) : shownIngredients;
+  const restPacks = useFocus ? shownPacks.filter((i) => !focusSet.has(i.id)) : shownPacks;
 
   if (quick) return <QuickCount rows={ingredients} onClose={() => setQuick(false)} onDone={refresh} />;
 
@@ -231,7 +238,9 @@ export function StockManager({ ingredients, finished, canWrite }: { ingredients:
           <button type="button" onClick={() => setQuick(true)} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground">
             Contagem rápida
           </button>
-          {neverCounted > 0 ? <p className="text-center text-xs text-muted">{neverCounted} {neverCounted === 1 ? "item nunca foi contado" : "itens nunca foram contados"}. Quanto mais atualizado o estoque, mais certa a lista de compras.</p> : null}
+          <p className="text-center text-xs text-muted">
+            Contados: <strong className="text-foreground">{counted} de {ingredients.length}</strong>. Quanto mais atualizado o estoque, mais certa a lista de compras.
+          </p>
         </div>
       ) : null}
 
@@ -251,31 +260,78 @@ export function StockManager({ ingredients, finished, canWrite }: { ingredients:
         </section>
       ) : null}
 
-      {shownIngredients.length > 0 ? (
+      {useFocus ? (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-            Insumos <span className="font-normal">({shownIngredients.length})</span>
+            Confira estes {focusRows.length} itens
+            <Hint>São os insumos que {focusLabel ?? "a produção em montagem"} vai usar. Se o estoque deles estiver certo, a lista de compras também fica certa.</Hint>
           </h2>
+          {focusLabel ? <p className="text-xs text-muted">Para {focusLabel}.</p> : null}
           <ul className="divide-y divide-border card px-4">
-            {shownIngredients.map((r) => (
+            {focusRows.map((r) => (
               <IngredientRow key={r.id} row={r} canWrite={canWrite} onDone={refresh} />
             ))}
           </ul>
         </section>
       ) : null}
 
-      {shownPacks.length > 0 ? (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-            Embalagens <span className="font-normal">({shownPacks.length})</span>
-          </h2>
-          <ul className="divide-y divide-border card px-4">
-            {shownPacks.map((r) => (
-              <IngredientRow key={r.id} row={r} canWrite={canWrite} onDone={refresh} />
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      {useFocus ? (
+        <details className="card px-4">
+          <summary className="flex min-h-12 cursor-pointer items-center text-sm font-semibold text-muted">
+            Todos os outros itens ({restIngredients.length + restPacks.length})
+          </summary>
+          <div className="flex flex-col gap-4 pb-3">
+            {restIngredients.length > 0 ? (
+              <div>
+                <h3 className="py-1 text-xs font-semibold uppercase tracking-wider text-muted">Insumos</h3>
+                <ul className="divide-y divide-border">
+                  {restIngredients.map((r) => (
+                    <IngredientRow key={r.id} row={r} canWrite={canWrite} onDone={refresh} />
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {restPacks.length > 0 ? (
+              <div>
+                <h3 className="py-1 text-xs font-semibold uppercase tracking-wider text-muted">Embalagens</h3>
+                <ul className="divide-y divide-border">
+                  {restPacks.map((r) => (
+                    <IngredientRow key={r.id} row={r} canWrite={canWrite} onDone={refresh} />
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </details>
+      ) : (
+        <>
+          {shownIngredients.length > 0 ? (
+            <section className="flex flex-col gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+                Insumos <span className="font-normal">({shownIngredients.length})</span>
+              </h2>
+              <ul className="divide-y divide-border card px-4">
+                {shownIngredients.map((r) => (
+                  <IngredientRow key={r.id} row={r} canWrite={canWrite} onDone={refresh} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {shownPacks.length > 0 ? (
+            <section className="flex flex-col gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
+                Embalagens <span className="font-normal">({shownPacks.length})</span>
+              </h2>
+              <ul className="divide-y divide-border card px-4">
+                {shownPacks.map((r) => (
+                  <IngredientRow key={r.id} row={r} canWrite={canWrite} onDone={refresh} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
+      )}
 
       {shownIngredients.length + shownPacks.length + shownFinished.length === 0 ? <p className="card p-4 text-sm text-muted">Nada encontrado.</p> : null}
     </div>

@@ -70,7 +70,7 @@ describe("links internos", () => {
   const links = internalLinks();
 
   it("o app tem as rotas esperadas do menu novo", () => {
-    for (const r of ["/", "/marmitas", "/marmitas/[id]", "/marmitas/[id]/preco", "/insumos/receitas/nova", "/insumos/receitas/[id]", "/producao", "/producao/calcular", "/producao/estoque", "/insumos", "/mes", "/mes/estoque", "/mes/historico", "/painel", "/custos", "/custos/impostos", "/custos/cardapio", "/avisos"]) {
+    for (const r of ["/", "/marmitas", "/marmitas/[id]", "/marmitas/[id]/preco", "/insumos/receitas/nova", "/insumos/receitas/[id]", "/producao", "/producao/[id]", "/producao/estoque", "/insumos", "/mes", "/mes/estoque", "/mes/historico", "/painel", "/custos", "/custos/impostos", "/custos/cardapio", "/avisos"]) {
       expect(routes, `falta a rota ${r}`).toContain(r);
     }
   });

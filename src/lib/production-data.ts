@@ -203,31 +203,72 @@ export async function loadWeeklySales(orgId: string, unitId: string, hasMenu: bo
 }
 
 export type PlanItem = { recipeId: string; suggested: number | null; planned: number; produced: number | null };
-export type Plan = { id: string; weekStart: string; status: "draft" | "confirmed" | "produced"; confirmedAt: string | null; producedAt: string | null; items: PlanItem[] };
 
-const toPlan = (p: { id: string; week_start: string; status: string; confirmed_at: string | null; produced_at: string | null }, items: { plan_id: string; recipe_id: string; suggested_qty: number | null; planned_qty: number; produced_qty: number | null }[]): Plan => ({
+/** Uma produção: um conjunto de marmitas que o dono decidiu fazer (pode haver várias por semana). */
+export type Production = {
+  id: string;
+  name: string | null;
+  /** Dia em que vai produzir. */
+  plannedFor: string;
+  weekStart: string;
+  /** `draft` = em montagem; `produced` = feita. (`confirmed` não é mais usado pela tela.) */
+  status: "draft" | "confirmed" | "produced";
+  producedAt: string | null;
+  createdAt: string;
+  items: PlanItem[];
+};
+
+type PlanRow = { id: string; name: string | null; planned_for: string; week_start: string; status: string; produced_at: string | null; created_at: string };
+type ItemRow = { plan_id: string; recipe_id: string; suggested_qty: number | null; planned_qty: number; produced_qty: number | null };
+
+const toProduction = (p: PlanRow, items: ItemRow[]): Production => ({
   id: p.id,
+  name: p.name,
+  plannedFor: p.planned_for,
   weekStart: p.week_start,
-  status: p.status as Plan["status"],
-  confirmedAt: p.confirmed_at,
+  status: p.status as Production["status"],
   producedAt: p.produced_at,
+  createdAt: p.created_at,
   items: items.filter((i) => i.plan_id === p.id).map((i) => ({ recipeId: i.recipe_id, suggested: i.suggested_qty, planned: i.planned_qty, produced: i.produced_qty })),
 });
 
-/** O plano de uma semana (ou `null` se ainda não existe). */
-export async function loadPlan(orgId: string, unitId: string, weekStart: string): Promise<Plan | null> {
+const PLAN_COLUMNS = "id, name, planned_for, week_start, status, produced_at, created_at";
+const ITEM_COLUMNS = "plan_id, recipe_id, suggested_qty, planned_qty, produced_qty";
+
+/** As produções da unidade, da mais nova para a mais antiga. */
+export async function loadProductions(orgId: string, unitId: string, limit = 30): Promise<Production[]> {
   const supabase = await createClient();
-  const { data: plan } = await supabase.from("production_plans").select("id, week_start, status, confirmed_at, produced_at").eq("org_id", orgId).eq("unit_id", unitId).eq("week_start", weekStart).maybeSingle();
-  if (!plan) return null;
-  const { data: items } = await supabase.from("production_plan_items").select("plan_id, recipe_id, suggested_qty, planned_qty, produced_qty").eq("org_id", orgId).eq("plan_id", plan.id as string);
-  return toPlan(plan as never, (items ?? []) as never);
+  const { data: plans } = await supabase.from("production_plans").select(PLAN_COLUMNS).eq("org_id", orgId).eq("unit_id", unitId).order("planned_for", { ascending: false }).order("created_at", { ascending: false }).limit(limit);
+  if (!plans?.length) return [];
+  const { data: items } = await supabase.from("production_plan_items").select(ITEM_COLUMNS).eq("org_id", orgId).in("plan_id", plans.map((p) => p.id as string));
+  return plans.map((p) => toProduction(p as PlanRow, (items ?? []) as ItemRow[]));
 }
 
-/** Os últimos planos (do mais novo para o mais antigo), para comparar o planejado com o produzido. */
-export async function loadRecentPlans(orgId: string, unitId: string, n = 4): Promise<Plan[]> {
+export async function loadProduction(orgId: string, unitId: string, id: string): Promise<Production | null> {
   const supabase = await createClient();
-  const { data: plans } = await supabase.from("production_plans").select("id, week_start, status, confirmed_at, produced_at").eq("org_id", orgId).eq("unit_id", unitId).order("week_start", { ascending: false }).limit(n);
-  if (!plans?.length) return [];
-  const { data: items } = await supabase.from("production_plan_items").select("plan_id, recipe_id, suggested_qty, planned_qty, produced_qty").eq("org_id", orgId).in("plan_id", plans.map((p) => p.id as string));
-  return plans.map((p) => toPlan(p as never, (items ?? []) as never));
+  const { data: plan } = await supabase.from("production_plans").select(PLAN_COLUMNS).eq("org_id", orgId).eq("unit_id", unitId).eq("id", id).maybeSingle();
+  if (!plan) return null;
+  const { data: items } = await supabase.from("production_plan_items").select(ITEM_COLUMNS).eq("org_id", orgId).eq("plan_id", id);
+  return toProduction(plan as PlanRow, (items ?? []) as ItemRow[]);
+}
+
+/** O que as OUTRAS produções da mesma semana já têm planejado por marmita (para a sugestão não pedir em dobro). */
+export async function loadWeekPlanned(orgId: string, unitId: string, weekStart: string, excludeId?: string): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data: plans } = await supabase.from("production_plans").select("id").eq("org_id", orgId).eq("unit_id", unitId).eq("week_start", weekStart);
+  const ids = (plans ?? []).map((p) => p.id as string).filter((id) => id !== excludeId);
+  if (ids.length === 0) return {};
+  const { data: items } = await supabase.from("production_plan_items").select("recipe_id, planned_qty").eq("org_id", orgId).in("plan_id", ids);
+  const out: Record<string, number> = {};
+  for (const i of items ?? []) out[i.recipe_id as string] = (out[i.recipe_id as string] ?? 0) + Number(i.planned_qty);
+  return out;
+}
+
+/** O que já foi marcado como comprado nesta produção (insumo -> quantidade que entrou no estoque, na unidade-base). */
+export async function loadPlanPurchases(orgId: string, planId: string): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("stock_movements").select("ingredient_id, qty_base").eq("org_id", orgId).eq("plan_id", planId).eq("kind", "purchase");
+  const out: Record<string, number> = {};
+  for (const r of data ?? []) if (r.ingredient_id) out[r.ingredient_id as string] = (out[r.ingredient_id as string] ?? 0) + Number(r.qty_base);
+  return out;
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { shoppingList } from "@/lib/calc";
 import type { ProdIngredient } from "@/lib/production-data";
-import { batchesLabel, buyRows, groupBySupplier, shoppingText } from "./production-view";
+import { batchesLabel, buyRows, computeProduction, groupBySupplier, shoppingText, type ProductionInput } from "./production-view";
 
 const ing = (name: string, over: Partial<ProdIngredient> = {}): ProdIngredient => ({ name, kind: "insumo", baseUnit: "g", purchaseUnit: "kg", unitCost: 0.02, packSize: 1000, packLabel: "1 kg", supplier: null, ...over });
 
@@ -56,5 +56,39 @@ describe("lista de compras na tela", () => {
     expect(batchesLabel(1)).toBe("1 lote");
     expect(batchesLabel(1.152)).toBe("1,15 lotes");
     expect(batchesLabel(3)).toBe("3 lotes");
+  });
+});
+
+describe("conta da produção", () => {
+  const base: ProductionInput = {
+    recipes: [{ id: "esc", name: "Escondidinho", costPerPortion: 9.5, usage: { patinho: 150, arroz: 120 } }],
+    ingredients: {
+      patinho: ing("Patinho moído", { unitCost: 0.04 }),
+      "arroz-cru": ing("Arroz", { unitCost: 0.005, packSize: 5000, packLabel: "5 kg" }),
+      arroz: ing("Arroz Teste", { kind: "receita", packSize: null, packLabel: null, unitCost: 0.0024 }),
+    },
+    receitas: { arroz: { name: "Arroz Teste", readyGrams: 12_500, parts: [{ ingredientId: "arroz-cru", grossPerGram: 0.4 }] } },
+    stock: { patinho: { balance: 8000, known: true, lastCountAt: "2026-10-20T12:00:00Z" } },
+  };
+
+  it("100 escondidinhos: 15 kg de patinho (tem 8), arroz em lote, custo da produção", () => {
+    const c = computeProduction([{ recipeId: "esc", units: 100 }], base);
+    expect(c.marmitas).toBe(100);
+    expect(c.cost).toBeCloseTo(950, 6);
+    expect(c.needs.receitas.get("arroz")!.grams).toBe(12_000);
+    expect(c.rows.toBuy.map((r) => [r.name, r.buy])).toEqual([["Arroz", "5 kg"], ["Patinho moído", "7 kg"]]);
+  });
+
+  it("o que já foi marcado como comprado continua na lista (não some ao comprar)", () => {
+    const bought = { patinho: 7000, "arroz-cru": 5000 };
+    // o estoque já recebeu essas compras:
+    const after: ProductionInput = { ...base, stock: { ...base.stock, patinho: { balance: 15_000, known: true, lastCountAt: null }, "arroz-cru": { balance: 5000, known: true, lastCountAt: null } } };
+    const c = computeProduction([{ recipeId: "esc", units: 100 }], after, bought);
+    expect(c.rows.toBuy.map((r) => r.name)).toEqual(["Arroz", "Patinho moído"]);
+    expect(c.rows.enough).toHaveLength(0);
+  });
+
+  it("sem quantidades, nada a calcular", () => {
+    expect(computeProduction([{ recipeId: "esc", units: 0 }], base).marmitas).toBe(0);
   });
 });

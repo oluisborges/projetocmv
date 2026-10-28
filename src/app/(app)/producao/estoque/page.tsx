@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ProducaoTabs } from "@/components/producao-tabs";
 import { requireMember } from "@/lib/auth";
-import { loadProductionBase } from "@/lib/production-data";
+import { loadProductionBase, loadProductions } from "@/lib/production-data";
+import { computeProduction, productionName } from "@/lib/production-view";
 import { StockManager, type FinishedRowData, type StockRowData } from "./stock-manager";
 
 export const metadata = { title: "Estoque" };
@@ -9,6 +10,16 @@ export const metadata = { title: "Estoque" };
 export default async function EstoquePage() {
   const { orgId, canWrite } = await requireMember();
   const base = await loadProductionBase(orgId, canWrite);
+
+  // Itens que as produções em montagem vão usar: são os primeiros a conferir.
+  const open = base ? (await loadProductions(orgId, base.unitId)).filter((p) => p.status !== "produced") : [];
+  const focus = new Set<string>();
+  if (base) {
+    for (const p of open) {
+      const calc = computeProduction(p.items.map((i) => ({ recipeId: i.recipeId, units: i.planned })), base);
+      for (const id of calc.needs.ingredients.keys()) focus.add(id);
+    }
+  }
 
   const ingredients: StockRowData[] = base
     ? Object.entries(base.ingredients)
@@ -38,7 +49,7 @@ export default async function EstoquePage() {
       <ProducaoTabs active="estoque" />
 
       {base ? (
-        <StockManager ingredients={ingredients} finished={finished} canWrite={canWrite} />
+        <StockManager ingredients={ingredients} finished={finished} canWrite={canWrite} focusIds={[...focus]} focusLabel={open.length === 1 ? productionName(open[0]) : open.length > 1 ? `${open.length} produções em montagem` : null} />
       ) : (
         <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com o suporte do Precificaí.</p>
       )}
