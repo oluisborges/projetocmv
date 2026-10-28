@@ -1,25 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Hint } from "@/components/hint";
 import { EstimateNotice } from "@/components/estimate-notice";
 import { MarginBadge } from "@/components/margin-badge";
 import { formatBRL, formatPct, parseDecimal } from "@/lib/format";
-import { analyzePrice, priceBreakdown, type PricingSettings } from "@/lib/pricing-view";
+import { analyzePrice, priceChange, type PricingSettings } from "@/lib/pricing-view";
 import { setRecipePrice } from "../../precos-actions";
 import { PendingLabel } from "@/components/spinner";
+import { MonthlyProfit, PriceStatement, type FixedBasis } from "./price-statement";
 
 type Channel = { id: string; name: string; fee_pct: number };
 
 const priceFmt = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const BAR: Record<string, string> = {
-  cost: "bg-foreground/70",
-  tax: "bg-warning/60",
-  fee: "bg-warning/60",
-  fixed: "bg-muted/60",
-  profit: "bg-success",
-};
 
 export function Simulator({
   recipeId,
@@ -30,6 +22,8 @@ export function Simulator({
   estimateReason,
   channels,
   canWrite,
+  basis,
+  menuUnits,
 }: {
   recipeId: string;
   cost: number;
@@ -40,6 +34,10 @@ export function Simulator({
   estimateReason: "tax" | "expenses" | null;
   channels: Channel[];
   canWrite: boolean;
+  /** De onde vem o percentual dos custos fixos (para o extrato explicar a conta). */
+  basis: FixedBasis;
+  /** Unidades dessa marmita vendidas no cardápio digital nos últimos 30 dias (ou `null`). */
+  menuUnits: number | null;
 }) {
   const [channelId, setChannelId] = useState(channels[0]?.id ?? "");
   const channel = channels.find((c) => c.id === channelId) ?? channels[0];
@@ -53,7 +51,8 @@ export function Simulator({
   const parsed = parseDecimal(text);
   const price = parsed === null ? 0 : Number(parsed);
   const analysis = analyzePrice({ cost, settings, feePct, price });
-  const parts = price > 0 ? priceBreakdown({ price, cost, settings, feePct }) : [];
+  // Quanto muda o que sobra por marmita em relação ao preço que vale hoje.
+  const change = saved && saved > 0 && price > 0 && Math.abs(price - saved) >= 0.005 ? priceChange({ cost, settings, feePct, from: saved, to: price }) : null;
 
   const nudge = (delta: number) => setText(priceFmt.format(Math.max(0, Number((price + delta).toFixed(2)))));
 
@@ -124,6 +123,17 @@ export function Simulator({
             </p>
           </div>
         ) : null}
+        {change ? (
+          <p className="tabular rounded-lg bg-background px-3 py-2 text-sm">
+            Hoje você cobra <strong>{formatBRL(saved ?? 0)}</strong> e sobra <strong>{formatBRL(change.before.net)}</strong>. Com este preço sobra <strong>{formatBRL(change.after.net)}</strong>
+            {" "}
+            <span className={change.netDelta >= 0 ? "font-semibold text-success" : "font-semibold text-danger"}>
+              ({change.netDelta >= 0 ? "+" : "−"}
+              {formatBRL(Math.abs(change.netDelta))} por marmita)
+            </span>
+            .
+          </p>
+        ) : null}
 
         {canWrite ? (
           <button type="button" onClick={save} disabled={!(price > 0) || state.kind === "saving"} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
@@ -136,28 +146,11 @@ export function Simulator({
         </p>
       </section>
 
-      {parts.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-            Para onde vai o dinheiro
-            <Hint>De cada venda, quanto cobre o custo, quanto vai para impostos e taxas, quanto paga as despesas fixas e quanto sobra de lucro.</Hint>
-          </h2>
-          <ul className="flex flex-col gap-2 card p-4">
-            {parts.map((p) => (
-              <li key={p.key} className="flex flex-col gap-1">
-                <div className="flex items-baseline justify-between gap-3 text-sm">
-                  <span className={p.key === "profit" && p.value < 0 ? "font-semibold text-danger" : ""}>{p.key === "profit" && p.value < 0 ? "Prejuízo" : p.label}</span>
-                  <span className="tabular shrink-0">
-                    <strong>{formatBRL(p.value)}</strong> <span className="text-muted">· {formatPct(p.pct)}</span>
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-background" aria-hidden>
-                  <div className={`h-full rounded-full ${p.value < 0 ? "bg-danger" : BAR[p.key]}`} style={{ width: `${Math.min(100, Math.max(0, p.pct * 100))}%` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {price > 0 ? (
+        <>
+          <PriceStatement recipeId={recipeId} price={price} cost={cost} settings={settings} feePct={feePct} channelName={channel?.name ?? null} basis={basis} />
+          <MonthlyProfit key={channel?.id} price={price} cost={cost} settings={settings} feePct={feePct} suggestedUnits={menuUnits && menuUnits > 0 ? Math.round(menuUnits) : 100} unitsFromMenu={Boolean(menuUnits && menuUnits > 0)} />
+        </>
       ) : null}
 
       {channels.length > 1 ? (

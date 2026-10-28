@@ -78,4 +78,22 @@ export function priceBreakdown(input: { price: number; cost: number; settings: P
   }));
 }
 
+/** O que as vendas de um mês rendem, a partir do que sobra em cada unidade. */
+export function monthlyResult(input: { price: number; contribution: number; net: number; units: number }) {
+  const units = D(Math.max(0, input.units));
+  return {
+    revenue: D(input.price).mul(units).toNumber(),
+    contribution: D(input.contribution).mul(units).toNumber(),
+    net: D(input.net).mul(units).toNumber(),
+  };
+}
+
+/** Quanto muda o que sobra por unidade ao trocar o preço (`from` -> `to`). `null` se algum dos dois não é um preço. */
+export function priceChange(input: { cost: number; settings: PricingSettings; feePct: number; from: number; to: number }) {
+  const before = analyzePrice({ cost: input.cost, settings: input.settings, feePct: input.feePct, price: input.from }).at;
+  const after = analyzePrice({ cost: input.cost, settings: input.settings, feePct: input.feePct, price: input.to }).at;
+  if (!before || !after) return null;
+  return { before, after, netDelta: D(after.net).minus(before.net).toNumber() };
+}
+
 export { totalRates };

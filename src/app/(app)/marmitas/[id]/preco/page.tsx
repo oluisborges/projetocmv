@@ -75,6 +75,8 @@ export default async function RecipePricingPage(props: PageProps<"/marmitas/[id]
           estimateReason={ctx.estimateReason}
           channels={ctx.channels}
           canWrite={canWrite}
+          basis={{ auto: ctx.fixedAuto, fixedTotal: ctx.fixedTotal, monthlyRevenue: ctx.monthlyRevenue, revenueSource: ctx.revenueSource, revenueMonths: ctx.revenueMonths }}
+          menuUnits={menuAverage?.units ?? null}
         />
       ) : (
         <p className="card p-4 text-sm">
