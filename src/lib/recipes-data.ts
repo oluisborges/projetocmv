@@ -23,6 +23,8 @@ export type IngredientRecord = {
   /** Quanto vem na compra e quanto se paga por isso (para editar o preço de dentro da ficha). */
   purchase_qty: number;
   purchase_price: number;
+  /** Fornecedor (se houver), para agrupar a lista de compras. */
+  supplier_id?: string | null;
 };
 
 export type RecipeRecord = {
@@ -74,7 +76,7 @@ export async function loadIngredients(): Promise<IngredientRecord[]> {
   const supabase = await createClient();
   const [data, receitas] = await Promise.all([
     fetchAll((from, to) =>
-      supabase.from("ingredients").select("id, name, category, kind, purchase_unit, purchase_qty, purchase_price, unit_cost, correction_factor, cooking_yield, archived_at").eq("org_id", orgId).order("id").range(from, to),
+      supabase.from("ingredients").select("id, name, category, kind, purchase_unit, purchase_qty, purchase_price, unit_cost, correction_factor, cooking_yield, archived_at, supplier_id").eq("org_id", orgId).order("id").range(from, to),
     ),
     loadReceitaRows(orgId),
   ]);
@@ -198,20 +200,28 @@ export async function loadArchivedRecipes(kind: "marmita" | "receita" = "marmita
   return data ?? [];
 }
 
+export type ReceitaBlueprintRecord = { id: string; name: string; readyGrams: number; parts: { ingredientId: string; grossPerGram: number }[] };
+
 /**
- * De que insumos é feita cada Receita, por grama pronto: quanto de cada insumo COMPRADO (já com fator de correção) sai em 1 g da receita.
- * Serve para o estoque, que precisa saber que 120 g de arroz pronto gastaram arroz cru, sal e cebola de verdade.
+ * De que insumos é feita cada Receita, por grama pronto: quanto de cada insumo COMPRADO (já com fator de correção) sai em 1 g da receita,
+ * e quanto cada lote rende pronto. Serve para o estoque e para a produção, que precisam saber que 120 g de arroz pronto
+ * gastaram arroz cru, sal e cebola de verdade.
  */
-export async function loadReceitaUsage(ingredients: IngredientRecord[]): Promise<Map<string, { ingredientId: string; grossPerGram: number }[]>> {
+export async function loadReceitaBlueprints(ingredients: IngredientRecord[]): Promise<Map<string, ReceitaBlueprintRecord>> {
   const orgId = await currentOrgId();
-  const out = new Map<string, { ingredientId: string; grossPerGram: number }[]>();
+  const out = new Map<string, ReceitaBlueprintRecord>();
   if (!orgId) return out;
   const fc = new Map(ingredients.map((i) => [i.id, i.correction_factor]));
   for (const r of await loadReceitaRows(orgId)) {
     if (!r.portion_weight || r.portion_weight <= 0) continue;
     const sums = new Map<string, number>();
     for (const it of r.items) if (it.ingredient_id) sums.set(it.ingredient_id, (sums.get(it.ingredient_id) ?? 0) + it.net_qty * (fc.get(it.ingredient_id) ?? 1));
-    out.set(r.id, [...sums].map(([ingredientId, gross]) => ({ ingredientId, grossPerGram: gross / r.portion_weight! })));
+    out.set(r.id, { id: r.id, name: r.name, readyGrams: r.portion_weight, parts: [...sums].map(([ingredientId, gross]) => ({ ingredientId, grossPerGram: gross / r.portion_weight! })) });
   }
   return out;
+}
+
+/** Só as partes de cada receita (insumo e quanto sai por grama pronto): o que o estoque mensal e o painel precisam. */
+export async function loadReceitaUsage(ingredients: IngredientRecord[]): Promise<Map<string, { ingredientId: string; grossPerGram: number }[]>> {
+  return new Map([...(await loadReceitaBlueprints(ingredients))].map(([id, b]) => [id, b.parts]));
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MonthChips } from "@/components/month-chips";
 import { MonthTabs } from "@/components/month-tabs";
+import { PainelTabs } from "@/components/painel-tabs";
 import { ExportLinks } from "@/components/export-links";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
@@ -165,6 +166,7 @@ export default async function MonthPage(props: PageProps<"/mes">) {
         <p className="text-muted">Quanto você gastou no mês, comparado com o que deveria.</p>
       </section>
 
+      <PainelTabs active="mes" showCoupons={connected} />
       <MonthTabs active="fechar" />
 
       <MonthChips months={months} current={month} basePath="/mes" />

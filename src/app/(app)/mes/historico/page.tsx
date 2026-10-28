@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { MonthTabs } from "@/components/month-tabs";
+import { PainelTabs } from "@/components/painel-tabs";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { loadHistory, type HistoryEntry } from "@/lib/history-data";
+import { hasMenuConnection } from "@/lib/menu-data";
 import type { ChangeEvent } from "@/lib/history-view";
 import { lastMonths, monthLabel } from "@/lib/month-view";
 import { ExportLinks } from "@/components/export-links";
@@ -251,7 +253,7 @@ function BridgeCard({ entries }: { entries: HistoryEntry[] }) {
 
 export default async function HistoricoPage() {
   const { orgId, canWrite } = await requireMember();
-  const history = await loadHistory(orgId, canWrite);
+  const [history, coupons] = await Promise.all([loadHistory(orgId, canWrite), hasMenuConnection(orgId)]);
 
   return (
     <>
@@ -259,6 +261,7 @@ export default async function HistoricoPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Histórico</h1>
         <p className="text-muted">O que aconteceu em cada mês.</p>
       </section>
+      <PainelTabs active="mes" showCoupons={coupons} />
       <MonthTabs active="historico" />
 
       {!history || history.entries.length === 0 ? (

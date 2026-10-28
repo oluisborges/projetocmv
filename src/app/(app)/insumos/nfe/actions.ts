@@ -185,6 +185,17 @@ export async function applyNfe(formData: FormData): Promise<NfeApplyResult> {
       const qtyBase = k.kind === "measure" ? toBaseQty(item.qty, k.unit).toNumber() : pack ? toBaseQty(item.qty * pack.qty, pack.unit).toNumber() : 0;
       if (!(qtyBase > 0) || !importRow) return;
       await supabase.from("ingredient_purchases").insert({ org_id: orgId, unit_id: unit.id, ingredient_id: ingredientId, month, qty_base: qtyBase, amount: item.total, source: "nfe", nfe_import_id: importRow.id });
+      // Estoque do dia a dia: a compra entra na data da nota (assim, uma nota antiga lançada depois de uma contagem não conta duas vezes).
+      const issued = new Date(doc.issuedAt);
+      await supabase.from("stock_movements").insert({
+        org_id: orgId,
+        unit_id: unit.id,
+        ingredient_id: ingredientId,
+        kind: "purchase",
+        qty_base: qtyBase,
+        occurred_at: (Number.isNaN(issued.getTime()) || issued.getTime() > Date.now() ? new Date() : issued).toISOString(),
+        nfe_import_id: importRow.id,
+      });
     };
     const changes: { ingredient_id: string; old_price: number | null; new_price: number; created: boolean }[] = [];
     const cnpj = doc.supplierCnpj || "0";

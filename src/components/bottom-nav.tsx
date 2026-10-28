@@ -14,18 +14,18 @@ const ICONS = {
   basket: <path d="M3 9h18l-1.6 9.2a2 2 0 0 1-2 1.8H6.6a2 2 0 0 1-2-1.8L3 9Zm4-.5 3-5m7 5-3-5M9.5 13v3m5-3v3" {...stroke} />,
   recipe: <path d="M7 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm2.5 5h5m-5 4h5m-5 4h3" {...stroke} />,
   wallet: <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3M4 7.5V17a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 7.5ZM16 13.5h.01" {...stroke} />,
-  calendar: <path d="M5 5.5h14a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1ZM4 10h16M8 3.5v4m8-4v4" {...stroke} />,
+  factory: <path d="M3 20V9l5 3V9l5 3V6h3l1 14M3 20h18M7 16h2m3 0h2" {...stroke} />,
 } as const;
 
-type Item = { href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean; lock?: "mes" | "painel" };
+type Item = { href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean; lock?: "painel" | "producao" };
 
 const ITEMS: Item[] = [
   { href: "/", label: "Início", icon: "home", match: (p) => p === "/" },
   { href: "/marmitas", label: "Marmitas", icon: "recipe", match: (p) => p.startsWith("/marmitas") },
   { href: "/insumos", label: "Insumos", icon: "basket", match: (p) => p.startsWith("/insumos") },
   { href: "/custos", label: "Custos", icon: "wallet", match: (p) => p.startsWith("/custos") },
-  { href: "/mes", label: "Mês", icon: "calendar", match: (p) => p.startsWith("/mes"), lock: "mes" },
-  { href: "/painel", label: "Painel", icon: "chart", match: (p) => p.startsWith("/painel"), lock: "painel" },
+  { href: "/painel", label: "Painel", icon: "chart", match: (p) => p.startsWith("/painel") || p.startsWith("/mes"), lock: "painel" },
+  { href: "/producao", label: "Produção", icon: "factory", match: (p) => p.startsWith("/producao"), lock: "producao" },
 ];
 
 /** Ícone + nome. Enquanto a página do toque carrega, o ícone pulsa e uma barra lima corre no topo do botão. */
@@ -49,9 +49,9 @@ function NavLabel({ label, icon, active }: { label: string; icon: keyof typeof I
  * Menu de baixo, sempre com todos os itens. Um item que ainda não pode ser usado fica com a letra clara e um cadeado;
  * ao tocar, aparece o que fazer para liberar (nunca é um botão que não responde).
  */
-export function BottomNav({ locks }: { locks: { mes: MenuLock | null; painel: MenuLock | null } }) {
+export function BottomNav({ locks }: { locks: { painel: MenuLock | null; producao: MenuLock | null } }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState<"mes" | "painel" | null>(null);
+  const [open, setOpen] = useState<"painel" | "producao" | null>(null);
   const close = useCallback(() => setOpen(null), []);
   const tip = open ? locks[open] : null;
 

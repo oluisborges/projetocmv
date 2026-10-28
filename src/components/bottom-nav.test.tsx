@@ -8,10 +8,10 @@ import { BottomNav } from "./bottom-nav";
 import { CostsTabs } from "./costs-tabs";
 import { PainelTabs } from "./painel-tabs";
 
-const open = { mes: null, painel: null };
+const open = { painel: null, producao: null };
 const newAccount = {
-  mes: { message: "O Mês é liberado depois que você cria a sua primeira marmita.", href: "/marmitas/nova", cta: "Criar marmita" },
-  painel: { message: "O Painel é liberado depois que você cria uma marmita e define o preço de venda dela.", href: "/marmitas/nova", cta: "Criar marmita" },
+  painel: { message: "O Painel é liberado depois que você cria a sua primeira marmita.", href: "/marmitas/nova", cta: "Criar marmita" },
+  producao: { message: "A Produção é liberada depois que você cria a sua primeira marmita.", href: "/marmitas/nova", cta: "Criar marmita" },
 };
 
 describe("menu de baixo", () => {
@@ -19,17 +19,17 @@ describe("menu de baixo", () => {
     path.value = "/";
     for (const locks of [open, newAccount]) {
       const html = renderToStaticMarkup(<BottomNav locks={locks} />);
-      for (const label of ["Início", "Marmitas", "Insumos", "Custos", "Mês", "Painel"]) expect(html).toContain(`>${label}<`);
+      for (const label of ["Início", "Marmitas", "Insumos", "Custos", "Painel", "Produção"]) expect(html).toContain(`>${label}<`);
     }
   });
 
   it("item travado vira botão com cadeado (não leva para a tela) e o liberado continua link", () => {
     path.value = "/";
     const html = renderToStaticMarkup(<BottomNav locks={newAccount} />);
-    expect(html).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Mês/);
     expect(html).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Painel/);
-    expect(html).not.toContain('href="/mes"');
+    expect(html).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Produção/);
     expect(html).not.toContain('href="/painel"');
+    expect(html).not.toContain('href="/producao"');
     expect(html).toContain('href="/custos"');
     expect(html).toContain('href="/marmitas"');
   });
@@ -37,7 +37,7 @@ describe("menu de baixo", () => {
   it("tudo liberado: todos os itens são links", () => {
     path.value = "/";
     const html = renderToStaticMarkup(<BottomNav locks={open} />);
-    for (const href of ["/", "/marmitas", "/insumos", "/custos", "/mes", "/painel"]) expect(html).toContain(`href="${href}"`);
+    for (const href of ["/", "/marmitas", "/insumos", "/custos", "/painel", "/producao"]) expect(html).toContain(`href="${href}"`);
     expect(html).not.toContain("aria-disabled");
   });
 
@@ -46,6 +46,12 @@ describe("menu de baixo", () => {
     const html = renderToStaticMarkup(<BottomNav locks={newAccount} />);
     expect(html).toContain('href="/painel"');
     expect(html).toContain('aria-current="page"');
+  });
+
+  it("Mês (fechar o mês) fica dentro do Painel: o item Painel fica ativo em /mes", () => {
+    path.value = "/mes/estoque";
+    const html = renderToStaticMarkup(<BottomNav locks={open} />);
+    expect(html).toMatch(/href="\/painel"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/painel"/);
   });
 
   it("Custos fica ativo em /custos e nas abas dele", () => {

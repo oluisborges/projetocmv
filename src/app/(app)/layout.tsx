@@ -8,23 +8,15 @@ import { menuLocksFrom, type MenuLock } from "@/lib/menu-locks";
 import { NoticesBell } from "@/components/notices-bell";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadMenuAlerts } from "@/lib/menu/server/alerts";
-import { activeUnit } from "@/lib/pricing-data";
 import { createClient } from "@/lib/supabase/server";
 import { exitViewAs, signOut } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 
-/** Menus travados (sempre visíveis): "Mês" até a primeira marmita; "Painel" até o primeiro preço de venda. */
-async function menuLocks(orgId: string): Promise<{ mes: MenuLock | null; painel: MenuLock | null }> {
+/** Menus travados (sempre visíveis): "Painel" e "Produção" até a primeira marmita. */
+async function menuLocks(orgId: string): Promise<{ painel: MenuLock | null; producao: MenuLock | null }> {
   const supabase = await createClient();
-  const unit = await activeUnit(orgId);
-  const [recipes, priced] = await Promise.all([
-    supabase.from("recipes").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("kind", "marmita").eq("active", true),
-    unit
-      ? // Só conta preço de marmita ativa: arquivar a única marmita com preço esconde o Painel de novo.
-        supabase.from("recipe_prices").select("recipe_id, recipes!inner(active)", { count: "exact", head: true }).eq("unit_id", unit.id).gt("current_price", 0).eq("recipes.active", true)
-      : Promise.resolve({ count: 0, error: null }),
-  ]);
-  return menuLocksFrom(recipes, priced);
+  const recipes = await supabase.from("recipes").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("kind", "marmita").eq("active", true);
+  return menuLocksFrom(recipes);
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -33,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const orgName = active?.orgName;
   // Equipe Shogun (fora do "ver como"): cardápios que pararam de importar aparecem em qualquer tela.
   // O aviso é um extra: se falhar (chave de serviço ausente, banco lento), a tela continua funcionando.
-  const locks = active ? await menuLocks(active.orgId).catch(() => ({ mes: null, painel: null })) : { mes: null, painel: null };
+  const locks = active ? await menuLocks(active.orgId).catch(() => ({ painel: null, producao: null })) : { painel: null, producao: null };
   const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts().catch(() => []) : [];
 
   return (

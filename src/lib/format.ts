@@ -48,6 +48,14 @@ export function formatPurchaseSize(qty: number | string, unit: string): string {
   return `${formatNumber(qty)} ${UNIT_LABEL[unit] ?? unit}`;
 }
 
+/** Quantidade na unidade-base (g, ml, un) escrita do jeito que se lê: 12500 g -> "12,5 kg", 800 -> "800 g", 3 un -> "3 un". */
+export function formatBaseQty(qty: number, baseUnit: string): string {
+  const q = Math.abs(qty) < 1e-9 ? 0 : qty;
+  if (baseUnit === "g") return q >= 1000 ? `${formatNumber(q / 1000, 2)} kg` : `${formatNumber(Math.round(q * 10) / 10, 1)} g`;
+  if (baseUnit === "ml") return q >= 1000 ? `${formatNumber(q / 1000, 2)} l` : `${formatNumber(Math.round(q * 10) / 10, 1)} ml`;
+  return `${formatNumber(Math.round(q * 100) / 100, 2)} un`;
+}
+
 export function daysSince(iso: string, now: Date = new Date()): number {
   return Math.max(0, Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000));
 }
