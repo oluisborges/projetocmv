@@ -27,7 +27,7 @@ const chip = (on: boolean) => `h-10 flex-1 rounded-lg px-2 text-sm font-semibold
 
 function statusText(known: boolean, lastCountAt: string | null) {
   if (!known) return "nunca contado";
-  return lastCountAt ? `contado ${formatAge(daysSince(lastCountAt))}` : "sem contagem (só movimentos)";
+  return lastCountAt ? `contado ${formatAge(daysSince(lastCountAt))}` : "nunca contado · estimado pelas compras e usos";
 }
 
 type Action = "count" | "purchase" | "waste";
@@ -61,7 +61,7 @@ function IngredientRow({ row, canWrite, onDone }: { row: StockRowData; canWrite:
           <span className="block text-xs text-muted">{statusText(row.known, row.lastCountAt)}</span>
         </span>
         <span className={`tabular shrink-0 text-right font-extrabold ${negative ? "text-warning" : ""}`}>
-          {row.known ? (negative ? "contar de novo" : formatBaseQty(row.balance, row.baseUnit)) : "—"}
+          {row.known ? (negative ? (row.lastCountAt ? "contar de novo" : "contar") : formatBaseQty(row.balance, row.baseUnit)) : "—"}
         </span>
       </button>
       {open ? (
