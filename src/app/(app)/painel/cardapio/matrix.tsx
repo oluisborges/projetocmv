@@ -7,7 +7,7 @@ const H = 250;
 const PAD = { l: 8, r: 8, t: 14, b: 22 };
 
 /**
- * Mapa das marmitas: quanto vende (para a direita) × quanto sobra em cada uma (para cima). O tamanho da bolha é o lucro total.
+ * Mapa das produtos: quanto vende (para a direita) × quanto sobra em cada uma (para cima). O tamanho da bolha é o lucro total.
  * As linhas tracejadas são o corte de popularidade e a sobra média: o encontro delas define os quatro grupos.
  */
 export function MenuMatrix({ result }: { result: EngineeringResult }) {
@@ -28,7 +28,7 @@ export function MenuMatrix({ result }: { result: EngineeringResult }) {
 
   return (
     <figure className="flex flex-col gap-2">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Mapa das marmitas: vendas por lucro de cada uma" className="w-full rounded-xl bg-background">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Mapa das produtos: vendas por lucro de cada uma" className="w-full rounded-xl bg-background">
         <line x1={cutX} y1={PAD.t} x2={cutX} y2={H - PAD.b} className="stroke-border" strokeDasharray="4 3" />
         <line x1={PAD.l} y1={cutY} x2={W - PAD.r} y2={cutY} className="stroke-border" strokeDasharray="4 3" />
         <text x={W - PAD.r - 2} y={PAD.t + 9} textAnchor="end" className="fill-muted text-[9px] font-semibold">
@@ -62,7 +62,7 @@ export function MenuMatrix({ result }: { result: EngineeringResult }) {
           vende mais →
         </text>
       </svg>
-      <figcaption className="text-xs text-muted">Quanto mais à direita, mais vende; quanto mais acima, mais sobra em cada marmita. Bolha grande = muito lucro no total.</figcaption>
+      <figcaption className="text-xs text-muted">Quanto mais à direita, mais vende; quanto mais acima, mais sobra em cada produto. Bolha grande = muito lucro no total.</figcaption>
     </figure>
   );
 }

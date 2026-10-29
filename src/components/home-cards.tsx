@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ApplyPriceButton } from "@/components/apply-price-button";
 import { Hint } from "@/components/hint";
-import { formatBRL, formatPct } from "@/lib/format";
+import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import type { MonthHealth } from "@/lib/month-health";
 import type { PriceAction } from "@/lib/price-actions";
 import { monthLabel } from "@/lib/month-view";
@@ -114,5 +114,39 @@ function ActionRow({ a, targetPct, canWrite }: { a: PriceAction; targetPct: numb
       </Link>
       {canWrite ? <ApplyPriceButton recipeId={a.id} price={a.targetPrice} name={a.name} /> : null}
     </li>
+  );
+}
+
+/** "Para empatar no mês": quanto vender para pagar todas as contas, pelo mix de vendas recente e já com impostos e taxas. */
+export function BreakEvenCard({ breakEven, monthlyRevenue }: { breakEven: { units: number; revenue: number; perDay: number } | null; monthlyRevenue: number | null }) {
+  return (
+    <section aria-label="Ponto de equilíbrio" className="flex flex-col gap-1 card p-4">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+        Para empatar no mês
+        <Hint label="O que é ponto de equilíbrio?">Quanto você precisa vender por mês só para pagar todas as contas, sem lucro e sem prejuízo. A conta usa o que você mais vende e já desconta impostos e taxas.</Hint>
+      </p>
+      {breakEven ? (
+        <>
+          <p className="tabular text-2xl font-extrabold tracking-tight">{formatNumber(breakEven.units, 0)} unidades</p>
+          <p className="text-sm text-muted">
+            Cerca de {formatNumber(breakEven.perDay, 0)} por dia · {formatBRL(breakEven.revenue)} de faturamento
+          </p>
+          {monthlyRevenue ? (
+            <>
+              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-border" aria-hidden>
+                <div className={`h-full rounded-full ${monthlyRevenue >= breakEven.revenue ? "bg-success" : "bg-danger"}`} style={{ width: `${Math.min(100, (monthlyRevenue / breakEven.revenue) * 100)}%` }} />
+              </div>
+              <p className="text-xs text-muted">
+                Pela sua média de faturamento ({formatBRL(monthlyRevenue)} por mês), você está {monthlyRevenue >= breakEven.revenue ? "acima" : "abaixo"} do equilíbrio.
+              </p>
+            </>
+          ) : null}
+        </>
+      ) : (
+        <p className="text-sm text-muted">
+          Cadastre seus custos fixos e a equipe para ver quanto precisa vender. <Link href="/financeiro" className="font-semibold text-primary underline">Abrir Custos fixos</Link>
+        </p>
+      )}
+    </section>
   );
 }

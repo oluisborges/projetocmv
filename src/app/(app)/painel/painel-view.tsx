@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Hint } from "@/components/hint";
 import { EstimateNotice } from "@/components/estimate-notice";
 import { ShareButton } from "@/components/share-button";
-import { formatBRL, formatNumber, formatPct } from "@/lib/format";
+import { formatBRL, formatPct } from "@/lib/format";
 import type { Dashboard } from "@/lib/dashboard-data";
 
 const card = "flex flex-col gap-1 card p-4";
@@ -24,7 +24,7 @@ function Tile({ label, value, hint, help, tone = "default" }: { label: string; v
 
 /** Painel completo: números do dia a dia, sempre em "% do preço de venda", com o jeito de ler ao lado. */
 export function PainelView({ data }: { data: Dashboard }) {
-  const { ctx, panel, breakEven } = data;
+  const { ctx, panel } = data;
   const estimate = ctx.estimate;
 
   if (!panel) {
@@ -132,35 +132,6 @@ export function PainelView({ data }: { data: Dashboard }) {
           ))}
         </ul>
         {panel.cmvRanking.length > 8 ? <p className="text-xs text-muted">Mostrando os 8 com maior gasto.</p> : null}
-      </section>
-
-      <section aria-label="Ponto de equilíbrio" className={card}>
-        <p className="flex items-center text-xs font-semibold uppercase tracking-wider text-muted">
-          Para empatar no mês
-          <Hint label="O que é ponto de equilíbrio?">Quanto você precisa vender por mês só para pagar todas as contas, sem lucro e sem prejuízo.</Hint>
-        </p>
-        {breakEven ? (
-          <>
-            <p className="tabular text-2xl font-extrabold tracking-tight">{formatNumber(breakEven.units, 0)} unidades</p>
-            <p className="text-sm text-muted">
-              Cerca de {formatNumber(breakEven.perDay, 0)} por dia · {formatBRL(breakEven.revenue)} de faturamento
-            </p>
-            {ctx.monthlyRevenue ? (
-              <>
-                <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-border" aria-hidden>
-                  <div className={`h-full rounded-full ${ctx.monthlyRevenue >= breakEven.revenue ? "bg-success" : "bg-danger"}`} style={{ width: `${Math.min(100, (ctx.monthlyRevenue / breakEven.revenue) * 100)}%` }} />
-                </div>
-                <p className="text-xs text-muted">
-                  Pela sua média de faturamento ({formatBRL(ctx.monthlyRevenue)} por mês), você está {ctx.monthlyRevenue >= breakEven.revenue ? "acima" : "abaixo"} do equilíbrio. O mês em andamento aparece no Início.
-                </p>
-              </>
-            ) : null}
-          </>
-        ) : (
-          <p className="text-sm text-muted">
-            Cadastre seus custos fixos e a equipe para ver quanto precisa vender. <Link href="/financeiro" className="font-semibold text-primary underline">Abrir Custos fixos e equipe</Link>
-          </p>
-        )}
       </section>
     </div>
   );

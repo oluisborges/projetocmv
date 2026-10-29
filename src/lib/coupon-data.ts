@@ -7,7 +7,7 @@ import { monthBounds } from "@/lib/month-view";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { createClient } from "@/lib/supabase/server";
 
-export type DiscountRoom = { id: string; name: string; price: number; cost: number; units: number; maxDiscountPct: number | null };
+export type DiscountRoom = { id: string; name: string; price: number; cost: number; /** Parte das contas fixas e da equipe que uma unidade paga (R$). */ fixedCost: number; units: number; maxDiscountPct: number | null };
 
 export type CouponData = {
   unitName: string;
@@ -97,7 +97,8 @@ export async function loadCoupons(orgId: string, canWrite: boolean, month: strin
     .flatMap(([id, s]) => {
       const r = recipeById.get(id);
       if (!r || r.cost === null || !(r.price && r.price > 0)) return [];
-      return [{ id, name: r.name, price: r.price, cost: r.cost, units: s.units, maxDiscountPct: maxDiscountPct({ price: r.price, cost: r.cost, variablePct, minMarginPct }) }];
+      const fixedCost = r.price * (ctx.settings.fixedExpensePct ?? 0);
+      return [{ id, name: r.name, price: r.price, cost: r.cost, fixedCost, units: s.units, maxDiscountPct: maxDiscountPct({ price: r.price, cost: r.cost, variablePct, minMarginPct, fixedCostPerUnit: fixedCost }) }];
     })
     .sort((a, b) => b.units - a.units)
     .slice(0, 8);

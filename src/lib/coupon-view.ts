@@ -138,13 +138,14 @@ export function analyzeCoupons(input: {
 }
 
 /**
- * Quanto de desconto uma marmita aguenta sem a margem cair abaixo da mínima:
- * preço mínimo = custo ÷ (1 − impostos − margem mínima); desconto máximo = 1 − preço mínimo ÷ preço. `null` se a conta é impossível.
+ * Quanto de desconto um produto aguenta sem a margem cair abaixo da mínima:
+ * preço mínimo = (custo + custos fixos de uma unidade) ÷ (1 − impostos − margem mínima); desconto máximo = 1 − preço mínimo ÷ preço. `null` se a conta é impossível.
+ * `fixedCostPerUnit` (R$): a parte das contas fixas e da equipe que cada unidade paga. Ela não encolhe com o cupom: o aluguel é o mesmo com ou sem desconto.
  */
-export function maxDiscountPct(input: { price: number; cost: number; variablePct: number; minMarginPct: number }): number | null {
+export function maxDiscountPct(input: { price: number; cost: number; variablePct: number; minMarginPct: number; fixedCostPerUnit?: number }): number | null {
   const factor = 1 - input.variablePct - input.minMarginPct;
   if (factor <= 0 || input.price <= 0) return null;
-  const floor = input.cost / factor;
+  const floor = (input.cost + (input.fixedCostPerUnit ?? 0)) / factor;
   return Math.max(0, 1 - floor / input.price);
 }
 

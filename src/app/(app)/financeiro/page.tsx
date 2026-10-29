@@ -1,13 +1,10 @@
 import Link from "next/link";
-import { Hint } from "@/components/hint";
 import { CostsTabs } from "@/components/costs-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
-import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
-import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
-import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
+import { loadPricingContext } from "@/lib/pricing-data";
 import { StepCard } from "./step-card";
 import { AddFixedCostForm, AddStaffForm, FixedCostRow, MonthlyNumbersForm, StaffRowView } from "./costs-forms";
 
@@ -27,24 +24,7 @@ export default async function CostsPage() {
     );
   }
 
-  const [fixedCosts, staff, ingredients, { recipes, items }, prices] = await Promise.all([
-    loadFixedCosts(ctx.unit.id),
-    loadStaff(ctx.unit.id),
-    loadIngredients(),
-    loadRecipes(),
-    loadCurrentPrices(ctx.unit.id),
-  ]);
-
-  // Produtos com custo calculado e preço definido entram no ponto de equilíbrio (mesmo peso para todas).
-  const byId = new Map(ingredients.map((i) => [i.id, i]));
-  const dishes = recipes.flatMap((r) => {
-    const price = prices.get(r.id) ?? 0;
-    const view = computeRecipe(
-      recipeCostSettings(r, ctx.settings.safetyMarginPct),
-      items.filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id)).map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope })),
-    );
-    return view.ok && price > 0 ? [{ price, cost: view.cost.costPerPortion.toNumber() }] : [];
-  });
+  const [fixedCosts, staff] = await Promise.all([loadFixedCosts(ctx.unit.id), loadStaff(ctx.unit.id)]);
 
   const cheapest = [...ctx.channels].sort((a, b) => a.fee_pct - b.fee_pct)[0];
   const feePct = cheapest?.fee_pct ?? 0;
@@ -53,7 +33,7 @@ export default async function CostsPage() {
     staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
     monthlyRevenue: ctx.monthlyRevenue,
     monthlyUnits: ctx.monthlyUnits,
-    dishes,
+    dishes: [],
     taxPct: ctx.settings.taxPct,
     feePct: feePct + (ctx.settings.otherPct ?? 0),
   });
@@ -142,42 +122,21 @@ export default async function CostsPage() {
       </section>
       <CostsTabs active="fixed" />
 
-      <section aria-live="polite" className="flex flex-col gap-2 rounded-2xl bg-primary p-5 text-primary-foreground">
-        <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-90">
-          Para não ter prejuízo, você precisa vender
-          <Hint label="O que é ponto de equilíbrio?">Quanto você precisa vender por mês só para pagar todas as contas, sem lucro e sem prejuízo.</Hint>
-        </p>
-        {summary.breakEven ? (
-          <>
-            <p className="tabular text-3xl font-extrabold tracking-tight">{formatNumber(summary.breakEven.units, 0)} unidades por mês</p>
+      {summary.total > 0 ? (
+        <section aria-live="polite" className="flex flex-col gap-1 rounded-2xl bg-primary p-5 text-primary-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wider opacity-90">Total de contas e equipe</p>
+          <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(summary.total)} por mês</p>
+          {summary.pctOfRevenue !== null && !overRevenue ? (
             <p className="text-sm opacity-90">
-              Cerca de {formatNumber(summary.breakEven.perDay, 0)} por dia · {formatBRL(summary.breakEven.revenue)} de faturamento
+              <span className="tabular">{formatPct(summary.pctOfRevenue)}</span> do que você fatura, já no preço. Quanto precisa vender para empatar: Início → Visão Avançada.
             </p>
-          </>
-        ) : summary.total > 0 && dishes.length > 0 ? (
-          <p className="text-base font-semibold">Com os preços de hoje, cada venda perde dinheiro. Revise em Cardápio.</p>
-        ) : summary.total > 0 ? (
-          <p className="text-base">
-            Falta o preço de venda dos produtos.{" "}
-            <Link href="/cardapio" className="font-bold underline">
-              Definir preços
-            </Link>
-          </p>
-        ) : (
-          <p className="text-base">Preencha os passos abaixo e eu calculo isso para você.</p>
-        )}
-        {summary.total > 0 ? (
-          <p className="border-t border-white/25 pt-2 text-sm opacity-90">
-            Total de contas e equipe: <strong className="tabular">{formatBRL(summary.total)}</strong> por mês
-            {summary.pctOfRevenue !== null && !overRevenue ? (
-              <>
-                {" "}
-                (<span className="tabular">{formatPct(summary.pctOfRevenue)}</span> do que você fatura, já no preço)
-              </>
-            ) : null}
-          </p>
-        ) : null}
-      </section>
+          ) : (
+            <p className="text-sm opacity-90">Quanto precisa vender para empatar aparece em Início → Visão Avançada.</p>
+          )}
+        </section>
+      ) : (
+        <p className="card p-4 text-sm">Preencha os passos abaixo e eu calculo quanto você precisa vender para empatar.</p>
+      )}
 
       {overRevenue ? (
         <p className="rounded-xl bg-danger/10 p-3 text-sm text-danger">

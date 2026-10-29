@@ -83,7 +83,7 @@ export function engineerMenu(inputs: EngineeringInput[], variablePct: number): E
 
 export const QUADRANT_INFO: Record<Quadrant, { label: string; hint: string; action: string }> = {
   star: { label: "Estrelas", hint: "vendem bem e sobra bem", action: "Mantenha e destaque no cardápio." },
-  plowhorse: { label: "Vendem bem, sobra pouco", hint: "o público gosta, mas o lucro por marmita é baixo", action: "Teste um pequeno aumento de preço ou reduza o custo da ficha." },
+  plowhorse: { label: "Vendem bem, sobra pouco", hint: "o público gosta, mas o lucro por produto é baixo", action: "Teste um pequeno aumento de preço ou reduza o custo da ficha." },
   puzzle: { label: "Joias escondidas", hint: "sobra bem, mas vendem pouco", action: "Dê mais destaque: foto, combo ou promoção." },
   dog: { label: "Pouco retorno", hint: "vendem pouco e sobra pouco", action: "Reveja o preço ou considere tirar do cardápio." },
 };

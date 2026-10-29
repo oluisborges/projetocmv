@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadDashboard } from "@/lib/dashboard-data";
 import { formatNumber, formatPct } from "@/lib/format";
-import { MonthHealthCard, PriceActionsCard } from "@/components/home-cards";
+import { BreakEvenCard, MonthHealthCard, PriceActionsCard } from "@/components/home-cards";
 import { monthHealth } from "@/lib/month-health";
 import { priceActions } from "@/lib/price-actions";
 import { InicioTabs } from "@/components/inicio-tabs";
@@ -257,6 +257,7 @@ export default async function HomePage() {
       {health && data ? <MonthHealthCard health={health} month={data.month.start} canWrite={canWrite} /> : null}
       {emptyMonth}
       {numbers}
+      {data && showDashboard ? <BreakEvenCard breakEven={data.breakEven} monthlyRevenue={data.ctx.monthlyRevenue} /> : null}
       {showDashboard && data ? <DashboardView data={data} variant="alerts" hideBelowTarget={actions.length > 0} collapseAlerts={Boolean(checklist) || actions.length > 0} /> : null}
 
       {session.isPlatformAdmin && !member?.viewingAs ? (

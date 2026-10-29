@@ -162,9 +162,9 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
       {data.room.length > 0 ? (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-            Quanto desconto cada marmita aguenta
+            Quanto desconto cada produto aguenta
             <Hint>
-              É o maior desconto que a marmita aceita sem a margem cair abaixo da sua margem mínima ({formatPct(data.minMarginPct, 0)}), considerando o custo da ficha, os impostos e as taxas. Acima disso o cupom faz você perder dinheiro naquela marmita.
+              É o maior desconto que o produto aceita sem a margem cair abaixo da sua margem mínima ({formatPct(data.minMarginPct, 0)}). A conta usa o custo dos insumos, a parte das contas fixas e da equipe que cada unidade paga, os impostos e as taxas. Acima disso o cupom faz você perder dinheiro naquele produto.
             </Hint>
           </h2>
           <ul className="divide-y divide-border card px-4">
@@ -175,7 +175,7 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
                     {r.name}
                   </Link>
                   <p className="tabular text-xs text-muted">
-                    preço {formatBRL(r.price)} · custo {formatBRL(r.cost)} · vendeu {formatNumber(r.units, 0)}
+                    preço {formatBRL(r.price)} · insumos {formatBRL(r.cost)}{r.fixedCost > 0 ? ` · contas fixas ${formatBRL(r.fixedCost)}` : ""} · vendeu {formatNumber(r.units, 0)}
                   </p>
                 </div>
                 <p className={`tabular shrink-0 text-right text-lg font-extrabold ${r.maxDiscountPct !== null && r.maxDiscountPct < 0.1 ? "text-danger" : ""}`}>

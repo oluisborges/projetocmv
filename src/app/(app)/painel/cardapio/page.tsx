@@ -11,7 +11,7 @@ import { productsForShare, QUADRANT_INFO, summarizeQuadrants, type Quadrant } fr
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
 import { MenuMatrix } from "./matrix";
 
-export const metadata = { title: "Por marmita" };
+export const metadata = { title: "Por produto" };
 
 const SHORT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const BADGE: Record<Quadrant, string> = { star: "bg-success/10 text-success", plowhorse: "bg-warning/10 text-warning", puzzle: "bg-primary/10 text-primary", dog: "bg-danger/10 text-danger" };
@@ -30,8 +30,8 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
   const header = (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Por marmita</h1>
-        <p className="text-muted">Quais marmitas valem destaque, reajuste ou saída do cardápio digital.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">Por produto</h1>
+        <p className="text-muted">Quais produtos valem destaque, reajuste ou saída do cardápio digital.</p>
       </section>
       <InicioTabs active="avancada" />
       <PainelTabs active="cardapio" showCoupons={await hasMenuConnection(orgId)} />
@@ -91,7 +91,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
               </>
             ) : (
               <>
-                Informe quantas marmitas vendeu de cada ficha em{" "}
+                Informe quantos produtos vendeu de cada ficha em{" "}
                 <Link href={`/producao/fechar-mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary">
                   Fechar o mês
                 </Link>{" "}
@@ -105,11 +105,11 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
           <section className="flex flex-col gap-1 card p-4">
             <p className="text-sm text-muted">
               Sobrou das vendas do mês
-              <Hint>Valor pago pelas marmitas (já sem a parte do cupom) menos o custo das fichas, impostos e outras taxas. Ainda não desconta as despesas fixas.</Hint>
+              <Hint>Valor pago pelos produtos (já sem a parte do cupom) menos o custo das fichas, impostos e outras taxas. Ainda não desconta as despesas fixas.</Hint>
             </p>
             <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(result.totalContribution)}</p>
             <p className="text-sm text-muted">
-              em {formatNumber(result.totalUnits, 0)} marmitas · {formatBRL(result.avgUnitContribution)} por marmita, em média.{" "}
+              em {formatNumber(result.totalUnits, 0)} produtos · {formatBRL(result.avgUnitContribution)} por produto, em média.{" "}
               {result.products.length > 2 ? (
                 <>
                   {productsForShare(result, 0.8)} {productsForShare(result, 0.8) === 1 ? "produto dá" : "produtos dão"} 80% desse lucro.
@@ -133,7 +133,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
           </dl>
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Marmita por marmita</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Produto por produto</h2>
             <ul className="divide-y divide-border card px-4">
               {result.products.map((p) => (
                 <li key={p.id} className="flex flex-col gap-1.5 py-3">
@@ -145,7 +145,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
                   </div>
                   <p className="tabular text-sm text-muted">
                     vendeu <strong className="text-foreground">{formatNumber(p.units, 0)}</strong> · pago em média {formatBRL(p.paidPrice)} · sobra{" "}
-                    <strong className="text-foreground">{formatBRL(p.unitContribution)}</strong> ({formatPct(p.marginPct, 0)}) por marmita
+                    <strong className="text-foreground">{formatBRL(p.unitContribution)}</strong> ({formatPct(p.marginPct, 0)}) por produto
                   </p>
                   <p className="tabular text-sm">
                     Lucro no mês: <strong>{formatBRL(p.totalContribution)}</strong>
@@ -165,16 +165,16 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
                 .join(", ")}
               {result.unclassified.length > 4 ? "…" : ""}. Complete em{" "}
               <Link href="/cardapio" className="tap-area font-semibold text-primary">
-                Marmitas
+                Produtos
               </Link>
               .
             </p>
           ) : null}
           {data.skippedManualUnits > 0 ? (
             <p className="rounded-xl bg-warning/10 p-3 text-sm">
-              {formatNumber(data.skippedManualUnits, 0)} marmitas que você digitou em fichas sem preço cadastrado não entraram. Cadastre o preço em{" "}
+              {formatNumber(data.skippedManualUnits, 0)} produtos que você digitou em fichas sem preço cadastrado não entraram. Cadastre o preço em{" "}
               <Link href="/cardapio" className="tap-area font-semibold text-primary">
-                Marmitas, na aba Preço de venda
+                Produtos, na aba Preço de venda
               </Link>
               .
             </p>

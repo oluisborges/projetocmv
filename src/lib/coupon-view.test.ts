@@ -107,6 +107,9 @@ describe("quanto desconto a marmita aguenta", () => {
     expect(maxDiscountPct({ price: 19.9, cost: 8.5, variablePct: 0.08, minMarginPct: 0.1 })).toBeCloseTo(1 - 10.3659 / 19.9, 3);
   });
   it("custo já alto: aguenta pouco ou nada", () => {
+    // As contas fixas (R$ 2,00 por unidade) entram no custo: o preço mínimo sobe e o desconto aguentado cai.
+    expect(maxDiscountPct({ price: 19.9, cost: 8.5, variablePct: 0.08, minMarginPct: 0.1, fixedCostPerUnit: 2 })).toBeCloseTo(1 - (10.5 / 0.82) / 19.9, 3);
+    expect(maxDiscountPct({ price: 19.9, cost: 8.5, variablePct: 0.08, minMarginPct: 0.1, fixedCostPerUnit: 2 })!).toBeLessThan(maxDiscountPct({ price: 19.9, cost: 8.5, variablePct: 0.08, minMarginPct: 0.1 })!);
     expect(maxDiscountPct({ price: 12, cost: 11, variablePct: 0.08, minMarginPct: 0.1 })).toBe(0);
   });
   it("conta impossível (impostos + margem passam de 100%)", () => {
