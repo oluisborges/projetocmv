@@ -13,11 +13,17 @@ describe("avisos de novidade", () => {
     expect(new Set(ANNOUNCEMENTS.map((a) => a.id)).size).toBe(ANNOUNCEMENTS.length);
   });
 
-  it("enquanto nenhum aviso está no ar, cliente não vê nada e só o admin enxerga o rascunho (prévia)", () => {
-    expect(ACTIVE_ANNOUNCEMENT_ID).toBeNull();
-    expect(pickAnnouncement({ dismissedIds: [], previewAllowed: false })).toBeNull();
-    const admin = pickAnnouncement({ dismissedIds: [], previewAllowed: true });
-    expect(admin?.preview).toBe(true);
-    expect(admin?.announcement.id).toBe(DRAFT_ANNOUNCEMENT_ID);
+  it("com o aviso no ar, todos veem até marcarem a caixinha; depois nunca mais", () => {
+    expect(ACTIVE_ANNOUNCEMENT_ID).toBe(DRAFT_ANNOUNCEMENT_ID);
+    for (const previewAllowed of [false, true]) {
+      const shown = pickAnnouncement({ dismissedIds: [], previewAllowed });
+      expect(shown?.announcement.id).toBe(ACTIVE_ANNOUNCEMENT_ID);
+      expect(shown?.preview).toBe(false); // vale de verdade, também para o admin (a dispensa é da conta dele)
+      expect(pickAnnouncement({ dismissedIds: [ACTIVE_ANNOUNCEMENT_ID!], previewAllowed })).toBeNull();
+    }
+  });
+
+  it("dispensar outro aviso não esconde este", () => {
+    expect(pickAnnouncement({ dismissedIds: ["outro-aviso"], previewAllowed: false })?.announcement.id).toBe(ACTIVE_ANNOUNCEMENT_ID);
   });
 });

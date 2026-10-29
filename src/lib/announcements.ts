@@ -1,6 +1,7 @@
 // Avisos de novidade (o modal que aparece depois de uma atualização).
 // Para lançar um aviso: acrescente-o em ANNOUNCEMENTS e troque ACTIVE_ANNOUNCEMENT_ID pelo id dele.
 // Com ACTIVE_ANNOUNCEMENT_ID = null nenhum cliente vê nada; o admin Shogun pode ver o rascunho abrindo qualquer tela com ?aviso=ver.
+// No ar desde a atualização de menus e receitas (novidades-2026-10).
 
 /** Textos aceitam **negrito**. `highlight` + `badge`: bloco em destaque (ex.: o que vem aí). */
 export type AnnouncementSection = { icon: string; title: string; body: string; bullets?: string[]; /** frase depois da lista */ after?: string; highlight?: boolean; badge?: string };
@@ -14,7 +15,7 @@ export type Announcement = {
 };
 
 /** Aviso que está no ar para todos. `null` = nenhum. Só trocar quando o dono do projeto pedir. */
-export const ACTIVE_ANNOUNCEMENT_ID: string | null = null;
+export const ACTIVE_ANNOUNCEMENT_ID: string | null = "novidades-2026-10";
 
 /** O aviso que está sendo preparado (visível só para o admin, com ?aviso=ver). */
 export const DRAFT_ANNOUNCEMENT_ID = "novidades-2026-10";
