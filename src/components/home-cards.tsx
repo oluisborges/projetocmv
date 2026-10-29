@@ -63,7 +63,7 @@ export function MonthHealthCard({ health, month, canWrite }: { health: MonthHeal
       ) : null}
 
       {canWrite ? (
-        <Link href={`/mes?mes=${month.slice(0, 7)}`} className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-primary">
+        <Link href={`/financeiro/mes?mes=${month.slice(0, 7)}`} className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-primary">
           Ver ou atualizar as contas do mês →
         </Link>
       ) : null}
@@ -85,7 +85,7 @@ export function PriceActionsCard({ actions, targetPct, canWrite = false }: { act
       <ul className="divide-y divide-border">
         {actions.map((a) => (
           <li key={a.id} className="flex flex-col gap-2 py-3">
-            <Link href={`/marmitas/${a.id}/preco`} className="flex min-h-11 flex-col gap-0.5">
+            <Link href={`/cardapio/${a.id}/preco`} className="flex min-h-11 flex-col gap-0.5">
               <span className="font-semibold leading-snug">{a.name}</span>
               <span className="tabular text-sm">
                 Suba de {formatBRL(a.price)} para <strong>{formatBRL(a.targetPrice)}</strong> <span className="text-muted">(+{formatBRL(a.rise)}, +{formatPct(a.risePct, 0)})</span>

@@ -17,14 +17,13 @@ const ICONS = {
   factory: <path d="M3 20V9l5 3V9l5 3V6h3l1 14M3 20h18M7 16h2m3 0h2" {...stroke} />,
 } as const;
 
-type Item = { href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean; lock?: "painel" | "producao" };
+type Item = { href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean; lock?: "producao" };
 
 const ITEMS: Item[] = [
-  { href: "/", label: "Início", icon: "home", match: (p) => p === "/" },
-  { href: "/marmitas", label: "Marmitas", icon: "recipe", match: (p) => p.startsWith("/marmitas") },
-  { href: "/insumos", label: "Insumos", icon: "basket", match: (p) => p.startsWith("/insumos") },
-  { href: "/custos", label: "Custos", icon: "wallet", match: (p) => p.startsWith("/custos") },
-  { href: "/painel", label: "Painel", icon: "chart", match: (p) => p.startsWith("/painel") || p.startsWith("/mes"), lock: "painel" },
+  { href: "/", label: "Início", icon: "home", match: (p) => p === "/" || p.startsWith("/painel") },
+  { href: "/cardapio", label: "Cardápio", icon: "recipe", match: (p) => p.startsWith("/cardapio") },
+  { href: "/ingredientes", label: "Ingredientes", icon: "basket", match: (p) => p.startsWith("/ingredientes") },
+  { href: "/financeiro", label: "Financeiro", icon: "wallet", match: (p) => p.startsWith("/financeiro") },
   { href: "/producao", label: "Produção", icon: "factory", match: (p) => p.startsWith("/producao"), lock: "producao" },
 ];
 
@@ -49,9 +48,9 @@ function NavLabel({ label, icon, active }: { label: string; icon: keyof typeof I
  * Menu de baixo, sempre com todos os itens. Um item que ainda não pode ser usado fica com a letra clara e um cadeado;
  * ao tocar, aparece o que fazer para liberar (nunca é um botão que não responde).
  */
-export function BottomNav({ locks }: { locks: { painel: MenuLock | null; producao: MenuLock | null } }) {
+export function BottomNav({ locks }: { locks: { producao: MenuLock | null } }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState<"painel" | "producao" | null>(null);
+  const [open, setOpen] = useState<"producao" | null>(null);
   const close = useCallback(() => setOpen(null), []);
   const tip = open ? locks[open] : null;
 

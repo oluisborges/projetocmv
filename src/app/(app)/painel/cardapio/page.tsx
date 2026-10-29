@@ -82,7 +82,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
             {data.menuConnected ? (
               <>
                 Vincule os produtos do cardápio digital às fichas em{" "}
-                <Link href="/custos/cardapio" className="tap-area font-semibold text-primary">
+                <Link href="/financeiro/cardapio" className="tap-area font-semibold text-primary">
                   Custos, aba Cardápio digital
                 </Link>{" "}
                 e complete as fichas que ainda estão sem custo.
@@ -90,7 +90,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
             ) : (
               <>
                 Informe quantas marmitas vendeu de cada ficha em{" "}
-                <Link href={`/mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary">
+                <Link href={`/financeiro/mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary">
                   Fechar o mês
                 </Link>{" "}
                 (e o preço de cada uma em Marmitas, na aba Preço de venda) para ver a análise.
@@ -136,7 +136,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
               {result.products.map((p) => (
                 <li key={p.id} className="flex flex-col gap-1.5 py-3">
                   <div className="flex items-start justify-between gap-3">
-                    <Link href={`/marmitas/${p.id}/preco`} className="tap-area min-w-0 font-semibold leading-snug">
+                    <Link href={`/cardapio/${p.id}/preco`} className="tap-area min-w-0 font-semibold leading-snug">
                       {p.name}
                     </Link>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${BADGE[p.quadrant]}`}>{QUADRANT_INFO[p.quadrant].label}</span>
@@ -162,7 +162,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
                 .map((u) => u.name)
                 .join(", ")}
               {result.unclassified.length > 4 ? "…" : ""}. Complete em{" "}
-              <Link href="/marmitas" className="tap-area font-semibold text-primary">
+              <Link href="/cardapio" className="tap-area font-semibold text-primary">
                 Marmitas
               </Link>
               .
@@ -171,7 +171,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
           {data.skippedManualUnits > 0 ? (
             <p className="rounded-xl bg-warning/10 p-3 text-sm">
               {formatNumber(data.skippedManualUnits, 0)} marmitas que você digitou em fichas sem preço cadastrado não entraram. Cadastre o preço em{" "}
-              <Link href="/marmitas" className="tap-area font-semibold text-primary">
+              <Link href="/cardapio" className="tap-area font-semibold text-primary">
                 Marmitas, na aba Preço de venda
               </Link>
               .

@@ -7,7 +7,7 @@ import { baseUnitOf, isCompatibleUnit, isPurchaseUnit, toBaseQty, type PurchaseU
 import { parseDecimal } from "@/lib/format";
 import { activeUnit } from "@/lib/pricing-data";
 import { createClient } from "@/lib/supabase/server";
-import type { Result } from "../../marmitas/actions";
+import type { Result } from "../../cardapio/actions";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 

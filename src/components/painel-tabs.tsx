@@ -13,7 +13,7 @@ export function PainelTabs({ active, showCoupons = false }: { active: "resumo" |
       items={[
         { key: "resumo", href: "/painel", label: "Resumo" },
         { key: "cardapio", href: "/painel/cardapio", label: "Por marmita" },
-        { key: "mes", href: "/mes", label: "Mês" },
+        { key: "mes", href: "/financeiro/mes", label: "Mês" },
         { key: "cupons", href: "/painel/cupons", label: "Cupons", lock: showCoupons ? undefined : { message: NO_COUPONS } },
       ]}
     />

@@ -8,56 +8,52 @@ import { BottomNav } from "./bottom-nav";
 import { CostsTabs } from "./costs-tabs";
 import { PainelTabs } from "./painel-tabs";
 
-const open = { painel: null, producao: null };
+const open = { producao: null };
 const newAccount = {
-  painel: { message: "O Painel é liberado depois que você cria a sua primeira marmita.", href: "/marmitas/nova", cta: "Criar marmita" },
-  producao: { message: "A Produção é liberada depois que você cria a sua primeira marmita.", href: "/marmitas/nova", cta: "Criar marmita" },
+  producao: { message: "A Produção é liberada depois que você cria a sua primeira marmita.", href: "/cardapio/nova", cta: "Criar marmita" },
 };
 
 describe("menu de baixo", () => {
-  it("sempre mostra os 6 itens, inclusive com tudo travado", () => {
+  it("sempre mostra os 5 itens, inclusive com a Produção travada", () => {
     path.value = "/";
     for (const locks of [open, newAccount]) {
       const html = renderToStaticMarkup(<BottomNav locks={locks} />);
-      for (const label of ["Início", "Marmitas", "Insumos", "Custos", "Painel", "Produção"]) expect(html).toContain(`>${label}<`);
+      for (const label of ["Início", "Cardápio", "Ingredientes", "Financeiro", "Produção"]) expect(html).toContain(`>${label}<`);
     }
   });
 
-  it("item travado vira botão com cadeado (não leva para a tela) e o liberado continua link", () => {
+  it("Produção travada vira botão com cadeado (não leva para a tela) e o resto continua link", () => {
     path.value = "/";
     const html = renderToStaticMarkup(<BottomNav locks={newAccount} />);
-    expect(html).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Painel/);
     expect(html).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Produção/);
-    expect(html).not.toContain('href="/painel"');
     expect(html).not.toContain('href="/producao"');
-    expect(html).toContain('href="/custos"');
-    expect(html).toContain('href="/marmitas"');
+    for (const href of ["/", "/cardapio", "/ingredientes", "/financeiro"]) expect(html).toContain(`href="${href}"`);
   });
 
   it("tudo liberado: todos os itens são links", () => {
     path.value = "/";
     const html = renderToStaticMarkup(<BottomNav locks={open} />);
-    for (const href of ["/", "/marmitas", "/insumos", "/custos", "/painel", "/producao"]) expect(html).toContain(`href="${href}"`);
+    for (const href of ["/", "/cardapio", "/ingredientes", "/financeiro", "/producao"]) expect(html).toContain(`href="${href}"`);
     expect(html).not.toContain("aria-disabled");
   });
 
   it("quem já está na tela do item nunca vê esse item travado", () => {
-    path.value = "/painel/cupons";
+    path.value = "/producao/estoque";
     const html = renderToStaticMarkup(<BottomNav locks={newAccount} />);
-    expect(html).toContain('href="/painel"');
+    expect(html).toContain('href="/producao"');
     expect(html).toContain('aria-current="page"');
   });
 
-  it("Mês (fechar o mês) fica dentro do Painel: o item Painel fica ativo em /mes", () => {
-    path.value = "/mes/estoque";
+  it("a Visão Avançada (/painel) fica dentro do Início", () => {
+    path.value = "/painel/cupons";
     const html = renderToStaticMarkup(<BottomNav locks={open} />);
-    expect(html).toMatch(/href="\/painel"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/painel"/);
+    expect(html).toMatch(/href="\/"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/"/);
   });
 
-  it("Custos fica ativo em /custos e nas abas dele", () => {
-    path.value = "/custos/impostos";
+  it("Fechar o mês fica dentro do Financeiro", () => {
+    path.value = "/financeiro/mes/estoque";
     const html = renderToStaticMarkup(<BottomNav locks={open} />);
-    expect(html).toMatch(/href="\/custos"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/custos"/);
+    expect(html).toMatch(/href="\/financeiro"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/financeiro"/);
   });
 });
 
@@ -72,7 +68,7 @@ describe("abas travadas", () => {
   });
 
   it("com cardápio conectado, as duas abas viram links", () => {
-    expect(renderToStaticMarkup(<CostsTabs active="fixed" menu />)).toContain('href="/custos/cardapio"');
+    expect(renderToStaticMarkup(<CostsTabs active="fixed" menu />)).toContain('href="/financeiro/cardapio"');
     const painel = renderToStaticMarkup(<PainelTabs active="resumo" showCoupons />);
     expect(painel).toContain('href="/painel/cupons"');
     expect(painel).not.toContain("aria-disabled");

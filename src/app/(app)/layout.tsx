@@ -12,8 +12,8 @@ import { createClient } from "@/lib/supabase/server";
 import { exitViewAs, signOut } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 
-/** Menus travados (sempre visíveis): "Painel" e "Produção" até a primeira marmita. */
-async function menuLocks(orgId: string): Promise<{ painel: MenuLock | null; producao: MenuLock | null }> {
+/** Menus travados (sempre visíveis): "Produção" até a primeira marmita. */
+async function menuLocks(orgId: string): Promise<{ producao: MenuLock | null }> {
   const supabase = await createClient();
   const recipes = await supabase.from("recipes").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("kind", "marmita").eq("active", true);
   return menuLocksFrom(recipes);
@@ -25,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const orgName = active?.orgName;
   // Equipe Shogun (fora do "ver como"): cardápios que pararam de importar aparecem em qualquer tela.
   // O aviso é um extra: se falhar (chave de serviço ausente, banco lento), a tela continua funcionando.
-  const locks = active ? await menuLocks(active.orgId).catch(() => ({ painel: null, producao: null })) : { painel: null, producao: null };
+  const locks = active ? await menuLocks(active.orgId).catch(() => ({ producao: null })) : { producao: null };
   const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts().catch(() => []) : [];
 
   return (

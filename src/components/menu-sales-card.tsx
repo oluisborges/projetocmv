@@ -62,7 +62,7 @@ export function MenuSalesCard({
         <p className="rounded-lg bg-warning/10 p-3 text-sm">
           {unlinkedProducts} {unlinkedProducts === 1 ? "produto vendido ainda não tem" : "produtos vendidos ainda não têm"} ficha
           {summary.coverage !== null ? ` (o custo de ${formatPct(summary.coverage.toNumber())} do que o cardápio vendeu já está na conta)` : ""}.{" "}
-          <Link href="/custos/cardapio" className="tap-area font-semibold text-primary">
+          <Link href="/financeiro/cardapio" className="tap-area font-semibold text-primary">
             Vincular agora
           </Link>
         </p>

@@ -37,7 +37,7 @@ export function buildNotices(input: NoticesInput): Notice[] {
       tone: "bad",
       title: `${plural(input.belowTarget.length, "marmita abaixo", "marmitas abaixo")} da meta de lucro`,
       detail: names,
-      href: "/marmitas",
+      href: "/cardapio",
       cta: "Ver marmitas",
     });
   }
@@ -49,7 +49,7 @@ export function buildNotices(input: NoticesInput): Notice[] {
       tone: "warn",
       title: `Feche ${prev.label}`,
       detail: "Falta informar o faturamento do mês para saber se deu lucro.",
-      href: `/mes?mes=${prev.month.slice(0, 7)}`,
+      href: `/financeiro/mes?mes=${prev.month.slice(0, 7)}`,
       cta: "Fechar o mês",
     });
   }
@@ -61,7 +61,7 @@ export function buildNotices(input: NoticesInput): Notice[] {
       tone: "warn",
       title: `${inc.name} subiu ${Math.round(inc.pct * 100)}%`,
       detail: inc.recipes > 0 ? `Afeta ${plural(inc.recipes, "ficha", "fichas")}.` : "Nenhuma ficha usa este insumo ainda.",
-      href: "/insumos",
+      href: "/ingredientes",
       cta: "Ver insumos",
     });
   }
@@ -72,7 +72,7 @@ export function buildNotices(input: NoticesInput): Notice[] {
       tone: "warn",
       title: plural(input.noPriceCount, "insumo sem preço", "insumos sem preço"),
       detail: "Sem o preço, o custo das marmitas que usam esse insumo fica errado.",
-      href: "/insumos",
+      href: "/ingredientes",
       cta: "Preencher preços",
     });
   }
@@ -83,7 +83,7 @@ export function buildNotices(input: NoticesInput): Notice[] {
       tone: "info",
       title: `${plural(input.staleCount, "preço parado", "preços parados")} há muito tempo`,
       detail: "Confira se ainda é o que você paga hoje.",
-      href: "/insumos",
+      href: "/ingredientes",
       cta: "Conferir preços",
     });
   }

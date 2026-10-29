@@ -145,7 +145,7 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
                   ) : (
                     <p className="text-xs text-muted">
                       Só {formatPct(r.coverage, 0)} dos itens têm ficha vinculada.{" "}
-                      <Link href="/custos/cardapio" className="font-semibold text-primary">
+                      <Link href="/financeiro/cardapio" className="font-semibold text-primary">
                         Vincular produtos
                       </Link>
                     </p>
@@ -169,7 +169,7 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
             {data.room.map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
-                  <Link href={`/marmitas/${r.id}/preco`} className="block truncate font-semibold">
+                  <Link href={`/cardapio/${r.id}/preco`} className="block truncate font-semibold">
                     {r.name}
                   </Link>
                   <p className="tabular text-xs text-muted">

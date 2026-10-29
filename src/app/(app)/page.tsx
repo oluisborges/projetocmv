@@ -29,7 +29,7 @@ export default async function HomePage() {
         minutes: 5,
         title: "Cadastre seus insumos e preços",
         detail: data.ingredientCount === 0 ? "Comece pelo catálogo de insumos: é só marcar o que você usa." : `${pricedIng} de ${data.ingredientCount} com preço preenchido`,
-        href: data.ingredientCount === 0 ? "/insumos/catalogo" : "/insumos",
+        href: data.ingredientCount === 0 ? "/ingredientes/catalogo" : "/ingredientes",
         cta: data.ingredientCount === 0 ? "Escolher do catálogo" : "Preencher preços",
         done: data.ingredientCount > 0 && data.noPriceCount === 0,
       },
@@ -38,7 +38,7 @@ export default async function HomePage() {
         minutes: 5,
         title: "Monte a ficha de cada produto",
         detail: data.recipeCount === 0 ? "A receita de um produto, com o custo calculado na hora." : `${data.recipeCount} ${data.recipeCount === 1 ? "ficha criada" : "fichas criadas"}`,
-        href: data.recipeCount === 0 ? "/marmitas/nova" : "/marmitas",
+        href: data.recipeCount === 0 ? "/cardapio/nova" : "/cardapio",
         cta: data.recipeCount === 0 ? "Criar a primeira ficha" : "Ver marmitas",
         done: data.recipeCount > 0,
       },
@@ -51,7 +51,7 @@ export default async function HomePage() {
           : ctx.fixedAuto
             ? "Falta só informar os impostos para o lucro mostrado ser o real."
             : "Sem isso o lucro mostrado é só uma estimativa.",
-        href: "/custos/impostos",
+        href: "/financeiro/impostos",
         cta: "Informar agora",
         done: ctx.configured,
       },
@@ -65,7 +65,7 @@ export default async function HomePage() {
               ? "Cadastrados: o app já usa isso no preço e mostra seu ponto de equilíbrio."
               : "Cadastrados. Informe também o faturamento do mês para o app usar no preço."
             : "Aluguel, energia, equipe… para descobrir quanto precisa vender para empatar.",
-        href: "/custos",
+        href: "/financeiro",
         cta: ctx.fixedTotal > 0 ? "Completar" : "Cadastrar custos",
         done: ctx.fixedAuto,
       },
@@ -74,7 +74,7 @@ export default async function HomePage() {
         minutes: 3,
         title: "Defina o preço de venda",
         detail: data.recipeCount === 0 ? "Depois de criar as fichas." : `${data.withPriceCount} de ${data.recipeCount} produtos com preço`,
-        href: "/marmitas",
+        href: "/cardapio",
         cta: "Definir preços",
         done: data.recipeCount > 0 && data.withPriceCount === data.recipeCount,
       },

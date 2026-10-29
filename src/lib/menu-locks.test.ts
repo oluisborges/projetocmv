@@ -1,24 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { menuLocksFrom } from "./menu-locks";
+import { advancedLockFrom, menuLocksFrom } from "./menu-locks";
 
 describe("menus travados", () => {
-  it("conta nova: Painel e Produção travados, os dois mandam criar a primeira marmita", () => {
+  it("conta nova: Produção travada e manda criar a primeira marmita", () => {
     const l = menuLocksFrom({ count: 0 });
-    expect(l.painel?.href).toBe("/marmitas/nova");
-    expect(l.painel?.message).toContain("primeira marmita");
-    expect(l.producao?.href).toBe("/marmitas/nova");
+    expect(l.producao?.href).toBe("/cardapio/nova");
     expect(l.producao?.message).toContain("primeira marmita");
   });
 
   it("com ao menos uma marmita: tudo liberado", () => {
-    expect(menuLocksFrom({ count: 3 })).toEqual({ painel: null, producao: null });
+    expect(menuLocksFrom({ count: 3 })).toEqual({ producao: null });
+    expect(advancedLockFrom({ count: 3 })).toBeNull();
+  });
+
+  it("a Visão Avançada também espera a primeira marmita", () => {
+    expect(advancedLockFrom({ count: 0 })?.message).toContain("Visão Avançada");
   });
 
   it("erro de consulta não trava nada", () => {
-    expect(menuLocksFrom({ count: null, error: new Error("timeout") })).toEqual({ painel: null, producao: null });
+    expect(menuLocksFrom({ count: null, error: new Error("timeout") })).toEqual({ producao: null });
+    expect(advancedLockFrom({ count: null, error: { code: "57014" } })).toBeNull();
   });
 
   it("contagem nula sem erro conta como zero", () => {
-    expect(menuLocksFrom({ count: null }).painel).not.toBeNull();
+    expect(menuLocksFrom({ count: null }).producao).not.toBeNull();
   });
 });

@@ -49,7 +49,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           {data.belowTarget.length > 2 ? "…" : ""})
         </>
       ),
-      href: "/marmitas",
+      href: "/cardapio",
       cta: "Ajustar preços",
     });
   }
@@ -63,7 +63,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           {inc.recipes > 0 ? `: afeta ${inc.recipes} ${inc.recipes === 1 ? "produto" : "produtos"}` : ""}
         </>
       ),
-      href: "/insumos",
+      href: "/ingredientes",
       cta: "Ver insumos",
     });
   }
@@ -76,7 +76,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           <strong>{data.noPriceCount} {data.noPriceCount === 1 ? "insumo sem preço" : "insumos sem preço"}</strong>: o custo dos produtos está incompleto
         </>
       ),
-      href: "/insumos",
+      href: "/ingredientes",
       cta: "Preencher",
     });
   }
@@ -89,7 +89,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           <strong>{data.staleCount} {data.staleCount === 1 ? "preço de insumo" : "preços de insumos"} sem atualizar há mais de 30 dias</strong>
         </>
       ),
-      href: "/insumos",
+      href: "/ingredientes",
       cta: "Atualizar",
     });
   }
@@ -102,7 +102,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           <strong>Você gastou {formatBRL(month.deviationCost)} a mais em insumos</strong> do que as vendas do mês explicam
         </>
       ),
-      href: "/mes",
+      href: "/financeiro/mes",
       cta: "Ver o mês",
     });
   }
@@ -115,26 +115,26 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           label="Lucro médio"
           value={data.avgNetPct !== null ? formatPct(data.avgNetPct) : "—"}
           hint={estimate ? "estimativa: faltam impostos" : `por unidade, vendendo por ${data.channelName}`}
-          href="/marmitas"
+          href="/cardapio"
         />
         <Kpi
           label="Abaixo da meta"
           value={String(data.belowTarget.length)}
           hint={`de ${data.pricedCount} ${data.pricedCount === 1 ? "produto com preço" : "produtos com preço"}`}
           tone={data.belowTarget.length > 0 && !estimate ? "bad" : "default"}
-          href="/marmitas"
+          href="/cardapio"
         />
         <Kpi
           label="Gasto com insumos"
           value={month.cmvRealPct !== null ? formatPct(month.cmvRealPct) : "—"}
           hint={month.cmvRealPct !== null ? "do faturamento neste mês" : "toque em Mês, no menu de baixo"}
-          href="/mes"
+          href="/financeiro/mes"
         />
         <Kpi
           label="Mão de obra"
           value={month.cmoPct !== null ? formatPct(month.cmoPct) : "—"}
           hint={month.cmoPct !== null ? "do faturamento neste mês" : "cadastre a equipe em Custos e o mês em Mês"}
-          href="/custos"
+          href="/financeiro"
         />
       </div>
       ) : null}
@@ -174,7 +174,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           <ul className="divide-y divide-border card px-4">
             {worst.map((d) => (
               <li key={d.id}>
-                <Link href={`/marmitas/${d.id}/preco`} className="flex min-h-14 items-center justify-between gap-3 py-3">
+                <Link href={`/cardapio/${d.id}/preco`} className="flex min-h-14 items-center justify-between gap-3 py-3">
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 font-medium leading-snug">{d.name}</span>
                     <span className="tabular text-xs text-muted">

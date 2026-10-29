@@ -70,13 +70,13 @@ describe("links internos", () => {
   const links = internalLinks();
 
   it("o app tem as rotas esperadas do menu novo", () => {
-    for (const r of ["/", "/marmitas", "/marmitas/[id]", "/marmitas/[id]/preco", "/insumos/receitas/nova", "/insumos/receitas/[id]", "/producao", "/producao/[id]", "/producao/estoque", "/insumos", "/mes", "/mes/estoque", "/mes/historico", "/painel", "/custos", "/custos/impostos", "/custos/cardapio", "/avisos"]) {
+    for (const r of ["/", "/cardapio", "/cardapio/[id]", "/cardapio/[id]/preco", "/ingredientes", "/ingredientes/receitas/nova", "/ingredientes/receitas/[id]", "/producao", "/producao/[id]", "/producao/estoque", "/painel", "/financeiro", "/financeiro/impostos", "/financeiro/cardapio", "/financeiro/mes", "/financeiro/mes/estoque", "/financeiro/mes/historico", "/avisos"]) {
       expect(routes, `falta a rota ${r}`).toContain(r);
     }
   });
 
   it("nenhuma rota do menu antigo continua existindo como página (viraram redirects)", () => {
-    for (const r of ["/fichas", "/precificacao", "/ajustes", "/ajustes/custos", "/custos/mes", "/custos/estoque", "/painel/historico"]) {
+    for (const r of ["/fichas", "/precificacao", "/ajustes", "/ajustes/custos", "/custos", "/custos/mes", "/custos/estoque", "/painel/historico", "/marmitas", "/insumos", "/mes"]) {
       expect(routes, `a rota antiga ${r} ainda existe`).not.toContain(r);
     }
   });
@@ -94,7 +94,7 @@ describe("links internos", () => {
   });
 
   it("nenhum link do código aponta mais para as URLs antigas (só os redirects as conhecem)", () => {
-    const old = links.filter(({ link }) => /^\/(fichas|precificacao|ajustes)(\/|$)/.test(link) || /^\/custos\/(mes|estoque)/.test(link) || link === "/painel/historico");
+    const old = links.filter(({ link }) => /^\/(fichas|precificacao|ajustes|marmitas|insumos|custos|mes)(\/|$)/.test(link) || link === "/painel/historico");
     expect(
       old.map((b) => `${b.file} -> ${b.link}`),
       "links para URLs antigas",
@@ -106,7 +106,12 @@ describe("links internos", () => {
     const destinations = [...text.matchAll(/to\("([^"]+)",\s*"([^"]+)"\)/g)].map((m) => m[2]);
     expect(destinations.length).toBeGreaterThan(5);
     const broken = destinations.filter((d) => {
-      const concrete = d.replace(/:path\*/g, "x").replace(/:[a-z]+/gi, "x");
+      // "/cardapio/:path*" leva a qualquer rota dentro de /cardapio: basta existir alguma.
+      if (d.endsWith("/:path*")) {
+        const prefix = d.slice(0, -"/:path*".length);
+        return !routes.some((r) => r === prefix || r.startsWith(`${prefix}/`));
+      }
+      const concrete = d.replace(/:[a-z]+/gi, "x");
       return !matchers.some((re) => re.test(concrete));
     });
     expect(broken, "redirects que levam a uma rota inexistente").toEqual([]);

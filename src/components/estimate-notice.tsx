@@ -7,7 +7,7 @@ export function EstimateNotice({ reason, className = "" }: { reason: "tax" | "ex
     <p role="status" className={`rounded-xl bg-warning/10 px-4 py-3 text-sm text-warning ${className}`}>
       <strong>Estimativa:</strong>{" "}
       {reason === "tax" ? "faltam os impostos e as despesas." : "as contas fixas ainda não entraram nas margens (falta o faturamento mensal, ou elas passam dele)."}{" "}
-      <Link href={reason === "tax" ? "/custos/impostos" : "/custos"} className="tap-area font-semibold underline">
+      <Link href={reason === "tax" ? "/financeiro/impostos" : "/financeiro"} className="tap-area font-semibold underline">
         {reason === "tax" ? "Informar em Custos" : "Ver em Custos, aba Custos fixos"}
       </Link>
     </p>

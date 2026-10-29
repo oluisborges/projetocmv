@@ -12,10 +12,10 @@ export function MarmitasTabs({ active, showCombos = true }: { active: "marmitas"
   const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
   return (
     <nav aria-label="Marmitas e combos" className="flex gap-1 rounded-xl bg-border/60 p-1">
-      <Link href="/marmitas" aria-current={active === "marmitas" ? "page" : undefined} className={item(active === "marmitas")}>
+      <Link href="/cardapio" aria-current={active === "marmitas" ? "page" : undefined} className={item(active === "marmitas")}>
         <Pending>Marmitas</Pending>
       </Link>
-      {showCombos ? <Link href="/marmitas/combos" aria-current={active === "combos" ? "page" : undefined} className={item(active === "combos")}>
+      {showCombos ? <Link href="/cardapio/combos" aria-current={active === "combos" ? "page" : undefined} className={item(active === "combos")}>
         <Pending>Combos</Pending>
       </Link> : null}
     </nav>

@@ -10,7 +10,7 @@ import { loadProductionBase, loadWeekPlanned, loadWeeklySales } from "@/lib/prod
 import { suggestionRows } from "@/lib/production-view";
 import { createClient } from "@/lib/supabase/server";
 import { brtDate, weekStartOf } from "@/lib/week";
-import type { Result } from "../marmitas/actions";
+import type { Result } from "../cardapio/actions";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 

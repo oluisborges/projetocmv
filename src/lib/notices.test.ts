@@ -17,7 +17,7 @@ describe("buildNotices", () => {
 
   it("insumo que subiu mostra o percentual e quantas fichas afeta", () => {
     const [n] = buildNotices({ ...base, increases: [{ ingredientId: "i1", name: "Frango", pct: 0.142, recipes: 3 }] });
-    expect(n).toMatchObject({ tone: "warn", title: "Frango subiu 14%", detail: "Afeta 3 fichas.", href: "/insumos" });
+    expect(n).toMatchObject({ tone: "warn", title: "Frango subiu 14%", detail: "Afeta 3 fichas.", href: "/ingredientes" });
   });
 
   it("fala no singular com uma ficha e avisa quando nenhuma usa o insumo", () => {
@@ -42,7 +42,7 @@ describe("buildNotices", () => {
       noPriceCount: 2,
       belowTarget: ["Strogonoff", "Feijoada", "Frango grelhado", "Escondidinho"],
     });
-    expect(list[0]).toMatchObject({ tone: "bad", href: "/marmitas", title: "4 marmitas abaixo da meta de lucro" });
+    expect(list[0]).toMatchObject({ tone: "bad", href: "/cardapio", title: "4 marmitas abaixo da meta de lucro" });
     expect(list[0].detail).toBe("Strogonoff, Feijoada, Frango grelhado…");
     expect(list[1].key).toBe("no-price");
   });
@@ -55,7 +55,7 @@ describe("buildNotices", () => {
     const prev = { label: "setembro", month: "2026-09-01", closed: false, soldOrRevenue: true };
     expect(buildNotices({ ...base, previousMonth: prev, dayOfMonth: 3 })).toEqual([]);
     const [n] = buildNotices({ ...base, previousMonth: prev, dayOfMonth: 4 });
-    expect(n).toMatchObject({ tone: "warn", title: "Feche setembro", href: "/mes?mes=2026-09" });
+    expect(n).toMatchObject({ tone: "warn", title: "Feche setembro", href: "/financeiro/mes?mes=2026-09" });
   });
 
   it("mês anterior sem movimento ou já fechado não gera aviso", () => {

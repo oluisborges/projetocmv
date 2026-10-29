@@ -18,26 +18,35 @@ const nextConfig: NextConfig = {
   // O logo do PDF é lido do disco no servidor: sem isto, a Vercel não leva a pasta public junto com a função.
   outputFileTracingIncludes: {
     "/painel/exportar": ["./public/brand/logo-horizontal.png"],
-    "/marmitas/exportar": ["./public/brand/logo-horizontal.png"],
+    "/cardapio/exportar": ["./public/brand/logo-horizontal.png"],
   },
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
   // URLs antigas (favoritos, links enviados) continuam funcionando depois da reorganização do menu.
   async redirects() {
     const to = (source: string, destination: string) => ({ source, destination, permanent: false });
     return [
-      to("/fichas", "/marmitas"),
-      to("/fichas/:path*", "/marmitas/:path*"),
-      to("/precificacao", "/marmitas"),
-      to("/precificacao/ajustes", "/custos/impostos"),
-      to("/precificacao/:id([0-9a-fA-F-]{36})", "/marmitas/:id/preco"),
-      to("/custos/mes", "/mes"),
-      to("/custos/estoque", "/mes/estoque"),
-      to("/painel/historico", "/mes/historico"),
-      // O hub Ajustes durou pouco: Custos voltou a ser menu.
-      to("/ajustes", "/custos"),
-      to("/ajustes/custos", "/custos"),
-      to("/ajustes/impostos", "/custos/impostos"),
-      to("/ajustes/cardapio", "/custos/cardapio"),
+      // Telas que já tiveram outro nome ou lugar.
+      to("/fichas", "/cardapio"),
+      to("/fichas/:path*", "/cardapio/:path*"),
+      to("/precificacao", "/cardapio"),
+      to("/precificacao/ajustes", "/financeiro/impostos"),
+      to("/precificacao/:id([0-9a-fA-F-]{36})", "/cardapio/:id/preco"),
+      to("/custos/mes", "/financeiro/mes"),
+      to("/custos/estoque", "/financeiro/mes/estoque"),
+      to("/painel/historico", "/financeiro/mes/historico"),
+      to("/ajustes", "/financeiro"),
+      to("/ajustes/custos", "/financeiro"),
+      to("/ajustes/impostos", "/financeiro/impostos"),
+      to("/ajustes/cardapio", "/financeiro/cardapio"),
+      // Menus renomeados (Marmitas -> Cardápio, Insumos -> Ingredientes, Custos e Mês -> Financeiro): os endereços antigos continuam funcionando.
+      to("/marmitas", "/cardapio"),
+      to("/marmitas/:path*", "/cardapio/:path*"),
+      to("/insumos", "/ingredientes"),
+      to("/insumos/:path*", "/ingredientes/:path*"),
+      to("/custos", "/financeiro"),
+      to("/custos/:path*", "/financeiro/:path*"),
+      to("/mes", "/financeiro/mes"),
+      to("/mes/:path*", "/financeiro/mes/:path*"),
     ];
   },
   async headers() {

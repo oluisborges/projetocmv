@@ -11,9 +11,9 @@ export function CostsTabs({ active, menu = false }: { active: "fixed" | "taxes" 
       ariaLabel="Partes de Custos"
       active={active}
       items={[
-        { key: "fixed", href: "/custos", label: "Custos fixos" },
-        { key: "taxes", href: "/custos/impostos", label: "Impostos e meta" },
-        { key: "menu", href: "/custos/cardapio", label: "Cardápio digital", lock: menu ? undefined : { message: NOT_CONNECTED } },
+        { key: "fixed", href: "/financeiro", label: "Custos fixos" },
+        { key: "taxes", href: "/financeiro/impostos", label: "Impostos e meta" },
+        { key: "menu", href: "/financeiro/cardapio", label: "Cardápio digital", lock: menu ? undefined : { message: NOT_CONNECTED } },
       ]}
     />
   );
