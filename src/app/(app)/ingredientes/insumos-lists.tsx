@@ -104,7 +104,7 @@ export function InsumosLists({ initialType, receitas, items, canWrite }: { initi
       />
 
       {showCategories ? (
-        <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4" aria-label="Categorias">
+        <div className="flex flex-wrap items-center gap-2" aria-label="Categorias">
           <button type="button" onMouseDown={(e) => e.preventDefault()} className={catChip(category === "")} onClick={() => setCategory("")}>
             Todas as categorias
           </button>
@@ -116,7 +116,7 @@ export function InsumosLists({ initialType, receitas, items, canWrite }: { initi
         </div>
       ) : null}
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Tipo de item">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Tipo de item">
         {CHIPS.map((c) => (
           <button key={c.key} type="button" aria-pressed={type === c.key} onClick={() => setType(c.key)} className={chip(type === c.key)}>
             {c.label} ({counts[c.key]})

@@ -34,7 +34,7 @@ export type RecipeRecord = {
   category: string | null;
   portions: number | null;
   portion_weight: number | null;
-  portion_weight_unit: "g" | "kg";
+  portion_weight_unit: "g" | "kg" | "ml" | "l";
   cooking_loss_pct: number;
   /** serving = quantidades de UMA unidade; batch = receita em lote que rende N porções. */
   mode: "serving" | "batch";
@@ -139,7 +139,7 @@ const toRecipe = (r: Record<string, unknown>): RecipeRecord =>
     kind: r.kind === "receita" ? "receita" : "marmita",
     portions: num(r.portions),
     portion_weight: num(r.portion_weight),
-    portion_weight_unit: r.portion_weight_unit === "kg" ? "kg" : "g",
+    portion_weight_unit: r.portion_weight_unit === "kg" || r.portion_weight_unit === "ml" || r.portion_weight_unit === "l" ? r.portion_weight_unit : "g",
     cooking_loss_pct: Number(r.cooking_loss_pct),
     mode: r.mode === "serving" ? "serving" : "batch",
   }) as RecipeRecord;

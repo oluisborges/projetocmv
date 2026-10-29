@@ -14,7 +14,7 @@ const inputClass = "h-12 card px-4 text-base outline-none focus:border-primary f
 const fmt = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(Number(n.toFixed(4))).replace(".", ","));
 
 type Props = {
-  recipe: { id: string; name: string; readyWeightGrams: number | null; readyWeightUnit: "g" | "kg" };
+  recipe: { id: string; name: string; readyWeightGrams: number | null; readyWeightUnit: ReadyUnit };
   initialItems: EditorItem[];
   ingredients: EditorIngredient[];
   canWrite: boolean;
@@ -24,11 +24,13 @@ type Props = {
  * Editor de uma Receita (arroz, estrogonofe…): o lote inteiro com o que entra e o peso total que rende pronto.
  * O custo por kg sai daqui e é o que as marmitas pagam por grama usado.
  */
+type ReadyUnit = "g" | "kg" | "ml" | "l";
+
 export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: Props) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [name, setName] = useState(recipe.name);
-  const [unit, setUnit] = useState<"g" | "kg">(recipe.readyWeightUnit);
+  const [unit, setUnit] = useState<ReadyUnit>(recipe.readyWeightUnit);
   const [ready, setReady] = useState(recipe.readyWeightGrams === null ? "" : fmt(fromBaseQty(recipe.readyWeightGrams, recipe.readyWeightUnit).toNumber()));
   const [status, setStatus] = useState<{ kind: "idle" | "saving" | "saved" | "error"; message?: string }>({ kind: "idle" });
   const [ingList, setIngList] = useState(ingredients);
@@ -44,7 +46,7 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
     [items, readyGrams, byId],
   );
 
-  async function save(over: { ready?: string; unit?: "g" | "kg" } = {}): Promise<boolean> {
+  async function save(over: { ready?: string; unit?: ReadyUnit } = {}): Promise<boolean> {
     setStatus({ kind: "saving" });
     const result = await updateRecipeSettings({ id: recipe.id, name, portions: "1", portionWeight: over.ready ?? ready, portionWeightUnit: over.unit ?? unit, cookingLoss: "0" });
     if (result.ok) {
@@ -71,7 +73,7 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
   }
 
   // Trocar kg/g não muda o peso: 12,5 kg vira 12.500 g.
-  function changeUnit(next: "g" | "kg") {
+  function changeUnit(next: ReadyUnit) {
     const p = parseDecimal(ready);
     const converted = p === null ? ready : fmt(fromBaseQty(toBaseQty(Number(p), unit), next).toNumber());
     setReady(converted);
@@ -183,14 +185,16 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Quanto rende pronta</h2>
         <div className="flex flex-col gap-1.5 text-sm font-medium">
           <label htmlFor="ready-weight">
-            Peso total depois de cozida
-            <Hint>Pese o lote pronto uma vez e anote. Se 5 kg de arroz cru viram 12,5 kg de arroz cozido, digite 12,5 kg.</Hint>
+            Quanto rende depois de pronta
+            <Hint>Pese (ou meça) o lote pronto uma vez e anote. Se 5 kg de arroz cru viram 12,5 kg de arroz cozido, digite 12,5 kg. Para molhos e caldos, pode usar litros ou ml (1 litro conta como 1 kg).</Hint>
           </label>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <input id="ready-weight" value={ready} onChange={(e) => setReady(e.target.value)} onBlur={() => save()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
-            <select value={unit} onChange={(e) => changeUnit(e.target.value as "g" | "kg")} disabled={!canWrite} aria-label="Unidade do peso" className="h-12 card px-3 text-base outline-none focus:border-primary disabled:opacity-60">
+            <select value={unit} onChange={(e) => changeUnit(e.target.value as ReadyUnit)} disabled={!canWrite} aria-label="Unidade do peso" className="h-12 card px-3 text-base outline-none focus:border-primary disabled:opacity-60">
               <option value="kg">kg</option>
               <option value="g">g</option>
+              <option value="l">litros</option>
+              <option value="ml">ml</option>
             </select>
           </div>
         </div>
