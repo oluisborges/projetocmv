@@ -83,22 +83,36 @@ export function PriceActionsCard({ actions, targetPct, canWrite = false }: { act
         </Hint>
       </h2>
       <ul className="divide-y divide-border">
-        {actions.map((a) => (
-          <li key={a.id} className="flex flex-col gap-2 py-3">
-            <Link href={`/cardapio/${a.id}/preco`} className="flex min-h-11 flex-col gap-0.5">
-              <span className="font-semibold leading-snug">{a.name}</span>
-              <span className="tabular text-sm">
-                Suba de {formatBRL(a.price)} para <strong>{formatBRL(a.targetPrice)}</strong> <span className="text-muted">(+{formatBRL(a.rise)}, +{formatPct(a.risePct, 0)})</span>
-              </span>
-              <span className="tabular text-xs text-muted">
-                Hoje sobra {formatPct(a.currentNetPct, 0)} (meta {formatPct(targetPct, 0)})
-                {a.gainPerMonth !== null ? ` · cerca de ${formatBRL(a.gainPerMonth)} a mais por mês` : ""}
-              </span>
-            </Link>
-            {canWrite ? <ApplyPriceButton recipeId={a.id} price={a.targetPrice} name={a.name} /> : null}
-          </li>
-        ))}
+        <ActionRow a={actions[0]} targetPct={targetPct} canWrite={canWrite} />
       </ul>
+      {actions.length > 1 ? (
+        <details>
+          <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-primary">Ver mais {actions.length - 1} {actions.length - 1 === 1 ? "preço" : "preços"}</summary>
+          <ul className="divide-y divide-border">
+            {actions.slice(1).map((a) => (
+              <ActionRow key={a.id} a={a} targetPct={targetPct} canWrite={canWrite} />
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </section>
+  );
+}
+
+function ActionRow({ a, targetPct, canWrite }: { a: PriceAction; targetPct: number; canWrite: boolean }) {
+  return (
+    <li className="flex flex-col gap-2 py-3">
+      <Link href={`/cardapio/${a.id}/preco`} className="flex min-h-11 flex-col gap-0.5">
+        <span className="font-semibold leading-snug">{a.name}</span>
+        <span className="tabular text-sm">
+          Suba de {formatBRL(a.price)} para <strong>{formatBRL(a.targetPrice)}</strong> <span className="text-muted">(+{formatBRL(a.rise)}, +{formatPct(a.risePct, 0)})</span>
+        </span>
+        <span className="tabular text-xs text-muted">
+          Hoje sobra {formatPct(a.currentNetPct, 0)} (meta {formatPct(targetPct, 0)})
+          {a.gainPerMonth !== null ? ` · cerca de ${formatBRL(a.gainPerMonth)} a mais por mês` : ""}
+        </span>
+      </Link>
+      {canWrite ? <ApplyPriceButton recipeId={a.id} price={a.targetPrice} name={a.name} /> : null}
+    </li>
   );
 }

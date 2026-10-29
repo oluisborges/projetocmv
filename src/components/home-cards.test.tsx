@@ -43,4 +43,12 @@ describe("cartões do início", () => {
   it("sem ações não mostra nada", () => {
     expect(renderToStaticMarkup(<PriceActionsCard targetPct={0.1} actions={[]} />)).toBe("");
   });
+
+  it("com várias marmitas abaixo da meta, só a primeira fica em foco e as outras ficam recolhidas", () => {
+    const one = { price: 17, targetPrice: 19, rise: 2, risePct: 2 / 17, currentNetPct: 0.04, gainPerMonth: null };
+    const html = renderToStaticMarkup(<PriceActionsCard targetPct={0.1} actions={[{ id: "a", name: "Frango", ...one }, { id: "b", name: "Peixe", ...one }, { id: "c", name: "Carne", ...one }]} />);
+    expect(html).toContain("Ver mais 2 preços");
+    expect(html.indexOf("Frango")).toBeLessThan(html.indexOf("<details"));
+    expect(html.indexOf("Peixe")).toBeGreaterThan(html.indexOf("<details"));
+  });
 });

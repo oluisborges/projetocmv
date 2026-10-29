@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BackLink } from "@/components/back-link";
+import { BrandFooter } from "@/components/brand-footer";
 import { SubmitButton } from "@/components/submit-button";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { signOut } from "../actions";
@@ -78,6 +79,8 @@ export default async function SettingsPage() {
           </SubmitButton>
         </form>
       </section>
+
+      <BrandFooter />
     </>
   );
 }

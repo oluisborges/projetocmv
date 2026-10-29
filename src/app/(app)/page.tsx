@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadDashboard } from "@/lib/dashboard-data";
-import { formatPct } from "@/lib/format";
+import { formatNumber, formatPct } from "@/lib/format";
 import { MonthHealthCard, PriceActionsCard } from "@/components/home-cards";
 import { monthHealth } from "@/lib/month-health";
 import { priceActions } from "@/lib/price-actions";
-import { BrandFooter } from "@/components/brand-footer";
 import { InicioTabs } from "@/components/inicio-tabs";
+import { devLockApplies } from "@/lib/menu-locks";
 import { loadAdvancedLock } from "@/lib/menu-locks-data";
-import { DashboardView } from "./dashboard";
+import { hasMenuConnection } from "@/lib/menu-data";
+import { loadProductionNeed } from "@/lib/production-need";
+import { monthLabel } from "@/lib/month-view";
+import { DashboardView, Kpi } from "./dashboard";
 
 type Step = { key: string; title: string; detail: string; href: string; cta: string; minutes: number; done: boolean };
 
@@ -19,7 +22,16 @@ export default async function HomePage() {
   const firstName = member?.viewingAs ? null : session.fullName?.split(" ")[0];
   const canWrite = member?.canWrite ?? false;
 
-  const [data, advancedLock] = member ? await Promise.all([loadDashboard(member.orgId, canWrite), loadAdvancedLock(member.orgId)]) : [null, null];
+  // Produção em desenvolvimento: sem o número dela (e sem link) enquanto estiver travada.
+  const productionLocked = devLockApplies(session.isPlatformAdmin);
+  const [data, advancedLock, connected, need] = member
+    ? await Promise.all([
+        loadDashboard(member.orgId, canWrite),
+        loadAdvancedLock(member.orgId),
+        hasMenuConnection(member.orgId).catch(() => false),
+        productionLocked ? Promise.resolve(null) : loadProductionNeed(member.orgId, canWrite).catch(() => null),
+      ])
+    : [null, null, false, null];
 
   let steps: Step[] = [];
   if (data) {
@@ -164,16 +176,65 @@ export default async function HomePage() {
       </section>
     ) : null;
 
-  const summary =
-    data && data.panel ? (
-      <Link href="/painel" className="flex items-center justify-between gap-3 rounded-2xl bg-primary p-5 text-primary-foreground">
-        <span className="flex flex-col">
-          <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Lucro por marmita (preço cadastrado)</span>
-          <span className="tabular text-4xl font-extrabold tracking-tight">{formatPct(data.panel.composition.profit)}</span>
-          <span className="text-sm opacity-90">de cada venda sobra para você{data.ctx.estimate ? " (estimativa)" : ""}</span>
-        </span>
-        <span className="shrink-0 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-primary">Ver detalhes</span>
-      </Link>
+  // Quatro números do dia a dia, cada um leva para a tela onde se resolve.
+  const numbers =
+    data && showDashboard ? (
+      <section aria-label="Em números" className="flex flex-col gap-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Em números</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <Kpi
+            label="Vendidas no mês"
+            value={data.menu ? formatNumber(data.menu.summary.linkedUnits.toNumber(), 0) : "—"}
+            hint={data.menu ? "marmitas do cardápio digital" : connected ? "aguardando pedidos do mês" : "conecte o cardápio digital"}
+            href="/cardapio/sincronizar"
+          />
+          <Kpi
+            label="Lucro médio"
+            value={data.avgNetPct !== null ? formatPct(data.avgNetPct) : "—"}
+            hint={data.ctx.estimate ? "por marmita (estimativa)" : "por marmita, no preço cadastrado"}
+            href="/cardapio"
+          />
+          <Kpi
+            label="Abaixo da meta"
+            value={String(data.belowTarget.length)}
+            hint={data.belowTarget.length === 1 ? "marmita" : "marmitas"}
+            tone={data.belowTarget.length > 0 && !data.ctx.estimate ? "bad" : "default"}
+            href="/cardapio"
+          />
+          <Kpi
+            label="Precisa produzir"
+            value={productionLocked ? "—" : need ? String(need.products) : "—"}
+            hint={productionLocked ? "Produção em breve" : need ? (need.products === 1 ? "marmita esta semana" : "marmitas esta semana") : "sem sugestão ainda"}
+            href={productionLocked ? undefined : "/producao"}
+          />
+        </div>
+      </section>
+    ) : null;
+
+  // Sem número do mês: as vendas vêm do cardápio digital; sem ele, a pessoa informa na mão.
+  const emptyMonth =
+    data && showDashboard && !health ? (
+      <section aria-label="Como estou este mês" className="flex flex-col gap-2 card p-5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+          Como estou em <span className="first-letter:uppercase">{monthLabel(data.month.start)}</span>
+        </p>
+        {connected ? (
+          <>
+            <p className="text-lg font-bold leading-snug">Estamos puxando as vendas do seu cardápio digital.</p>
+            <p className="text-sm text-muted">Assim que chegarem os pedidos do mês, aqui aparece quanto sobra e se você já passou do ponto de equilíbrio.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-lg font-bold leading-snug">Falta o faturamento do mês para ver quanto sobra.</p>
+            <p className="text-sm text-muted">Conecte o cardápio digital para as vendas virem sozinhas, ou informe o valor do mês.</p>
+            {canWrite ? (
+              <Link href={`/producao/fechar-mes?mes=${data.month.start.slice(0, 7)}`} className="mt-1 inline-flex h-12 items-center justify-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground">
+                Informar o faturamento
+              </Link>
+            ) : null}
+          </>
+        )}
+      </section>
     ) : null;
 
   return (
@@ -195,7 +256,9 @@ export default async function HomePage() {
         <p className="card p-4 text-sm">Sua conta ainda não está ligada a nenhuma marmitaria. Fale com o suporte do Precificaí.</p>
       ) : null}
 
-      {allDone ? (
+      {checklist}
+      {actions.length > 0 && data ? <PriceActionsCard actions={actions} targetPct={data.ctx.settings.minMarginPct} canWrite={canWrite} /> : null}
+      {allDone && actions.length === 0 ? (
         <section className="flex items-center gap-4 rounded-2xl border border-success/30 bg-success/10 p-4">
           <span aria-hidden className="flex size-12 shrink-0 items-center justify-center rounded-full bg-success text-2xl font-bold text-primary-foreground">
             ✓
@@ -207,10 +270,9 @@ export default async function HomePage() {
         </section>
       ) : null}
       {health && data ? <MonthHealthCard health={health} month={data.month.start} canWrite={canWrite} /> : null}
-      {checklist}
-      {actions.length > 0 && data ? <PriceActionsCard actions={actions} targetPct={data.ctx.settings.minMarginPct} canWrite={canWrite} /> : null}
-      {summary}
-      {showDashboard && data ? <DashboardView data={data} variant="alerts" hideBelowTarget={actions.length > 0} /> : null}
+      {emptyMonth}
+      {numbers}
+      {showDashboard && data ? <DashboardView data={data} variant="alerts" hideBelowTarget={actions.length > 0} collapseAlerts={Boolean(checklist) || actions.length > 0} /> : null}
 
       {session.isPlatformAdmin && !member?.viewingAs ? (
         <Link href="/admin" className="rounded-xl bg-primary px-4 py-3 text-center font-semibold text-primary-foreground">
@@ -218,7 +280,6 @@ export default async function HomePage() {
         </Link>
       ) : null}
 
-      <BrandFooter />
     </>
   );
 }

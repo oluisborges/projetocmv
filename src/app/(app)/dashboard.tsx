@@ -7,7 +7,7 @@ import { currentMonthStart } from "@/lib/month-view";
 
 const card = "flex flex-col gap-1 card p-4";
 
-function Kpi({ label, value, hint, tone = "default", href }: { label: string; value: string; hint?: string; tone?: "default" | "bad"; href?: string }) {
+export function Kpi({ label, value, hint, tone = "default", href }: { label: string; value: string; hint?: string; tone?: "default" | "bad"; href?: string }) {
   const body = (
     <>
       <p className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
@@ -25,7 +25,7 @@ function Kpi({ label, value, hint, tone = "default", href }: { label: string; va
 }
 
 /** Painel do Início: o que o dono precisa ver em 10 segundos. Só aparece quando já há produto com preço. */
-export function DashboardView({ data, variant = "full", hideBelowTarget = false }: { data: Dashboard; variant?: "full" | "alerts"; /** O Início já mostra "O que fazer agora" para esses produtos: sem aviso repetido. */ hideBelowTarget?: boolean }) {
+export function DashboardView({ data, variant = "full", hideBelowTarget = false, collapseAlerts = false }: { data: Dashboard; variant?: "full" | "alerts"; /** O Início já mostra "O que fazer agora" para esses produtos: sem aviso repetido. */ hideBelowTarget?: boolean; /** Já há um "próximo passo" em destaque: os avisos ficam recolhidos. */ collapseAlerts?: boolean }) {
   const { ctx, month } = data;
   const estimate = ctx.estimate;
 
@@ -151,23 +151,36 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
       ) : null}
 
       {alerts.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Atenção</h2>
-          <ul className="flex flex-col gap-2">
-            {alerts.map((a) => (
-              <li key={a.key} className={`flex items-center justify-between gap-3 rounded-xl p-3 text-sm ${a.tone === "bad" ? "bg-danger/10" : "bg-warning/10"}`}>
-                <p className="min-w-0 flex-1 leading-snug">{a.text}</p>
-                <Link href={a.href} className="flex h-11 shrink-0 items-center rounded-lg border border-border bg-surface px-3 font-semibold">
-                  {a.cta}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        (() => {
+          const list = (
+            <ul className="flex flex-col gap-2">
+              {alerts.map((a) => (
+                <li key={a.key} className={`flex items-center justify-between gap-3 rounded-xl p-3 text-sm ${a.tone === "bad" ? "bg-danger/10" : "bg-warning/10"}`}>
+                  <p className="min-w-0 flex-1 leading-snug">{a.text}</p>
+                  <Link href={a.href} className="flex h-11 shrink-0 items-center rounded-lg border border-border bg-surface px-3 font-semibold">
+                    {a.cta}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          );
+          return collapseAlerts ? (
+            <details className="card px-4 pb-3">
+              <summary className="flex min-h-12 cursor-pointer items-center text-sm font-semibold text-primary">
+                Ver {alerts.length} {alerts.length === 1 ? "aviso" : "avisos"}
+              </summary>
+              {list}
+            </details>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Atenção</h2>
+              {list}
+            </div>
+          );
+        })()
       ) : (
         <p className="rounded-xl bg-success/10 p-3 text-sm text-success">Nada pedindo atenção agora. Preços em dia e produtos dentro da meta.</p>
       )}
-
       {variant === "full" && worst.length > 0 ? (
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Das que dão menos lucro para as que dão mais</h2>
