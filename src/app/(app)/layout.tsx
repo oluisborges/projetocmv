@@ -4,6 +4,8 @@ import { AdminLink, SettingsLink } from "@/components/header-icons";
 import { ActivityTracker } from "@/components/activity-tracker";
 import { AdminAlertBanner } from "@/components/admin-alert-banner";
 import { BottomNav } from "@/components/bottom-nav";
+import { pickAnnouncement } from "@/lib/announcements";
+import { AnnouncementModal } from "./announcement-modal";
 import { devLockApplies, menuLocksFrom, PRODUCAO_DEV_LOCK, type MenuLock } from "@/lib/menu-locks";
 import { NoticesBell } from "@/components/notices-bell";
 import { getActiveOrg, requireUser } from "@/lib/auth";
@@ -30,6 +32,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     : active
       ? await menuLocks(active.orgId).catch(() => ({ producao: null }))
       : { producao: null };
+  // Aviso de novidades: o que está no ar e que esta PESSOA (não o cliente que o admin está vendo) ainda não dispensou.
+  const supabaseForNotices = await createClient();
+  const { data: dismissed } = await supabaseForNotices.from("notice_dismissals").select("notice_id").eq("user_id", session.userId);
+  const notice = pickAnnouncement({ dismissedIds: (dismissed ?? []).map((d) => d.notice_id as string), previewAllowed: session.isPlatformAdmin });
   const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts().catch(() => []) : [];
 
   return (
@@ -75,6 +81,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <ActivityTracker />
+      {notice ? <AnnouncementModal announcement={notice.announcement} preview={notice.preview} /> : null}
       <BottomNav locks={locks} producaoOpen={session.isPlatformAdmin} />
     </div>
   );

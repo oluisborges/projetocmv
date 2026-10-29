@@ -3,7 +3,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireStaff, VIEW_AS_COOKIE } from "@/lib/auth";
+import { requireStaff, requireUser, VIEW_AS_COOKIE } from "@/lib/auth";
+import { findAnnouncement } from "@/lib/announcements";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signOut() {
@@ -36,4 +37,12 @@ export async function viewAsOrganization(formData: FormData) {
 export async function exitViewAs() {
   (await cookies()).delete(VIEW_AS_COOKIE);
   redirect("/admin");
+}
+
+/** "Entendi, não precisa mais mostrar": grava na conta da PESSOA logada (o admin que entra "vendo como" um cliente conta como o admin, não como o cliente). */
+export async function dismissAnnouncement(noticeId: string): Promise<void> {
+  const session = await requireUser();
+  if (!findAnnouncement(noticeId)) return;
+  const supabase = await createClient();
+  await supabase.from("notice_dismissals").upsert({ user_id: session.userId, notice_id: noticeId }, { onConflict: "user_id,notice_id", ignoreDuplicates: true });
 }
