@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CostsTabs } from "@/components/costs-tabs";
+import { MarmitasTabs } from "@/components/marmitas-tabs";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { loadCombos } from "@/lib/combos-data";
@@ -15,7 +15,7 @@ import { ImportProgress } from "@/components/import-progress";
 import type { TargetOption } from "./link-row";
 import { LinksBrowser, type LinkItem } from "./links-browser";
 
-export const metadata = { title: "Cardápio digital" };
+export const metadata = { title: "Sincronizar Cardápio" };
 
 export default async function MenuLinksPage() {
   const { orgId, canWrite } = await requireMember();
@@ -25,10 +25,10 @@ export default async function MenuLinksPage() {
   const header = (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
-        <p className="text-muted">Cardápio digital: diga a qual ficha cada produto que o cardápio vende corresponde.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">Cardápio</h1>
+        <p className="text-muted">Sincronizar Cardápio: diga a qual ficha cada produto que o cardápio vende corresponde.</p>
       </section>
-      <CostsTabs active="menu" menu={connected} />
+      <MarmitasTabs active="sync" connected={connected} />
     </>
   );
 
@@ -131,7 +131,7 @@ export default async function MenuLinksPage() {
       <p className="text-xs text-muted">
         Os valores aqui já são o que os clientes realmente pagaram, com a parte do cupom de cada pedido descontada. O CardápioWeb e a Prefiro cobram mensalidade fixa, sem porcentagem por pedido: cadastre a mensalidade em{" "}
         <Link href="/financeiro" className="tap-area font-semibold text-primary">
-          Custos, aba Custos fixos
+          Financeiro, aba Custos fixos
         </Link>
         .
       </p>

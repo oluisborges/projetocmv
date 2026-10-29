@@ -3,7 +3,6 @@ import { Hint } from "@/components/hint";
 import { CostsTabs } from "@/components/costs-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
-import { hasMenuConnection } from "@/lib/menu-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
@@ -17,13 +16,12 @@ export const metadata = { title: "Custos fixos e equipe" };
 export default async function CostsPage() {
   const { orgId, canWrite } = await requireMember();
   const ctx = await loadPricingContext(orgId, canWrite);
-  const connected = await hasMenuConnection(orgId);
 
   if (!ctx) {
     return (
       <>
         <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
-        <CostsTabs active="fixed" menu={connected} />
+        <CostsTabs active="fixed" />
         <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com o suporte do Precificaí.</p>
       </>
     );
@@ -142,7 +140,7 @@ export default async function CostsPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
         <p className="text-muted">O que você paga todo mês, venda ou não venda.</p>
       </section>
-      <CostsTabs active="fixed" menu={connected} />
+      <CostsTabs active="fixed" />
 
       <section aria-live="polite" className="flex flex-col gap-2 rounded-2xl bg-primary p-5 text-primary-foreground">
         <p className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider opacity-90">

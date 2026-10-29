@@ -37,7 +37,8 @@ const nextConfig: NextConfig = {
       to("/ajustes", "/financeiro"),
       to("/ajustes/custos", "/financeiro"),
       to("/ajustes/impostos", "/financeiro/impostos"),
-      to("/ajustes/cardapio", "/financeiro/cardapio"),
+      to("/ajustes/cardapio", "/cardapio/sincronizar"),
+      to("/financeiro/cardapio", "/cardapio/sincronizar"),
       // Menus renomeados (Marmitas -> Cardápio, Insumos -> Ingredientes, Custos e Mês -> Financeiro): os endereços antigos continuam funcionando.
       to("/marmitas", "/cardapio"),
       to("/marmitas/:path*", "/cardapio/:path*"),

@@ -42,7 +42,7 @@ export function closeMonthChecklist(input: {
       title: "Vendas do cardápio digital",
       done: input.menuOrders > 0,
       detail: input.menuOrders > 0 ? `${input.menuOrders.toLocaleString("pt-BR")} pedidos · ${brl(input.menuRevenue)} já importados, sem digitar nada.` : "Ainda não chegou nenhum pedido deste mês.",
-      href: input.menuOrders > 0 ? undefined : "/financeiro/cardapio",
+      href: input.menuOrders > 0 ? undefined : "/cardapio/sincronizar",
       cta: input.menuOrders > 0 ? undefined : "Ver vínculos",
     });
   }

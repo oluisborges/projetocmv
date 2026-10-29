@@ -25,7 +25,8 @@ export default async function RecipesPage() {
   ]);
   const byId = new Map(ingredients.map((i) => [i.id, i]));
   // Cardápio digital: quanto cada marmita está saindo (média paga, já com cupom). Só aviso; o preço é do dono.
-  const menuAverage = ctx && (await hasMenuConnection(orgId)) ? await loadMenuAveragePrices(ctx.unit.id) : new Map<string, { price: number; units: number }>();
+  const connected = await hasMenuConnection(orgId);
+  const menuAverage = ctx && connected ? await loadMenuAveragePrices(ctx.unit.id) : new Map<string, { price: number; units: number }>();
 
   const rows: PricingRowData[] = recipes.map((r) => {
     const costItems: CostItem[] = items
@@ -72,7 +73,7 @@ export default async function RecipesPage() {
         <p className="text-muted">Cada produto com o custo por porção, o preço de venda e quanto sobra.</p>
       </section>
 
-      <MarmitasTabs active="marmitas" showCombos />
+      <MarmitasTabs active="marmitas" showCombos connected={connected} />
 
       {canWrite ? (
         <Link href="/cardapio/nova" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">

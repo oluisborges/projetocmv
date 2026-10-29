@@ -147,7 +147,7 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
                   ) : (
                     <p className="text-xs text-muted">
                       Só {formatPct(r.coverage, 0)} dos itens têm ficha vinculada.{" "}
-                      <Link href="/financeiro/cardapio" className="font-semibold text-primary">
+                      <Link href="/cardapio/sincronizar" className="font-semibold text-primary">
                         Vincular produtos
                       </Link>
                     </p>

@@ -7,7 +7,7 @@ const EXACT: Record<string, string> = {
   "/painel/cupons": "Abriu os cupons",
   "/financeiro": "Abriu o Financeiro (custos fixos)",
   "/financeiro/impostos": "Abriu impostos e meta de lucro",
-  "/financeiro/cardapio": "Abriu os vínculos do cardápio digital",
+  "/cardapio/sincronizar": "Abriu a sincronização do cardápio digital",
   "/financeiro/mes": "Abriu Fechar o mês",
   "/financeiro/mes/estoque": "Abriu a contagem do mês",
   "/financeiro/mes/historico": "Abriu o Histórico",

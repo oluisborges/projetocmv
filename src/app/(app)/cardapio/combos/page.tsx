@@ -6,6 +6,7 @@ import { requireMember } from "@/lib/auth";
 import { summarizeCombo } from "@/lib/combo-view";
 import { loadCombos, loadRecipeCosts, loadSalesWeights } from "@/lib/combos-data";
 import { formatBRL, formatNumber } from "@/lib/format";
+import { hasMenuConnection } from "@/lib/menu-data";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { restoreCombo } from "./actions";
 import { NewComboForm } from "./new-combo-form";
@@ -16,6 +17,7 @@ export const metadata = { title: "Combos" };
 export default async function CombosPage() {
   const { orgId, canWrite } = await requireMember();
   const ctx = await loadPricingContext(orgId, canWrite);
+  const connected = await hasMenuConnection(orgId);
 
   const header = (
     <section className="flex flex-col gap-1">
@@ -45,7 +47,7 @@ export default async function CombosPage() {
   return (
     <>
       {header}
-      <MarmitasTabs active="combos" />
+      <MarmitasTabs active="combos" connected={connected} />
       <EstimateNotice reason={ctx.estimateReason} />
 
       {canWrite ? (

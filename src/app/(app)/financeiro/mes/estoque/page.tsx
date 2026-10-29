@@ -6,7 +6,6 @@ import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
-import { hasMenuConnection } from "@/lib/menu-data";
 import { loadStockMonth } from "@/lib/stock-data";
 import { FinishedStockForm, StockRowCard } from "./stock-forms";
 
@@ -17,7 +16,7 @@ export default async function StockPage(props: PageProps<"/financeiro/mes/estoqu
   const sp = await props.searchParams;
   const now = currentMonthStart();
   const month = monthStart(typeof sp.mes === "string" ? sp.mes : undefined) ?? now;
-  const [data, coupons] = await Promise.all([loadStockMonth(orgId, canWrite, month), hasMenuConnection(orgId)]);
+  const data = await loadStockMonth(orgId, canWrite, month);
 
   const months = lastMonths(now, 6);
   if (!months.includes(month)) months.push(month);
@@ -29,7 +28,7 @@ export default async function StockPage(props: PageProps<"/financeiro/mes/estoqu
         <h1 className="text-2xl font-extrabold tracking-tight">Estoque do mês</h1>
         <p className="text-muted">O que você comprou, o que as fichas gastaram e o que sobrou de verdade.</p>
       </section>
-      <CostsTabs active="month" menu={coupons} />
+      <CostsTabs active="month" />
       <MonthTabs active="estoque" />
     </>
   );

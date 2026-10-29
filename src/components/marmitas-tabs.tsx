@@ -1,23 +1,20 @@
 "use client";
 
-import Link, { useLinkStatus } from "next/link";
+import { SectionTabs } from "@/components/section-tabs";
 
-function Pending({ children }: { children: React.ReactNode }) {
-  const { pending } = useLinkStatus();
-  return <span className={pending ? "animate-pulse" : undefined}>{children}</span>;
-}
+const NOT_CONNECTED = "Esta parte é liberada quando o seu cardápio digital (CardápioWeb ou Prefiro) estiver conectado. Fale com o suporte do Precificaí para conectar.";
 
-/** Alternância entre as marmitas (fichas) e os combos que as juntam. */
-export function MarmitasTabs({ active, showCombos = true }: { active: "marmitas" | "combos"; /** Sem nenhum combo cadastrado a aba some; o atalho fica no fim da lista. */ showCombos?: boolean }) {
-  const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
+/** Partes do Cardápio: as marmitas, os combos que as juntam e a sincronização com o cardápio digital (travada sem cardápio conectado). */
+export function MarmitasTabs({ active, showCombos = true, connected = false }: { active: "marmitas" | "combos" | "sync"; /** Sem nenhum combo cadastrado a aba some; o atalho fica no fim da lista. */ showCombos?: boolean; connected?: boolean }) {
   return (
-    <nav aria-label="Marmitas e combos" className="flex gap-1 rounded-xl bg-border/60 p-1">
-      <Link href="/cardapio" aria-current={active === "marmitas" ? "page" : undefined} className={item(active === "marmitas")}>
-        <Pending>Marmitas</Pending>
-      </Link>
-      {showCombos ? <Link href="/cardapio/combos" aria-current={active === "combos" ? "page" : undefined} className={item(active === "combos")}>
-        <Pending>Combos</Pending>
-      </Link> : null}
-    </nav>
+    <SectionTabs
+      ariaLabel="Partes do Cardápio"
+      active={active}
+      items={[
+        { key: "marmitas", href: "/cardapio", label: "Marmitas" },
+        ...(showCombos || active === "combos" ? [{ key: "combos", href: "/cardapio/combos", label: "Combos" }] : []),
+        { key: "sync", href: "/cardapio/sincronizar", label: "Sincronizar Cardápio", lock: connected ? undefined : { message: NOT_CONNECTED } },
+      ]}
+    />
   );
 }

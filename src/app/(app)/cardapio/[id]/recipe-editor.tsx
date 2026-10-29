@@ -514,7 +514,7 @@ export function RecipeEditor({
   initialItems: EditorItem[];
   ingredients: EditorIngredient[];
   canWrite: boolean;
-  /** Margem de segurança sobre os insumos, vinda de Custos, aba Impostos e meta (fração). */
+  /** Margem de segurança sobre os insumos, vinda de Financeiro, aba Impostos e meta (fração). */
   safetyMarginPct: number;
 }) {
   const router = useRouter();

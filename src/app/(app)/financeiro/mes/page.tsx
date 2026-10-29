@@ -166,7 +166,7 @@ export default async function MonthPage(props: PageProps<"/financeiro/mes">) {
         <p className="text-muted">Quanto você gastou no mês, comparado com o que deveria.</p>
       </section>
 
-      <CostsTabs active="month" menu={connected} />
+      <CostsTabs active="month" />
       <MonthTabs active="fechar" />
 
       <MonthChips months={months} current={month} basePath="/financeiro/mes" />

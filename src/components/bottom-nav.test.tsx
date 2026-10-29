@@ -5,6 +5,7 @@ const path = vi.hoisted(() => ({ value: "/" }));
 vi.mock("next/navigation", () => ({ usePathname: () => path.value }));
 
 import { BottomNav } from "./bottom-nav";
+import { MarmitasTabs } from "@/components/marmitas-tabs";
 import { CostsTabs } from "./costs-tabs";
 import { PainelTabs } from "./painel-tabs";
 
@@ -58,17 +59,18 @@ describe("menu de baixo", () => {
 });
 
 describe("abas travadas", () => {
-  it("Cardápio digital (Custos) e Cupons (Painel) aparecem sempre; sem cardápio conectado ficam travados", () => {
-    const costs = renderToStaticMarkup(<CostsTabs active="fixed" menu={false} />);
+  it("Sincronizar Cardápio (Cardápio) e Cupons (Painel) aparecem sempre; sem cardápio conectado ficam travados", () => {
+    const costs = renderToStaticMarkup(<CostsTabs active="fixed" />);
     expect(costs).toContain("Custos fixos");
     expect(costs).toContain("Impostos e meta");
-    expect(costs).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Cardápio digital/);
+    expect(costs).toContain("Fechar o mês");
+    expect(renderToStaticMarkup(<MarmitasTabs active="marmitas" connected={false} />)).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Sincronizar Cardápio/);
     const painel = renderToStaticMarkup(<PainelTabs active="resumo" showCoupons={false} />);
     expect(painel).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Cupons/);
   });
 
   it("com cardápio conectado, as duas abas viram links", () => {
-    expect(renderToStaticMarkup(<CostsTabs active="fixed" menu />)).toContain('href="/financeiro/cardapio"');
+    expect(renderToStaticMarkup(<MarmitasTabs active="marmitas" connected />)).toContain('href="/cardapio/sincronizar"');
     const painel = renderToStaticMarkup(<PainelTabs active="resumo" showCoupons />);
     expect(painel).toContain('href="/painel/cupons"');
     expect(painel).not.toContain("aria-disabled");

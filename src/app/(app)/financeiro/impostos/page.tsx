@@ -1,7 +1,6 @@
 import { CostsTabs } from "@/components/costs-tabs";
 import { requireMember } from "@/lib/auth";
 import { Hint } from "@/components/hint";
-import { hasMenuConnection } from "@/lib/menu-data";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { AddChannelForm, ChannelRow, SettingsForm } from "./forms";
 
@@ -10,7 +9,6 @@ export const metadata = { title: "Impostos e meta de lucro" };
 export default async function PricingSettingsPage() {
   const { orgId, canWrite } = await requireMember();
   const ctx = await loadPricingContext(orgId, canWrite);
-  const connected = await hasMenuConnection(orgId);
 
   return (
     <>
@@ -18,7 +16,7 @@ export default async function PricingSettingsPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
         <p className="text-muted">Impostos, taxas e a meta de lucro: esses números entram na conta do lucro de todos os produtos.</p>
       </section>
-      <CostsTabs active="taxes" menu={connected} />
+      <CostsTabs active="taxes" />
 
       {!ctx ? (
         <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com o suporte do Precificaí.</p>
