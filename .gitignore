@@ -43,3 +43,6 @@ next-env.d.ts
 
 # arquivos temporários da CLI do Supabase
 supabase/.temp/
+
+# estado local do oh-my-claudecode (em qualquer pasta)
+**/.omc/
