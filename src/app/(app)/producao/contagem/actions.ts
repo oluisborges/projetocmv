@@ -8,6 +8,7 @@ import { parseDecimal } from "@/lib/format";
 import { monthStart } from "@/lib/month-view";
 import { activeUnit } from "@/lib/pricing-data";
 import { createClient } from "@/lib/supabase/server";
+import { requireProductionAccess } from "@/lib/production-access";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 
@@ -40,6 +41,7 @@ async function context(month: string, ingredientId: string): Promise<Ctx | { err
 
 /** Contagem do estoque no fim do mês (na unidade do insumo). Vazio apaga a contagem. */
 export async function saveStockCount(month: string, ingredientId: string, rawQty: string): Promise<Saved> {
+  await requireProductionAccess();
   const c = await context(month, ingredientId);
   if ("error" in c) return { ok: false, error: c.error };
   const q = await readQty(c.orgId, c.ingredientId, rawQty);
@@ -60,6 +62,7 @@ export async function saveStockCount(month: string, ingredientId: string, rawQty
 
 /** Quanto o dono comprou do insumo no mês SEM nota fiscal importada (as notas somam sozinhas). Vazio apaga. */
 export async function saveManualPurchase(month: string, ingredientId: string, rawQty: string): Promise<Saved> {
+  await requireProductionAccess();
   const c = await context(month, ingredientId);
   if ("error" in c) return { ok: false, error: c.error };
   const q = await readQty(c.orgId, c.ingredientId, rawQty);
@@ -83,6 +86,7 @@ export async function saveManualPurchase(month: string, ingredientId: string, ra
 
 /** Valor, ao custo, das marmitas prontas que sobraram no freezer no fim do mês. Vazio apaga. */
 export async function saveFinishedStock(month: string, rawValue: string): Promise<{ ok: true; value: number | null } | { ok: false; error: string }> {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
   const start = monthStart(month);

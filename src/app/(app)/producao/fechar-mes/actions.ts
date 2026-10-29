@@ -7,6 +7,7 @@ import { parseDecimal } from "@/lib/format";
 import { monthStart } from "@/lib/month-view";
 import { activeUnit } from "@/lib/pricing-data";
 import { createClient } from "@/lib/supabase/server";
+import { requireProductionAccess } from "@/lib/production-access";
 
 export type FormState = { error?: string; ok?: string };
 
@@ -31,6 +32,7 @@ async function ensurePeriod(orgId: string, unitId: string, month: string): Promi
 }
 
 export async function savePeriod(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { error: NO_PERMISSION };
 
@@ -55,6 +57,7 @@ export async function savePeriod(_prev: FormState, formData: FormData): Promise<
 }
 
 export async function setComboSoldQty(month: string, comboId: string, rawQty: string): Promise<{ ok: true; qty: number } | { ok: false; error: string }> {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 
@@ -84,6 +87,7 @@ export async function setComboSoldQty(month: string, comboId: string, rawQty: st
 }
 
 export async function setSoldQty(month: string, recipeId: string, rawQty: string): Promise<{ ok: true; qty: number } | { ok: false; error: string }> {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { ok: false, error: NO_PERMISSION };
 

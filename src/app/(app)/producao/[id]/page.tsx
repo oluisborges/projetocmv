@@ -7,10 +7,12 @@ import { loadPlanPurchases, loadProduction, loadProductionBase, loadWeekPlanned,
 import { productionName, suggestionRows } from "@/lib/production-view";
 import { deleteProduction } from "../actions";
 import { ProductionWizard } from "./production-wizard";
+import { requireProductionAccess } from "@/lib/production-access";
 
 export const metadata = { title: "Produção" };
 
 export default async function ProductionPage(props: PageProps<"/producao/[id]">) {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   const { id } = await props.params;
   if (!z.uuid().safeParse(id).success) notFound();

@@ -7,10 +7,12 @@ import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
 import { loadStockMonth } from "@/lib/stock-data";
 import { FinishedStockForm, StockRowCard } from "./stock-forms";
+import { requireProductionAccess } from "@/lib/production-access";
 
 export const metadata = { title: "Estoque do mês" };
 
 export default async function StockPage(props: PageProps<"/producao/contagem">) {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   const sp = await props.searchParams;
   const now = currentMonthStart();

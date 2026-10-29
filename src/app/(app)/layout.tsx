@@ -75,7 +75,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <ActivityTracker />
-      <BottomNav locks={locks} />
+      <BottomNav locks={locks} producaoOpen={session.isPlatformAdmin} />
     </div>
   );
 }

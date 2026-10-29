@@ -21,10 +21,12 @@ import { createClient } from "@/lib/supabase/server";
 import { PeriodForm, SalesRow } from "./month-forms";
 import { MenuProfitCard } from "@/components/menu-cards";
 import { MenuSalesCard } from "@/components/menu-sales-card";
+import { requireProductionAccess } from "@/lib/production-access";
 
 export const metadata = { title: "Fechar o mês" };
 
 export default async function MonthPage(props: PageProps<"/producao/fechar-mes">) {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   const sp = await props.searchParams;
   const requested = monthStart(typeof sp.mes === "string" ? sp.mes : undefined);

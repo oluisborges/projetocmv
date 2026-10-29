@@ -84,3 +84,15 @@ describe("Produção em desenvolvimento", () => {
     expect(devLockApplies(true)).toBe(DEV_LOCK_INCLUDES_ADMIN);
   });
 });
+
+describe("Produção para a equipe Shogun", () => {
+  it("com o cadeado, o admin ainda enxerga um link para a Produção; os outros só veem o botão travado", () => {
+    path.value = "/cardapio";
+    const lock = { producao: { message: "em desenvolvimento" } };
+    const admin = renderToStaticMarkup(<BottomNav locks={lock} producaoOpen />);
+    expect(admin).toMatch(/<a[^>]*href="\/producao"/);
+    const others = renderToStaticMarkup(<BottomNav locks={lock} />);
+    expect(others).not.toMatch(/<a[^>]*href="\/producao"/);
+    expect(others).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Produção/);
+  });
+});

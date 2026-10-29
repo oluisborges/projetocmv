@@ -6,12 +6,14 @@ import { formatNumber } from "@/lib/format";
 import { loadProductionBase, loadProductions, type Production } from "@/lib/production-data";
 import { productionDateLabel as dateLabel, productionName } from "@/lib/production-view";
 import { createProduction } from "./actions";
+import { requireProductionAccess } from "@/lib/production-access";
 
 export const metadata = { title: "Produção" };
 
 const totalOf = (p: Production, key: "planned" | "produced") => p.items.reduce((n, i) => n + (key === "planned" ? i.planned : (i.produced ?? 0)), 0);
 
 export default async function ProducaoPage() {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   const base = await loadProductionBase(orgId, canWrite);
 

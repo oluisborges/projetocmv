@@ -4,10 +4,12 @@ import { requireMember } from "@/lib/auth";
 import { loadProductionBase, loadProductions } from "@/lib/production-data";
 import { computeProduction, productionName } from "@/lib/production-view";
 import { StockManager, type FinishedRowData, type StockRowData } from "./stock-manager";
+import { requireProductionAccess } from "@/lib/production-access";
 
 export const metadata = { title: "Estoque" };
 
 export default async function EstoquePage() {
+  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   const base = await loadProductionBase(orgId, canWrite);
 

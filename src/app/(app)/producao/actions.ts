@@ -11,6 +11,7 @@ import { suggestionRows } from "@/lib/production-view";
 import { createClient } from "@/lib/supabase/server";
 import { brtDate, weekStartOf } from "@/lib/week";
 import type { Result } from "../cardapio/actions";
+import { requireProductionAccess } from "@/lib/production-access";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 
@@ -28,6 +29,7 @@ const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(new
 
 /** Começa uma produção nova. Com `suggestion`, já vem com as marmitas e quantidades que o sistema sugere; sem, vazia. */
 export async function createProduction(formData: FormData): Promise<void> {
+  await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return;
   const withSuggestion = formData.get("mode") !== "blank";
@@ -61,6 +63,7 @@ const updateInput = z.object({
 
 /** Salva a produção (nome, dia e quantidades). Chamada sozinha enquanto a pessoa edita. */
 export async function updateProduction(input: z.input<typeof updateInput>): Promise<Result> {
+  await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return { ok: false, error: ctx.error };
   const parsed = updateInput.safeParse(input);
@@ -96,6 +99,7 @@ export async function updateProduction(input: z.input<typeof updateInput>): Prom
 
 /** Apaga uma produção que ainda não foi feita. */
 export async function deleteProduction(formData: FormData): Promise<void> {
+  await requireProductionAccess();
   const ctx = await context();
   const id = z.uuid().safeParse(formData.get("id"));
   if (!ctx.ok || !id.success) return;
@@ -112,6 +116,7 @@ const boughtInput = z.object({ planId: z.uuid(), ingredientId: z.uuid(), bought:
 
 /** Marcar um item da lista de compras como comprado dá entrada no estoque; desmarcar desfaz. */
 export async function setBought(input: z.input<typeof boughtInput>): Promise<Result> {
+  await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return { ok: false, error: ctx.error };
   const parsed = boughtInput.safeParse(input);
@@ -143,6 +148,7 @@ const productionInput = z.object({ planId: z.uuid(), produced: z.array(z.object(
  * Só uma vez por produção.
  */
 export async function registerProduction(input: z.input<typeof productionInput>): Promise<Result<{ ingredients: number; marmitas: number }>> {
+  await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return { ok: false, error: ctx.error };
   const parsed = productionInput.safeParse(input);

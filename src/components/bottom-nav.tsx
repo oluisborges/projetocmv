@@ -28,15 +28,20 @@ const ITEMS: Item[] = [
 ];
 
 /** Ícone + nome. Enquanto a página do toque carrega, o ícone pulsa e uma barra lima corre no topo do botão. */
-function NavLabel({ label, icon, active }: { label: string; icon: keyof typeof ICONS; active: boolean }) {
+function NavLabel({ label, icon, active, lockBadge = false }: { label: string; icon: keyof typeof ICONS; active: boolean; lockBadge?: boolean }) {
   const { pending } = useLinkStatus();
   return (
     <>
       {pending ? <span aria-hidden className="nav-loading absolute inset-x-0 top-0 h-1 bg-accent" /> : null}
-      <span className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${active ? "bg-primary text-primary-foreground" : ""} ${pending ? "animate-pulse" : ""}`}>
+      <span className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors ${active ? "bg-primary text-primary-foreground" : ""} ${pending ? "animate-pulse" : ""}`}>
         <svg viewBox="0 0 24 24" className="size-5" aria-hidden>
           {ICONS[icon]}
         </svg>
+        {lockBadge ? (
+          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-surface text-muted">
+            <LockIcon className="size-3" />
+          </span>
+        ) : null}
       </span>
       <span className="text-xs leading-none">{label}</span>
       {pending ? <span className="sr-only"> carregando</span> : null}
@@ -48,7 +53,7 @@ function NavLabel({ label, icon, active }: { label: string; icon: keyof typeof I
  * Menu de baixo, sempre com todos os itens. Um item que ainda não pode ser usado fica com a letra clara e um cadeado;
  * ao tocar, aparece o que fazer para liberar (nunca é um botão que não responde).
  */
-export function BottomNav({ locks }: { locks: { producao: MenuLock | null } }) {
+export function BottomNav({ locks, producaoOpen = false }: { locks: { producao: MenuLock | null }; /** A equipe Shogun entra mesmo com o cadeado: o item abre a página em vez de mostrar o aviso. */ producaoOpen?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState<"producao" | null>(null);
   const close = useCallback(() => setOpen(null), []);
@@ -66,9 +71,10 @@ export function BottomNav({ locks }: { locks: { producao: MenuLock | null } }) {
           {ITEMS.map((item) => {
             const active = item.match(pathname);
             const locked = item.lock && !active ? locks[item.lock] : null;
+            const passThrough = Boolean(locked && item.lock === "producao" && producaoOpen);
             return (
               <li key={item.href} className="flex-1">
-                {locked ? (
+                {locked && !passThrough ? (
                   <button
                     type="button"
                     aria-disabled="true"
@@ -92,7 +98,7 @@ export function BottomNav({ locks }: { locks: { producao: MenuLock | null } }) {
                     aria-current={active ? "page" : undefined}
                     className={`relative flex h-16 flex-col items-center justify-center gap-1 ${active ? "font-extrabold text-primary" : "font-semibold text-muted"}`}
                   >
-                    <NavLabel label={item.label} icon={item.icon} active={active} />
+                    <NavLabel label={item.label} icon={item.icon} active={active} lockBadge={passThrough} />
                   </Link>
                 )}
               </li>

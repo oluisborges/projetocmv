@@ -8,6 +8,7 @@ import { parseDecimal } from "@/lib/format";
 import { activeUnit } from "@/lib/pricing-data";
 import { createClient } from "@/lib/supabase/server";
 import type { Result } from "../../cardapio/actions";
+import { requireProductionAccess } from "@/lib/production-access";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 
@@ -43,6 +44,7 @@ function toBaseFor(purchaseUnit: string, text: string, unit: string, { allowZero
 
 /** Contagem do estoque: o que há de verdade agora. Salva só as linhas preenchidas. */
 export async function saveStockCounts(input: { counts: { ingredientId: string; text: string; unit: string }[] }): Promise<Result<{ saved: number }>> {
+  await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return { ok: false, error: ctx.error };
   const parsed = z.array(countItem).max(500).safeParse(input.counts);
@@ -79,6 +81,7 @@ const moveInput = z.object({
 
 /** Um movimento de um insumo: contei (valor real), comprei (+) ou perdi (−). */
 export async function addIngredientMovement(input: z.input<typeof moveInput>): Promise<Result> {
+  await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return { ok: false, error: ctx.error };
   const parsed = moveInput.safeParse(input);
@@ -104,6 +107,7 @@ const finishedInput = z.object({ recipeId: z.uuid(), kind: z.enum(["count", "pro
 
 /** Marmitas prontas (congelador): contei (valor real), produzi (+) ou perdi (−). Sempre em unidades inteiras. */
 export async function addFinishedMovement(input: z.input<typeof finishedInput>): Promise<Result> {
+  await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return { ok: false, error: ctx.error };
   const parsed = finishedInput.safeParse(input);
