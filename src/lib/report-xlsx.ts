@@ -73,7 +73,7 @@ export async function reportToXlsx(report: Report): Promise<Buffer> {
     ["   Cardápio digital", report.revenue.menu, pctOf(report.revenue.menu), `${report.revenue.orders.toLocaleString("pt-BR")} pedidos, já descontados os cupons`],
     ["   Vendas por fora do cardápio", report.revenue.outside, pctOf(report.revenue.outside), "Informado em Fechar o mês"],
     ["Compras de insumos", report.purchases, pctOf(report.purchases), "Notas fiscais importadas + compras informadas"],
-    ["Mão de obra (equipe)", report.staffValue, pctOf(report.staffValue), "Salários e encargos cadastrados em Custos, aba Custos fixos"],
+    ["Mão de obra (equipe)", report.staffValue, pctOf(report.staffValue), "Salários e encargos cadastrados em Financeiro, aba Custos fixos"],
     ["Contas fixas", report.fixedValue, pctOf(report.fixedValue), "Custos, aba Custos fixos: aluguel, energia, mensalidade do cardápio…"],
     ["Impostos e taxas", report.taxesValue, pctOf(report.taxesValue), "Percentuais definidos em Custos, aba Impostos e meta"],
     ["Resultado estimado", report.result?.value ?? null, report.result?.pct ?? null, "Faturamento − compras − equipe − contas fixas − impostos e taxas"],

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MonthChips } from "@/components/month-chips";
 import { MonthTabs } from "@/components/month-tabs";
-import { PainelTabs } from "@/components/painel-tabs";
+import { CostsTabs } from "@/components/costs-tabs";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
@@ -29,7 +29,7 @@ export default async function StockPage(props: PageProps<"/financeiro/mes/estoqu
         <h1 className="text-2xl font-extrabold tracking-tight">Estoque do mês</h1>
         <p className="text-muted">O que você comprou, o que as fichas gastaram e o que sobrou de verdade.</p>
       </section>
-      <PainelTabs active="mes" showCoupons={coupons} />
+      <CostsTabs active="month" menu={coupons} />
       <MonthTabs active="estoque" />
     </>
   );

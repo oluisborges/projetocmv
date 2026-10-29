@@ -133,7 +133,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
         <Kpi
           label="Mão de obra"
           value={month.cmoPct !== null ? formatPct(month.cmoPct) : "—"}
-          hint={month.cmoPct !== null ? "do faturamento neste mês" : "cadastre a equipe em Custos e o mês em Mês"}
+          hint={month.cmoPct !== null ? "do faturamento neste mês" : "cadastre a equipe e o mês em Financeiro"}
           href="/financeiro"
         />
       </div>

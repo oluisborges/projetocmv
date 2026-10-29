@@ -12,7 +12,7 @@ import { loadArchivedRecipes, loadIngredients, loadRecipes } from "@/lib/recipes
 import { restoreRecipe } from "./actions";
 import { PricingList, type PricingRowData } from "./pricing-list";
 
-export const metadata = { title: "Marmitas" };
+export const metadata = { title: "Cardápio" };
 
 export default async function RecipesPage() {
   const { orgId, canWrite } = await requireMember();
@@ -68,7 +68,7 @@ export default async function RecipesPage() {
   return (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Marmitas</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Cardápio</h1>
         <p className="text-muted">Cada produto com o custo por porção, o preço de venda e quanto sobra.</p>
       </section>
 

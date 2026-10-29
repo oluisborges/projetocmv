@@ -15,7 +15,7 @@ export default async function PricingSettingsPage() {
   return (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
         <p className="text-muted">Impostos, taxas e a meta de lucro: esses números entram na conta do lucro de todos os produtos.</p>
       </section>
       <CostsTabs active="taxes" menu={connected} />

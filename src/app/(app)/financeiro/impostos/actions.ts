@@ -25,7 +25,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
   if (!canWrite) return { error: NO_PERMISSION };
 
   const tax = percent(formData.get("tax"), "Impostos");
-  // Despesa fixa calculada em Custos: o campo não é enviado, e o valor digitado antes fica como está.
+  // Despesa fixa calculada em Financeiro: o campo não é enviado, e o valor digitado antes fica como está.
   const fixedSent = formData.has("fixed");
   const fixed = fixedSent ? percent(formData.get("fixed"), "Despesas fixas") : ({ ok: true, value: 0 } as const);
   // O lucro desejado saiu da tela (não há mais preço sugerido): se não vier no formulário, o valor guardado fica como está.

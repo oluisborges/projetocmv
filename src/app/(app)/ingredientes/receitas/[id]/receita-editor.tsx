@@ -116,7 +116,7 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
             </p>
             {cost.missingPrices > 0 ? (
               <p className="pt-1 text-xs text-warning">
-                {cost.missingPrices} {cost.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Insumos.
+                {cost.missingPrices} {cost.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Ingredientes.
               </p>
             ) : null}
           </div>

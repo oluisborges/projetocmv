@@ -112,6 +112,6 @@ describe("DashboardView", () => {
       <DashboardView data={build({ month: { ...base.month, cmvRealPct: null, cmoPct: null, deviationPct: null, deviationCost: null, hasData: false } })} />,
     );
     expect(html).toContain("toque em Mês, no menu de baixo");
-    expect(html).toContain("cadastre a equipe em Custos e o mês em Mês");
+    expect(html).toContain("cadastre a equipe e o mês em Financeiro");
   });
 });

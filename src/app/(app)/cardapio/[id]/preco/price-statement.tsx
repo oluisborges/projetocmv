@@ -61,7 +61,7 @@ export function PriceStatement({
     <p className={noteClass}>
       Percentual que você informou. Cadastre os custos fixos e o faturamento para o sistema calcular sozinho.{" "}
       <Link href="/financeiro" className={link}>
-        Informar em Custos
+        Informar em Financeiro
       </Link>
     </p>
   );
@@ -93,7 +93,7 @@ export function PriceStatement({
         <p className={noteClass}>
           Percentual que você definiu.{" "}
           <Link href="/financeiro/impostos" className={link}>
-            Alterar em Custos
+            Alterar em Financeiro
           </Link>
         </p>
       ),

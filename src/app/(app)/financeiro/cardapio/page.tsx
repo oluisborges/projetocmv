@@ -25,7 +25,7 @@ export default async function MenuLinksPage() {
   const header = (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
         <p className="text-muted">Cardápio digital: diga a qual ficha cada produto que o cardápio vende corresponde.</p>
       </section>
       <CostsTabs active="menu" menu={connected} />

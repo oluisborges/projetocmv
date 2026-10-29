@@ -696,7 +696,7 @@ export function RecipeEditor({
         )}
         {view.ok && view.missingPrices > 0 ? (
           <p className="pt-1 text-xs text-warning">
-            {view.missingPrices} {view.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Insumos.
+            {view.missingPrices} {view.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Ingredientes.
           </p>
         ) : null}
         {status.kind === "error" ? (

@@ -6,6 +6,8 @@ import { MonthHealthCard, PriceActionsCard } from "@/components/home-cards";
 import { monthHealth } from "@/lib/month-health";
 import { priceActions } from "@/lib/price-actions";
 import { BrandFooter } from "@/components/brand-footer";
+import { InicioTabs } from "@/components/inicio-tabs";
+import { loadAdvancedLock } from "@/lib/menu-locks-data";
 import { DashboardView } from "./dashboard";
 
 type Step = { key: string; title: string; detail: string; href: string; cta: string; minutes: number; done: boolean };
@@ -17,7 +19,7 @@ export default async function HomePage() {
   const firstName = member?.viewingAs ? null : session.fullName?.split(" ")[0];
   const canWrite = member?.canWrite ?? false;
 
-  const data = member ? await loadDashboard(member.orgId, canWrite) : null;
+  const [data, advancedLock] = member ? await Promise.all([loadDashboard(member.orgId, canWrite), loadAdvancedLock(member.orgId)]) : [null, null];
 
   let steps: Step[] = [];
   if (data) {
@@ -170,7 +172,7 @@ export default async function HomePage() {
           <span className="tabular text-4xl font-extrabold tracking-tight">{formatPct(data.panel.composition.profit)}</span>
           <span className="text-sm opacity-90">de cada venda sobra para você{data.ctx.estimate ? " (estimativa)" : ""}</span>
         </span>
-        <span className="shrink-0 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-primary">Ver painel</span>
+        <span className="shrink-0 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-primary">Ver detalhes</span>
       </Link>
     ) : null;
 
@@ -187,6 +189,8 @@ export default async function HomePage() {
         </p>
       </section>
 
+      {member ? <InicioTabs active="resumo" advancedLock={advancedLock} /> : null}
+
       {!member && !session.isPlatformAdmin ? (
         <p className="card p-4 text-sm">Sua conta ainda não está ligada a nenhuma marmitaria. Fale com o suporte do Precificaí.</p>
       ) : null}
@@ -198,7 +202,7 @@ export default async function HomePage() {
           </span>
           <p className="text-sm">
             <strong className="block text-base">Tudo organizado!</strong>
-            Seus custos, preços e contas estão em dia. Compartilhe o resultado no Painel.
+            Seus custos, preços e contas estão em dia. Veja os detalhes na Visão Avançada.
           </p>
         </section>
       ) : null}

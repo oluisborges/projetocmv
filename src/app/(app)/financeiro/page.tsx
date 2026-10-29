@@ -22,7 +22,7 @@ export default async function CostsPage() {
   if (!ctx) {
     return (
       <>
-        <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
         <CostsTabs active="fixed" menu={connected} />
         <p className="card p-4 text-sm">Sua marmitaria ainda não tem uma unidade cadastrada. Fale com o suporte do Precificaí.</p>
       </>
@@ -139,7 +139,7 @@ export default async function CostsPage() {
   return (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Custos</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
         <p className="text-muted">O que você paga todo mês, venda ou não venda.</p>
       </section>
       <CostsTabs active="fixed" menu={connected} />
@@ -157,7 +157,7 @@ export default async function CostsPage() {
             </p>
           </>
         ) : summary.total > 0 && dishes.length > 0 ? (
-          <p className="text-base font-semibold">Com os preços de hoje, cada venda perde dinheiro. Revise em Marmitas.</p>
+          <p className="text-base font-semibold">Com os preços de hoje, cada venda perde dinheiro. Revise em Cardápio.</p>
         ) : summary.total > 0 ? (
           <p className="text-base">
             Falta o preço de venda dos produtos.{" "}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandFooter } from "@/components/brand-footer";
 import { Hint } from "@/components/hint";
+import { InicioTabs } from "@/components/inicio-tabs";
 import { PainelTabs } from "@/components/painel-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadCoupons } from "@/lib/coupon-data";
@@ -29,9 +30,10 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
   const header = (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Painel</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Início</h1>
         <p className="text-muted">Quanto os cupons custam e se ainda sobra lucro com eles.</p>
       </section>
+      <InicioTabs active="avancada" />
       <PainelTabs active="cupons" showCoupons />
     </>
   );

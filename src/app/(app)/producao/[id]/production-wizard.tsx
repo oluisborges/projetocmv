@@ -221,7 +221,7 @@ export function ProductionWizard({
               <ul className="divide-y divide-border pb-1">{others.map(renderRow)}</ul>
             </details>
           ) : null}
-          {rows.length === 0 ? <p className="card p-4 text-sm text-muted">Nenhuma marmita com a ficha completa ainda. Termine as fichas em Marmitas para montar a produção.</p> : null}
+          {rows.length === 0 ? <p className="card p-4 text-sm text-muted">Nenhuma marmita com a ficha completa ainda. Termine as fichas em Cardápio para montar a produção.</p> : null}
         </section>
       ) : null}
 

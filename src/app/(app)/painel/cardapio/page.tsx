@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandFooter } from "@/components/brand-footer";
 import { Hint } from "@/components/hint";
+import { InicioTabs } from "@/components/inicio-tabs";
 import { PainelTabs } from "@/components/painel-tabs";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
@@ -32,6 +33,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
         <h1 className="text-2xl font-extrabold tracking-tight">Por marmita</h1>
         <p className="text-muted">Quais marmitas valem destaque, reajuste ou saída do cardápio digital.</p>
       </section>
+      <InicioTabs active="avancada" />
       <PainelTabs active="cardapio" showCoupons={await hasMenuConnection(orgId)} />
     </>
   );
@@ -93,7 +95,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
                 <Link href={`/financeiro/mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary">
                   Fechar o mês
                 </Link>{" "}
-                (e o preço de cada uma em Marmitas, na aba Preço de venda) para ver a análise.
+                (e o preço de cada uma em Cardápio, na aba Preço de venda) para ver a análise.
               </>
             )}
           </p>

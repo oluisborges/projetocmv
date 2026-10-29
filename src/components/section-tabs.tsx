@@ -21,7 +21,7 @@ function Pending({ children }: { children: React.ReactNode }) {
 export function SectionTabs({ ariaLabel, active, items }: { ariaLabel: string; active: string; items: TabItem[] }) {
   const [open, setOpen] = useState<string | null>(null);
   const close = useCallback(() => setOpen(null), []);
-  const base = "flex h-11 flex-1 items-center justify-center gap-1 rounded-lg px-1 text-[13px] font-semibold sm:text-sm";
+  const base = "flex min-h-11 flex-1 items-center justify-center gap-1 rounded-lg px-1 py-1 text-center text-[13px] font-semibold leading-tight sm:text-sm";
   const tip = items.find((i) => i.key === open)?.lock;
 
   return (

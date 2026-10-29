@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MonthChips } from "@/components/month-chips";
 import { MonthTabs } from "@/components/month-tabs";
-import { PainelTabs } from "@/components/painel-tabs";
+import { CostsTabs } from "@/components/costs-tabs";
 import { ExportLinks } from "@/components/export-links";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
@@ -103,7 +103,7 @@ export default async function MonthPage(props: PageProps<"/financeiro/mes">) {
   await kickStalled(menuStatus); // importação parada? quem abre esta tela a retoma
   const menuOn = usesMenu(connected, menuData?.orders ?? 0);
   // Os cardápios (CardápioWeb e Prefiro) cobram mensalidade fixa, não % por pedido: aqui só entram os impostos e as outras taxas.
-  // A mensalidade é um custo fixo e entra em Custos, aba Custos fixos.
+  // A mensalidade é um custo fixo e entra em Financeiro, aba Custos fixos.
   const menuVariablePct = ctx.settings.taxPct + (ctx.settings.otherPct ?? 0);
   const menuView = menuOn
     ? buildMenuMonth({
@@ -166,7 +166,7 @@ export default async function MonthPage(props: PageProps<"/financeiro/mes">) {
         <p className="text-muted">Quanto você gastou no mês, comparado com o que deveria.</p>
       </section>
 
-      <PainelTabs active="mes" showCoupons={connected} />
+      <CostsTabs active="month" menu={connected} />
       <MonthTabs active="fechar" />
 
       <MonthChips months={months} current={month} basePath="/financeiro/mes" />
@@ -305,7 +305,7 @@ export default async function MonthPage(props: PageProps<"/financeiro/mes">) {
             <div className="border-t border-border pt-3 text-sm">
               <p className="text-muted">
                 Mão de obra
-                <Hint>Salários mais encargos da sua equipe (cadastrada em Custos, aba Custos fixos), dividido pelo faturamento do mês.</Hint>
+                <Hint>Salários mais encargos da sua equipe (cadastrada em Financeiro, aba Custos fixos), dividido pelo faturamento do mês.</Hint>
               </p>
               <p className="tabular">
                 <strong className="text-xl font-extrabold">{summary.cmoPct !== null ? formatPct(summary.cmoPct) : "—"}</strong>{" "}
