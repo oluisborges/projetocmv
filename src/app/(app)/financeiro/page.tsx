@@ -41,7 +41,8 @@ export default async function CostsPage() {
     feePct: feePct + (ctx.settings.otherPct ?? 0),
   });
 
-  const salesDone = Boolean(ctx.monthlyRevenue && ctx.monthlyUnits);
+  // O faturamento basta para o passo valer (vem do cardápio sozinho); as unidades só detalham quanto cada unidade paga das contas.
+  const salesDone = Boolean(ctx.monthlyRevenue);
   const fixedDone = fixedCosts.length > 0;
   const staffDone = staff.length > 0;
   const doneCount = [salesDone, fixedDone, staffDone].filter(Boolean).length;
@@ -54,7 +55,7 @@ export default async function CostsPage() {
       title: "Quanto você vende por mês",
       done: salesDone,
       status: salesDone
-        ? `${formatBRL(ctx.monthlyRevenue!)} · ${formatNumber(ctx.monthlyUnits!, 0)} unidades${ctx.revenueSource === "history" ? ` · média de ${ctx.revenueMonths} ${ctx.revenueMonths === 1 ? "mês" : "meses"}` : ""}`
+        ? `${formatBRL(ctx.monthlyRevenue!)}${ctx.monthlyUnits ? ` · ${formatNumber(ctx.monthlyUnits, 0)} unidades` : ""}${ctx.revenueSource === "history" ? ` · média de ${ctx.revenueMonths} ${ctx.revenueMonths === 1 ? "mês" : "meses"}` : ""}`
         : "falta preencher",
       body: canWrite ? (
         <>
@@ -83,7 +84,7 @@ export default async function CostsPage() {
           <MonthlyNumbersForm revenue={ctx.manualRevenue} units={ctx.manualUnits} autoRevenue={ctx.autoRevenue?.revenue ?? null} autoUnits={ctx.autoRevenue?.units ?? null} />
         </>
       ) : salesDone ? (
-        <p className="text-sm">{formatBRL(ctx.monthlyRevenue!)} · {formatNumber(ctx.monthlyUnits!, 0)} unidades por mês.</p>
+        <p className="text-sm">{formatBRL(ctx.monthlyRevenue!)} por mês{ctx.monthlyUnits ? ` · ${formatNumber(ctx.monthlyUnits, 0)} unidades` : ""}.</p>
       ) : (
         <p className="text-sm text-muted">Ainda não informado.</p>
       ),
