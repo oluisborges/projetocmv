@@ -127,3 +127,19 @@ a[class*="rounded"]:active {
   button:not(:disabled):active,
   a[class*="rounded"]:active { transform: none; }
 }
+
+/* Aviso de novidades: sobe de baixo no celular e aparece no centro no computador. */
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+dialog.announcement[open] { animation: sheet-in 0.28s ease-out both; }
+dialog.announcement[open]::backdrop { animation: fade-in 0.28s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  dialog.announcement[open],
+  dialog.announcement[open]::backdrop { animation: none; }
+}

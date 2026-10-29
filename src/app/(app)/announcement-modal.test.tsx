@@ -17,7 +17,7 @@ describe("modal de novidades", () => {
   it("mostra o título, as novidades e a Produção em breve", () => {
     expect(html).toContain("O Precificaí ficou mais fácil de usar");
     expect(html).toContain("Agora você pode cadastrar receitas");
-    expect(html).toContain("Vem aí: Produção");
+    expect(html).toContain("Em breve");
     expect(html).toContain("cadeadinho");
   });
 });

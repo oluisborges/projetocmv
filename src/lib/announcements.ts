@@ -2,7 +2,8 @@
 // Para lançar um aviso: acrescente-o em ANNOUNCEMENTS e troque ACTIVE_ANNOUNCEMENT_ID pelo id dele.
 // Com ACTIVE_ANNOUNCEMENT_ID = null nenhum cliente vê nada; o admin Shogun pode ver o rascunho abrindo qualquer tela com ?aviso=ver.
 
-export type AnnouncementSection = { icon: string; title: string; body: string; bullets?: string[]; /** frase depois da lista */ after?: string };
+/** Textos aceitam **negrito**. `highlight` + `badge`: bloco em destaque (ex.: o que vem aí). */
+export type AnnouncementSection = { icon: string; title: string; body: string; bullets?: string[]; /** frase depois da lista */ after?: string; highlight?: boolean; badge?: string };
 
 export type Announcement = {
   /** Identifica o aviso: quem marcou "não mostrar mais" não volta a ver ESTE aviso (um aviso novo, com outro id, volta a aparecer). */
@@ -27,7 +28,7 @@ export const ANNOUNCEMENTS: Announcement[] = [
       {
         icon: "🍚",
         title: "Agora você pode cadastrar receitas",
-        body: "Arroz, feijão, molho, estrogonofe: aquilo que você faz em panela grande e usa em várias marmitas. Cadastre a receita uma vez e diga quanto ela rende pronta: o sistema calcula quanto custa cada grama. Na marmita, é só dizer quantos gramas daquela receita vão dentro. Assim o seu gasto com ingredientes (o CMV) fica muito mais certo, porque o tempero e o sal do lote também entram na conta.",
+        body: "Arroz, feijão, molho, estrogonofe: aquilo que você faz em panela grande e usa em várias marmitas. **Cadastre a receita uma vez** e diga quanto ela rende pronta: o sistema calcula **quanto custa cada grama**. Na marmita, é só dizer quantos gramas daquela receita vão dentro. Assim o seu **gasto com ingredientes (o CMV)** fica muito mais certo, porque o tempero e o sal do lote também entram na conta.",
       },
       {
         icon: "🧭",
@@ -47,14 +48,16 @@ export const ANNOUNCEMENTS: Announcement[] = [
       },
       {
         icon: "🏭",
-        title: "Vem aí: Produção (em fase final)",
-        body: "Um menu novo para o dia a dia da cozinha. Ele vai:",
+        title: "Produção",
+        badge: "Em breve",
+        highlight: true,
+        body: "Um menu novo para o dia a dia da cozinha, em **fase final**. Ele vai:",
         bullets: [
-          "sugerir quanto produzir de cada marmita, pelo que você vendeu nas últimas semanas;",
-          "montar a lista de compras do que falta, já descontando o que você tem no estoque;",
-          "controlar o estoque de ingredientes e de marmitas prontas.",
+          "Quanto produzir: sugere a quantidade de cada marmita, pelo que você vendeu nas últimas semanas.",
+          "Lista de compras: monta o que falta, já descontando o que você tem no estoque.",
+          "Estoque: controla os ingredientes e as marmitas prontas.",
         ],
-        after: "Ele aparece no menu com um cadeadinho porque ainda estamos terminando. Em breve ele é liberado!",
+        after: "Ele aparece no menu com um **cadeadinho** porque ainda estamos terminando. Em breve ele é liberado!",
       },
     ],
   },

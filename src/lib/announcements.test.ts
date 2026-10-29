@@ -5,7 +5,7 @@ describe("avisos de novidade", () => {
   it("o rascunho existe e fala de tudo que foi combinado, sem o Fechar o mês (a Produção ainda está travada)", () => {
     const draft = findAnnouncement(DRAFT_ANNOUNCEMENT_ID)!;
     const text = JSON.stringify(draft);
-    for (const word of ["receitas", "Cardápio", "Ingredientes", "Financeiro", "Produção", "lista de compras", "estoque"]) expect(text).toContain(word);
+    for (const word of ["receitas", "Cardápio", "Ingredientes", "Financeiro", "Produção", "Lista de compras", "Estoque"]) expect(text).toContain(word);
     expect(text).not.toContain("fechar o mês");
   });
 
