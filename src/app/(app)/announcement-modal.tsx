@@ -4,24 +4,11 @@ import { Fragment, useEffect, useRef, useState, useTransition } from "react";
 import type { Announcement, AnnouncementSection } from "@/lib/announcements";
 import { dismissAnnouncement } from "./actions";
 
-const seenKey = (id: string) => `aviso-fechado:${id}`;
-
-/** Marca, só neste navegador e só até fechar a aba, que a pessoa já viu o aviso: ele não volta a cada menu, mas volta no próximo acesso. */
-function rememberClosedThisVisit(id: string) {
-  try {
-    sessionStorage.setItem(seenKey(id), "1");
-  } catch {
-    /* sem armazenamento: o aviso só pode reaparecer ao trocar de página */
-  }
-}
-
-function closedThisVisit(id: string): boolean {
-  try {
-    return sessionStorage.getItem(seenKey(id)) === "1";
-  } catch {
-    return false;
-  }
-}
+/**
+ * Avisos que a pessoa fechou com o X nesta página. Fica só na memória: trocar de menu não recarrega a página (o aviso não volta),
+ * mas atualizar a página ou entrar de novo mostra o aviso outra vez. Só a caixinha "não mostrar mais" esconde de vez.
+ */
+const closedInThisPage = new Set<string>();
 
 /** Texto com **destaques** em negrito. */
 function Rich({ text }: { text: string }) {
@@ -84,7 +71,7 @@ function SectionBlock({ s }: { s: AnnouncementSection }) {
 }
 
 /**
- * Modal de novidades. O X fecha e o aviso volta no próximo acesso (não a cada troca de menu).
+ * Modal de novidades. O X fecha e o aviso volta ao atualizar a página ou no próximo acesso (não a cada troca de menu).
  * A caixinha "entendi, não mostrar mais" grava na conta da pessoa e o aviso não volta nunca mais.
  * `preview`: rascunho do admin; só abre com ?aviso=ver na barra de endereço e nunca grava nada.
  * No celular sobe de baixo como uma folha; no computador abre no centro.
@@ -98,7 +85,7 @@ export function AnnouncementModal({ announcement, preview }: { announcement: Ann
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog || dialog.open) return;
-    const wanted = preview ? new URLSearchParams(window.location.search).get("aviso") === "ver" : !closedThisVisit(announcement.id);
+    const wanted = preview ? new URLSearchParams(window.location.search).get("aviso") === "ver" : !closedInThisPage.has(announcement.id);
     if (wanted) dialog.showModal();
   }, [announcement.id, preview]);
 
@@ -108,13 +95,13 @@ export function AnnouncementModal({ announcement, preview }: { announcement: Ann
   };
 
   const close = () => {
-    if (!preview) rememberClosedThisVisit(announcement.id);
+    if (!preview) closedInThisPage.add(announcement.id);
     ref.current?.close();
   };
 
   const dismissForever = (checked: boolean) => {
     if (!checked) return;
-    rememberClosedThisVisit(announcement.id);
+    closedInThisPage.add(announcement.id);
     ref.current?.close();
     if (!preview) startTransition(() => void dismissAnnouncement(announcement.id));
   };
@@ -123,7 +110,7 @@ export function AnnouncementModal({ announcement, preview }: { announcement: Ann
     <dialog
       ref={ref}
       aria-labelledby="announcement-title"
-      onClose={() => !preview && rememberClosedThisVisit(announcement.id)}
+      onClose={() => !preview && closedInThisPage.add(announcement.id)}
       onClick={(e) => e.target === ref.current && close()}
       className="announcement m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-hidden rounded-t-3xl bg-surface p-0 text-foreground shadow-2xl backdrop:bg-black/55 sm:m-auto sm:max-w-lg sm:rounded-3xl"
     >
