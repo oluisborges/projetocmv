@@ -24,7 +24,7 @@ type Props = {
  * Editor de uma Receita (arroz, estrogonofe…): o lote inteiro com o que entra e o peso total que rende pronto.
  * O custo por kg sai daqui e é o que as marmitas pagam por grama usado.
  */
-type ReadyUnit = "g" | "kg" | "ml" | "l";
+type ReadyUnit = "g" | "kg" | "ml" | "l" | "un";
 
 export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: Props) {
   const router = useRouter();
@@ -41,6 +41,7 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
     return p === null ? null : toBaseQty(Number(p), unit).toNumber();
   }, [ready, unit]);
 
+  const perLabel = unit === "un" ? "Custo por unidade pronta" : unit === "ml" || unit === "l" ? "Custo por litro pronto" : "Custo por kg pronto";
   const cost = useMemo(
     () => computeReceita({ readyWeightGrams: readyGrams, ingredients: items.flatMap((i) => (byId.has(i.ingredientId) ? [{ ingredient: byId.get(i.ingredientId)!, netQty: i.netQty }] : [])) }),
     [items, readyGrams, byId],
@@ -107,14 +108,14 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
           <div className="flex flex-col gap-0.5">
             <p className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted">
               <span>
-                Custo por kg pronto
-                <Hint>O custo do lote inteiro (com sal, tempero e tudo) dividido pelo peso que sai pronto. A marmita paga só os gramas que usa.</Hint>
+                {perLabel}
+                <Hint>O custo do lote inteiro (com sal, tempero e tudo) dividido pelo que sai pronto. A marmita paga só o que usa.</Hint>
               </span>
               {savedChip}
             </p>
-            <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(cost.costPerGram * 1000)}</p>
+            <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(cost.costPerGram * (unit === "un" ? 1 : 1000))}</p>
             <p className="tabular text-xs text-muted">
-              Lote {formatBRL(cost.batchCost)} · rende {formatNumber(cost.readyWeightGrams / 1000, 2)} kg · {formatBRL(cost.costPerGram * 100)} a cada 100 g
+              Lote {formatBRL(cost.batchCost)} · rende {unit === "un" ? `${formatNumber(cost.readyWeightGrams, 0)} un` : `${formatNumber(cost.readyWeightGrams / 1000, 2)} ${unit === "ml" || unit === "l" ? "L" : "kg"}`}{unit === "un" ? "" : ` · ${formatBRL(cost.costPerGram * 100)} a cada 100 ${unit === "ml" || unit === "l" ? "ml" : "g"}`}
             </p>
             {cost.missingPrices > 0 ? (
               <p className="pt-1 text-xs text-warning">
@@ -186,7 +187,7 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
         <div className="flex flex-col gap-1.5 text-sm font-medium">
           <label htmlFor="ready-weight">
             Quanto rende depois de pronta
-            <Hint>Pese (ou meça) o lote pronto uma vez e anote. Se 5 kg de arroz cru viram 12,5 kg de arroz cozido, digite 12,5 kg. Para molhos e caldos, pode usar litros ou ml (1 litro conta como 1 kg).</Hint>
+            <Hint>Pese (ou meça) o lote pronto uma vez e anote. Se 5 kg de arroz cru viram 12,5 kg de arroz cozido, digite 12,5 kg. Para molhos e caldos, pode usar litros ou ml ou unidades (ex.: 30 pães).</Hint>
           </label>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <input id="ready-weight" value={ready} onChange={(e) => setReady(e.target.value)} onBlur={() => save()} inputMode="decimal" disabled={!canWrite} className={inputClass} />
@@ -195,6 +196,7 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
               <option value="g">g</option>
               <option value="l">litros</option>
               <option value="ml">ml</option>
+              <option value="un">un</option>
             </select>
           </div>
         </div>

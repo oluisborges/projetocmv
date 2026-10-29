@@ -12,7 +12,7 @@ export function NewReceitaForm() {
       <div className="flex flex-col gap-1.5 text-sm font-medium">
         <label htmlFor="ready-weight">
           Quanto rende pronta
-          <Hint>Tudo que sai do lote, já pronto. Se 5 kg de arroz cru viram 12,5 kg de arroz pronto, digite 12,5 e escolha kg. Para molhos e caldos, pode usar litros ou ml (1 litro conta como 1 kg).</Hint>
+          <Hint>Tudo que sai do lote, já pronto. Se 5 kg de arroz cru viram 12,5 kg de arroz pronto, digite 12,5 e escolha kg. Para molhos e caldos, pode usar litros ou ml ou unidades (ex.: 30 pães).</Hint>
         </label>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
           <input
@@ -28,6 +28,7 @@ export function NewReceitaForm() {
             <option value="g">g</option>
             <option value="l">litros</option>
             <option value="ml">ml</option>
+            <option value="un">un</option>
           </select>
         </div>
       </div>

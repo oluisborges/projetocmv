@@ -33,7 +33,7 @@ type RecipeSettingsInput = {
   portions: number | null;
   /** sempre em gramas */
   portionWeight: number | null;
-  portionWeightUnit: "g" | "kg" | "ml" | "l";
+  portionWeightUnit: "g" | "kg" | "ml" | "l" | "un";
   cookingLossPct: number;
 };
 
@@ -53,7 +53,7 @@ function readSettings(raw: {
 
   const portions = optionalNumber(raw.portions, "Porções", { max: 100_000 });
   if (!portions.ok) return portions;
-  const weightUnit = raw.portionWeightUnit === "kg" || raw.portionWeightUnit === "ml" || raw.portionWeightUnit === "l" ? raw.portionWeightUnit : "g";
+  const weightUnit = raw.portionWeightUnit === "kg" || raw.portionWeightUnit === "ml" || raw.portionWeightUnit === "l" || raw.portionWeightUnit === "un" ? raw.portionWeightUnit : "g";
   const weightTyped = optionalNumber(raw.portionWeight, "Peso da porção", { max: 100_000 });
   if (!weightTyped.ok) return weightTyped;
   // O que o dono digitou (em g ou kg) vira gramas, que é o que o cálculo usa.

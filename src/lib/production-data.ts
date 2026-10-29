@@ -39,7 +39,7 @@ export type ProductionBase = {
   /** Marmitas com a ficha incompleta (sem ingredientes ou porções): não entram na conta. */
   incomplete: { id: string; name: string }[];
   ingredients: Record<string, ProdIngredient>;
-  receitas: Record<string, { name: string; readyGrams: number; parts: { ingredientId: string; grossPerGram: number }[] }>;
+  receitas: Record<string, { name: string; base: "g" | "ml" | "un"; readyGrams: number; parts: { ingredientId: string; grossPerGram: number }[] }>;
   /** Saldo dos insumos (do livro de estoque). Insumo sem movimento não aparece. */
   stock: Record<string, ProdBalance>;
   /** Saldo das marmitas prontas (congeladas): contado + produzido − vendido no cardápio digital. */
@@ -158,7 +158,7 @@ export async function loadProductionBase(orgId: string, canWrite: boolean): Prom
     recipes: ready,
     incomplete,
     ingredients,
-    receitas: Object.fromEntries([...blueprints].map(([id, b]) => [id, { name: b.name, readyGrams: b.readyGrams, parts: b.parts }])),
+    receitas: Object.fromEntries([...blueprints].map(([id, b]) => [id, { name: b.name, base: b.base, readyGrams: b.readyGrams, parts: b.parts }])),
     stock: balances.stock,
     finished: balances.finished,
     hasMenu,

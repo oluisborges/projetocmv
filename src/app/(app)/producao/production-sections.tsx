@@ -27,13 +27,13 @@ export function PrepareList({ calc, receitas }: { calc: ProductionCalc; receitas
             <li key={id} className="flex flex-col gap-1 py-3">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="font-semibold">{bp?.name ?? "Receita"}</span>
-                <span className="tabular shrink-0 font-extrabold">{formatBaseQty(r.grams, "g")} prontos</span>
+                <span className="tabular shrink-0 font-extrabold">{formatBaseQty(r.grams, bp?.base ?? "g")} prontos</span>
               </div>
               <p className="text-sm">
                 {whole > 0 ? (
                   <>
                     Faça <strong>{whole} {whole === 1 ? "lote" : "lotes"}</strong>
-                    {bp ? ` (cada um rende ${formatBaseQty(bp.readyGrams, "g")})` : ""}.
+                    {bp ? ` (cada um rende ${formatBaseQty(bp.readyGrams, bp.base)})` : ""}.
                   </>
                 ) : (
                   "Informe quanto a receita rende pronta para calcular os lotes."

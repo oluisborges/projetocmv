@@ -19,6 +19,11 @@ const CHIPS: { key: TypeFilter; label: string }[] = [
   { key: "embalagens", label: "Embalagens" },
 ];
 
+function readyText(r: ReceitaListItem) {
+  const q = r.readyWeightGrams ?? 0;
+  return r.base === "un" ? `${formatNumber(q, 0)} un` : `${formatNumber(q / 1000, 2)} ${r.base === "ml" ? "L" : "kg"}`;
+}
+
 function ReceitaRows({ receitas }: { receitas: ReceitaListItem[] }) {
   return (
     <ul className="flex flex-col gap-2">
@@ -27,10 +32,10 @@ function ReceitaRows({ receitas }: { receitas: ReceitaListItem[] }) {
           <Link href={`/ingredientes/receitas/${r.id}`} className="flex flex-col gap-0.5 card p-4">
             <span className="flex items-baseline justify-between gap-3">
               <span className="min-w-0 truncate font-semibold">{r.name}</span>
-              {r.costPerKg !== null ? <span className="tabular shrink-0 font-extrabold">{formatBRL(r.costPerKg)}/kg</span> : <span className="shrink-0 text-xs text-warning">incompleta</span>}
+              {r.costPerKg !== null ? <span className="tabular shrink-0 font-extrabold">{formatBRL(r.costPerKg)}/{r.base === "un" ? "un" : r.base === "ml" ? "litro" : "kg"}</span> : <span className="shrink-0 text-xs text-warning">incompleta</span>}
             </span>
             <span className="text-xs text-muted">
-              {r.readyWeightGrams ? `rende ${formatNumber(r.readyWeightGrams / 1000, 2)} kg pronto` : "informe quanto rende"}
+              {r.readyWeightGrams ? `rende ${readyText(r)} pronto` : "informe quanto rende"}
               {r.batchCost !== null ? ` · lote ${formatBRL(r.batchCost)}` : ""}
               {" · "}
               {r.usedIn === 0 ? "ainda não usada" : `usada em ${r.usedIn} ${r.usedIn === 1 ? "marmita" : "marmitas"}`}

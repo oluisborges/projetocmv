@@ -34,7 +34,7 @@ export type RecipeRecord = {
   category: string | null;
   portions: number | null;
   portion_weight: number | null;
-  portion_weight_unit: "g" | "kg" | "ml" | "l";
+  portion_weight_unit: "g" | "kg" | "ml" | "l" | "un";
   cooking_loss_pct: number;
   /** serving = quantidades de UMA unidade; batch = receita em lote que rende N porções. */
   mode: "serving" | "batch";
@@ -84,18 +84,22 @@ export async function loadIngredients(): Promise<IngredientRecord[]> {
   return [...real, ...receitaIngredients(receitas, new Map(real.map((i) => [i.id, i])))];
 }
 
-type ReceitaRow = { id: string; name: string; portion_weight: number | null; active: boolean; items: { recipe_id: string; ingredient_id: string | null; net_qty: number }[] };
+/** Em que a receita é medida: g (kg), ml (litros) ou un. O custo e o uso nas marmitas seguem essa medida. */
+export type ReceitaBase = "g" | "ml" | "un";
+const baseOfUnit = (u: unknown): ReceitaBase => (u === "ml" || u === "l" ? "ml" : u === "un" ? "un" : "g");
+
+type ReceitaRow = { id: string; name: string; portion_weight: number | null; base: ReceitaBase; active: boolean; items: { recipe_id: string; ingredient_id: string | null; net_qty: number }[] };
 
 /** Receitas da marmitaria (inclusive arquivadas: marmitas que já usam continuam calculando) com os ingredientes de cada uma. */
 async function loadReceitaRows(orgId: string): Promise<ReceitaRow[]> {
   const supabase = await createClient();
-  const { data: recipes } = await supabase.from("recipes").select("id, name, portion_weight, active").eq("org_id", orgId).eq("kind", "receita");
+  const { data: recipes } = await supabase.from("recipes").select("id, name, portion_weight, portion_weight_unit, active").eq("org_id", orgId).eq("kind", "receita");
   if (!recipes?.length) return [];
   const rows = await fetchAll((from, to) =>
     supabase.from("recipe_items").select("recipe_id, ingredient_id, net_qty").eq("org_id", orgId).in("recipe_id", recipes.map((r) => r.id)).order("id").range(from, to),
   );
   const items = rows.map((i) => ({ recipe_id: i.recipe_id as string, ingredient_id: i.ingredient_id as string | null, net_qty: Number(i.net_qty) }));
-  return recipes.map((r) => ({ id: r.id as string, name: r.name as string, portion_weight: num(r.portion_weight), active: Boolean(r.active), items: items.filter((i) => i.recipe_id === r.id) }));
+  return recipes.map((r) => ({ id: r.id as string, name: r.name as string, portion_weight: num(r.portion_weight), base: baseOfUnit(r.portion_weight_unit), active: Boolean(r.active), items: items.filter((i) => i.recipe_id === r.id) }));
 }
 
 function receitaIngredients(receitas: ReceitaRow[], byId: Map<string, IngredientRecord>): IngredientRecord[] {
@@ -106,7 +110,7 @@ function receitaIngredients(receitas: ReceitaRow[], byId: Map<string, Ingredient
       id: r.id,
       name: r.name,
       kind: "receita" as const,
-      purchase_unit: "g",
+      purchase_unit: r.base,
       unit_cost: c?.costPerGram ?? 0,
       correction_factor: 1,
       cooking_yield: 1,
@@ -139,7 +143,7 @@ const toRecipe = (r: Record<string, unknown>): RecipeRecord =>
     kind: r.kind === "receita" ? "receita" : "marmita",
     portions: num(r.portions),
     portion_weight: num(r.portion_weight),
-    portion_weight_unit: r.portion_weight_unit === "kg" || r.portion_weight_unit === "ml" || r.portion_weight_unit === "l" ? r.portion_weight_unit : "g",
+    portion_weight_unit: r.portion_weight_unit === "kg" || r.portion_weight_unit === "ml" || r.portion_weight_unit === "l" || r.portion_weight_unit === "un" ? r.portion_weight_unit : "g",
     cooking_loss_pct: Number(r.cooking_loss_pct),
     mode: r.mode === "serving" ? "serving" : "batch",
   }) as RecipeRecord;
@@ -161,7 +165,7 @@ export async function loadRecipes(): Promise<{ recipes: RecipeRecord[]; items: R
   };
 }
 
-export type ReceitaListItem = { id: string; name: string; readyWeightGrams: number | null; batchCost: number | null; costPerKg: number | null; ingredientCount: number; usedIn: number };
+export type ReceitaListItem = { id: string; name: string; base: ReceitaBase; readyWeightGrams: number | null; batchCost: number | null; costPerKg: number | null; ingredientCount: number; usedIn: number };
 
 /** Receitas ativas com custo do lote, custo por kg e em quantas marmitas são usadas. */
 export async function loadReceitas(): Promise<ReceitaListItem[]> {
@@ -182,9 +186,10 @@ export async function loadReceitas(): Promise<ReceitaListItem[]> {
       return {
         id: r.id,
         name: r.name,
+        base: r.base,
         readyWeightGrams: r.portion_weight,
         batchCost: c?.batchCost ?? null,
-        costPerKg: c ? c.costPerGram * 1000 : null,
+        costPerKg: c ? (r.base === "un" ? c.costPerGram : c.costPerGram * 1000) : null,
         ingredientCount: r.items.length,
         usedIn: new Set(used.filter((u) => u.receita_id === r.id).map((u) => u.recipe_id as string)).size,
       };
@@ -200,7 +205,7 @@ export async function loadArchivedRecipes(kind: "marmita" | "receita" = "marmita
   return data ?? [];
 }
 
-export type ReceitaBlueprintRecord = { id: string; name: string; readyGrams: number; parts: { ingredientId: string; grossPerGram: number }[] };
+export type ReceitaBlueprintRecord = { id: string; name: string; base: ReceitaBase; readyGrams: number; parts: { ingredientId: string; grossPerGram: number }[] };
 
 /**
  * De que insumos é feita cada Receita, por grama pronto: quanto de cada insumo COMPRADO (já com fator de correção) sai em 1 g da receita,
@@ -216,7 +221,7 @@ export async function loadReceitaBlueprints(ingredients: IngredientRecord[]): Pr
     if (!r.portion_weight || r.portion_weight <= 0) continue;
     const sums = new Map<string, number>();
     for (const it of r.items) if (it.ingredient_id) sums.set(it.ingredient_id, (sums.get(it.ingredient_id) ?? 0) + it.net_qty * (fc.get(it.ingredient_id) ?? 1));
-    out.set(r.id, { id: r.id, name: r.name, readyGrams: r.portion_weight, parts: [...sums].map(([ingredientId, gross]) => ({ ingredientId, grossPerGram: gross / r.portion_weight! })) });
+    out.set(r.id, { id: r.id, name: r.name, base: r.base, readyGrams: r.portion_weight, parts: [...sums].map(([ingredientId, gross]) => ({ ingredientId, grossPerGram: gross / r.portion_weight! })) });
   }
   return out;
 }

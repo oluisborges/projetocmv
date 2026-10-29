@@ -67,7 +67,7 @@ describe("conta da produção", () => {
       "arroz-cru": ing("Arroz", { unitCost: 0.005, packSize: 5000, packLabel: "5 kg" }),
       arroz: ing("Arroz Teste", { kind: "receita", packSize: null, packLabel: null, unitCost: 0.0024 }),
     },
-    receitas: { arroz: { name: "Arroz Teste", readyGrams: 12_500, parts: [{ ingredientId: "arroz-cru", grossPerGram: 0.4 }] } },
+    receitas: { arroz: { name: "Arroz Teste", base: "g" as const, readyGrams: 12_500, parts: [{ ingredientId: "arroz-cru", grossPerGram: 0.4 }] } },
     stock: { patinho: { balance: 8000, known: true, lastCountAt: "2026-10-20T12:00:00Z" } },
   };
 
