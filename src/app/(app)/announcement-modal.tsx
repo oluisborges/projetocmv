@@ -128,7 +128,7 @@ export function AnnouncementModal({ announcement, preview }: { announcement: Ann
       className="announcement m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-hidden rounded-t-3xl bg-surface p-0 text-foreground shadow-2xl backdrop:bg-black/55 sm:m-auto sm:max-w-lg sm:rounded-3xl"
     >
       <div className="flex max-h-[92dvh] flex-col">
-        <header className="relative overflow-hidden bg-gradient-to-br from-brand-deep to-primary px-5 pb-5 pt-5 text-primary-foreground">
+        <header className="relative shrink-0 overflow-hidden bg-gradient-to-br from-brand-deep to-primary px-5 pb-5 pt-5 text-primary-foreground">
           <span aria-hidden className="absolute inset-x-0 top-0 h-1.5 bg-accent" />
           <button
             type="button"
@@ -158,7 +158,7 @@ export function AnnouncementModal({ announcement, preview }: { announcement: Ann
           ) : null}
         </div>
 
-        <footer className="border-t border-border bg-surface px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
+        <footer className="shrink-0 border-t border-border bg-surface px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
           <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-border bg-tint/40 px-3 text-sm font-semibold has-[:checked]:border-primary has-[:checked]:bg-tint">
             <input type="checkbox" onChange={(e) => dismissForever(e.target.checked)} className="size-6 shrink-0 accent-[var(--color-primary)]" />
             Entendi, não precisa mais mostrar este aviso
