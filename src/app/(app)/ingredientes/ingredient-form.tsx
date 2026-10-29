@@ -85,7 +85,7 @@ export function IngredientForm({
           className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         >
           <option value="insumo">Insumo (comida)</option>
-          <option value="embalagem">Embalagem (bandeja, filme, etiqueta…)</option>
+          <option value="embalagem">Embalagem (pote, tampa, filme, etiqueta…)</option>
         </select>
       </label>
 

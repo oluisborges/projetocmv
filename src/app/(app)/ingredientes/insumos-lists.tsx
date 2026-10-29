@@ -67,6 +67,7 @@ export function InsumosLists({ initialType, receitas, items, canWrite }: { initi
   const insumos = useMemo(() => items.filter((i) => i.kind !== "embalagem"), [items]);
   const packs = useMemo(() => items.filter((i) => i.kind === "embalagem"), [items]);
   const pendingCount = items.filter(needsUpdate).length;
+  const counts: Record<TypeFilter, number> = { todos: receitas.length + items.length, insumos: insumos.length, receitas: receitas.length, embalagens: packs.length };
   const categories = useMemo(() => [...new Set([...(showInsumos ? insumos : []), ...(showPacks ? packs : [])].map((i) => i.category).filter((c): c is string => Boolean(c)))].sort(), [insumos, packs, showInsumos, showPacks]);
 
   const q = norm(query);
@@ -118,7 +119,7 @@ export function InsumosLists({ initialType, receitas, items, canWrite }: { initi
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Tipo de item">
         {CHIPS.map((c) => (
           <button key={c.key} type="button" aria-pressed={type === c.key} onClick={() => setType(c.key)} className={chip(type === c.key)}>
-            {c.label}
+            {c.label} ({counts[c.key]})
           </button>
         ))}
         <button type="button" aria-pressed={onlyPending} onClick={() => setOnlyPending((v) => !v)} className={`${chip(onlyPending)} ${onlyPending ? "" : "border-warning/60 text-warning"}`}>

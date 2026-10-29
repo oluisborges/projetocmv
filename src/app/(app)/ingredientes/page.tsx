@@ -34,8 +34,8 @@ export default async function IngredientsPage(props: PageProps<"/ingredientes">)
 
   return (
     <>
-      <section className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-extrabold tracking-tight">Ingredientes</h1>
           <p className="text-muted">Toque no preço, digite o valor novo e pronto: salva sozinho.</p>
         </div>
