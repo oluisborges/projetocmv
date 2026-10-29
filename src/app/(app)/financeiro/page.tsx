@@ -5,6 +5,7 @@ import { Hint } from "@/components/hint";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
+import { hasMenuConnection } from "@/lib/menu-data";
 import { loadLastMonthRevenue } from "@/lib/last-month-revenue";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { StepCard } from "./step-card";
@@ -26,7 +27,7 @@ export default async function CostsPage() {
     );
   }
 
-  const [fixedCosts, staff, lastMonth] = await Promise.all([loadFixedCosts(ctx.unit.id), loadStaff(ctx.unit.id), loadLastMonthRevenue(orgId, ctx.unit.id).catch(() => null)]);
+  const [fixedCosts, staff, lastMonth, menuConnected] = await Promise.all([loadFixedCosts(ctx.unit.id), loadStaff(ctx.unit.id), loadLastMonthRevenue(orgId, ctx.unit.id).catch(() => null), hasMenuConnection(orgId).catch(() => false)]);
 
   const cheapest = [...ctx.channels].sort((a, b) => a.fee_pct - b.fee_pct)[0];
   const feePct = cheapest?.fee_pct ?? 0;
@@ -55,27 +56,37 @@ export default async function CostsPage() {
       status: salesDone
         ? `${formatBRL(ctx.monthlyRevenue!)} · ${formatNumber(ctx.monthlyUnits!, 0)} unidades${ctx.revenueSource === "history" ? ` · média de ${ctx.revenueMonths} ${ctx.revenueMonths === 1 ? "mês" : "meses"}` : ""}`
         : "falta preencher",
-      body:
-        ctx.revenueSource === "history" ? (
-          <>
-            <p className="text-sm leading-relaxed">
-              Calculado pela <strong>média dos {ctx.revenueMonths === 1 ? "mês" : `${ctx.revenueMonths} últimos meses`}</strong> em que você informou o faturamento. Para mudar, ajuste os meses em
-              Mês.
+      body: canWrite ? (
+        <>
+          {ctx.manualRevenue || ctx.manualUnits ? (
+            <p className="rounded-xl bg-warning/10 p-3 text-sm">
+              {ctx.autoRevenue
+                ? `Está valendo o número que você digitou. Apague os campos e salve para voltar a usar o automático (${menuConnected ? "do seu cardápio digital" : "dos meses informados"}).`
+                : "Está valendo o número que você digitou."}
             </p>
-            <Link href="/producao/fechar-mes" className="inline-flex min-h-11 items-center font-semibold text-primary">
-              Abrir o Mês →
-            </Link>
-          </>
-        ) : canWrite ? (
-          <>
-            <MonthlyNumbersForm revenue={ctx.monthlyRevenue} units={ctx.monthlyUnits} />
-            <p className="text-xs text-muted">
-              Quando você informar o faturamento de cada mês em <Link href="/producao/fechar-mes" className="tap-area font-semibold text-primary underline">Produção, Fechar o mês</Link>, o app passa a usar a média desses meses.
+          ) : ctx.autoRevenue ? (
+            <p className="rounded-xl bg-success/10 p-3 text-sm">
+              {menuConnected ? (
+                <>
+                  <strong>Já puxamos sozinhos do seu cardápio digital</strong> (média dos últimos {ctx.autoRevenue.months} {ctx.autoRevenue.months === 1 ? "mês" : "meses"}). Não precisa digitar nada. Se quiser, informe à mão: o que você digitar passa a valer.
+                </>
+              ) : (
+                <>
+                  Calculado pela <strong>média dos últimos {ctx.autoRevenue.months} {ctx.autoRevenue.months === 1 ? "mês" : "meses"}</strong> em que você informou o faturamento em{" "}
+                  <Link href="/producao/fechar-mes" className="tap-area font-semibold text-primary underline">Produção, Fechar o mês</Link>. Se quiser, informe à mão: o que você digitar passa a valer.
+                </>
+              )}
             </p>
-          </>
-        ) : (
-          <p className="text-sm text-muted">Ainda não informado.</p>
-        ),
+          ) : menuConnected ? (
+            <p className="rounded-xl bg-tint p-3 text-sm">Seu cardápio digital está conectado: assim que fechar o primeiro mês de pedidos, o faturamento vem sozinho. Enquanto isso, pode informar à mão.</p>
+          ) : null}
+          <MonthlyNumbersForm revenue={ctx.manualRevenue} units={ctx.manualUnits} autoRevenue={ctx.autoRevenue?.revenue ?? null} autoUnits={ctx.autoRevenue?.units ?? null} />
+        </>
+      ) : salesDone ? (
+        <p className="text-sm">{formatBRL(ctx.monthlyRevenue!)} · {formatNumber(ctx.monthlyUnits!, 0)} unidades por mês.</p>
+      ) : (
+        <p className="text-sm text-muted">Ainda não informado.</p>
+      ),
     },
     {
       key: "fixed",

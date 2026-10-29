@@ -22,7 +22,7 @@ const pctText = (fraction: number) => String(Number((fraction * 100).toFixed(2))
 const smallInput =
   "tabular h-11 card px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
 
-export function MonthlyNumbersForm({ revenue, units }: { revenue: number | null; units: number | null }) {
+export function MonthlyNumbersForm({ revenue, units, autoRevenue = null, autoUnits = null }: { revenue: number | null; units: number | null; /** Média automática, mostrada como sugestão quando o campo está vazio. */ autoRevenue?: number | null; autoUnits?: number | null }) {
   return (
     <ActionForm action={saveMonthlyNumbers} submitLabel="Salvar números do mês">
       <div className="grid grid-cols-1 gap-3">
@@ -32,7 +32,7 @@ export function MonthlyNumbersForm({ revenue, units }: { revenue: number | null;
           inputMode="decimal"
           required={false}
           defaultValue={revenue ? moneyInput.format(revenue) : ""}
-          placeholder="Ex.: 60.000"
+          placeholder={autoRevenue ? `Automático: ${moneyInput.format(autoRevenue)}` : "Ex.: 60.000"}
           hint={<Hint>A MÉDIA do que entra por mês com as vendas. Com isso o app calcula quanto dos seus custos fixos pesa em cada real vendido e já usa no preço. O faturamento de cada mês específico você informa em Produção, na aba Fechar o mês.</Hint>}
         />
         <TextField
@@ -41,7 +41,7 @@ export function MonthlyNumbersForm({ revenue, units }: { revenue: number | null;
           inputMode="decimal"
           required={false}
           defaultValue={units ? String(units) : ""}
-          placeholder="Ex.: 1400"
+          placeholder={autoUnits ? `Automático: ${Math.round(autoUnits)}` : "Ex.: 1400"}
           hint={<Hint>A média de unidades vendidas por mês (somando todos os produtos). Serve para mostrar quanto de custo fixo cada unidade precisa pagar.</Hint>}
         />
       </div>

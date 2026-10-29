@@ -28,6 +28,11 @@ export type PricingContext = {
   revenueSource: "history" | "manual" | null;
   /** Quantos meses entraram na média (0 quando não é "history"). */
   revenueMonths: number;
+  /** O que o dono digitou à mão (vale no lugar da média quando existe). */
+  manualRevenue: number | null;
+  manualUnits: number | null;
+  /** A média automática (cardápio digital + meses informados), mesmo quando um número à mão está valendo. */
+  autoRevenue: { revenue: number; units: number | null; months: number } | null;
   /** Custos fixos + equipe por mês (0 se ainda não cadastrou). */
   fixedTotal: number;
   /** Parte do total acima que é equipe (salário + encargos). */
@@ -143,8 +148,9 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
   const [fixedCosts, staff, history] = await Promise.all([loadFixedCosts(unit.id), loadStaff(unit.id), monthlyAverages(orgId, unit.id)]);
   const manualRevenue = settingsRow?.monthly_revenue ? Number(settingsRow.monthly_revenue) : null;
   const manualUnits = settingsRow?.monthly_units ? Number(settingsRow.monthly_units) : null;
-  const monthlyRevenue = history ? history.revenue : manualRevenue;
-  const monthlyUnits = history ? (history.units ?? manualUnits) : manualUnits;
+  // O que o dono digitou à mão vale; sem isso, vale a média puxada do cardápio digital e dos meses informados.
+  const monthlyRevenue = manualRevenue ?? history?.revenue ?? null;
+  const monthlyUnits = manualUnits ?? history?.units ?? null;
   const fixed = summarizeFixedCosts({
     fixedCosts: fixedCosts.map((c) => c.monthly_amount),
     staff: staff.map((m) => ({ area: m.area, monthlySalary: m.monthly_salary, chargesPct: m.charges_pct })),
@@ -171,8 +177,11 @@ export async function loadPricingContext(orgId: string, canWrite: boolean): Prom
     fixedPctOfRevenue: fixed.pctOfRevenue,
     monthlyRevenue,
     monthlyUnits,
-    revenueSource: history ? "history" : manualRevenue ? "manual" : null,
-    revenueMonths: history?.months ?? 0,
+    revenueSource: manualRevenue ? "manual" : history ? "history" : null,
+    revenueMonths: manualRevenue ? 0 : (history?.months ?? 0),
+    manualRevenue,
+    manualUnits,
+    autoRevenue: history,
     fixedTotal: fixed.total,
     staffTotal: fixed.staffTotal,
     configured,
