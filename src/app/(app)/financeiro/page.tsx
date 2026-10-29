@@ -157,12 +157,7 @@ export default async function CostsPage() {
         </p>
       ) : null}
 
-      <div className="flex items-baseline justify-between text-sm">
-        <h2 className="font-semibold">{doneCount === 3 ? "Tudo preenchido" : `${doneCount} de 3 preenchidos`}</h2>
-        <Link href="/producao/fechar-mes" className="tap-area font-semibold text-primary">
-          Fechar o mês →
-        </Link>
-      </div>
+      <h2 className="text-sm font-semibold">{doneCount === 3 ? "Tudo preenchido" : `${doneCount} de 3 preenchidos`}</h2>
 
       <div className="flex flex-col gap-3">
         {steps.map((st, i) => (
