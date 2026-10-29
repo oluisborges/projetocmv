@@ -5,10 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createIngredient } from "../actions";
 import { IngredientForm } from "../ingredient-form";
 
-export const metadata = { title: "Novo insumo" };
+export const metadata = { title: "Novo item" };
 
-export default async function NewIngredientPage() {
+export default async function NewIngredientPage(props: PageProps<"/ingredientes/novo">) {
   const { orgId, canWrite } = await requireMember();
+  const { tipo } = await props.searchParams;
+  const isPack = tipo === "embalagem";
   if (!canWrite) redirect("/ingredientes");
 
   const supabase = await createClient();
@@ -17,9 +19,9 @@ export default async function NewIngredientPage() {
 
   return (
     <>
-      <BackLink href="/ingredientes">Insumos</BackLink>
-      <h1 className="text-2xl font-extrabold tracking-tight">Novo insumo</h1>
-      <IngredientForm action={createIngredient} submitLabel="Salvar insumo" categories={categories} />
+      <BackLink href="/ingredientes">Ingredientes</BackLink>
+      <h1 className="text-2xl font-extrabold tracking-tight">{isPack ? "Nova embalagem" : "Novo insumo"}</h1>
+      <IngredientForm action={createIngredient} submitLabel={isPack ? "Salvar embalagem" : "Salvar insumo"} categories={categories} defaults={{ kind: isPack ? "embalagem" : "insumo" }} />
     </>
   );
 }

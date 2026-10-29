@@ -34,7 +34,7 @@ export default async function IngredientPage(props: PageProps<"/ingredientes/[id
 
   return (
     <>
-      <BackLink href="/ingredientes">Insumos</BackLink>
+      <BackLink href="/ingredientes">Ingredientes</BackLink>
       <h1 className="text-2xl font-extrabold tracking-tight">{ing.name}</h1>
 
       {canWrite ? (

@@ -28,7 +28,7 @@ export default async function RecipePage(props: PageProps<"/cardapio/[id]">) {
 
   return (
     <>
-      <BackLink href="/cardapio">Marmitas</BackLink>
+      <BackLink href="/cardapio">Cardápio</BackLink>
       <div className="flex flex-col gap-0.5">
         <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
         {recipe.updated_at ? (

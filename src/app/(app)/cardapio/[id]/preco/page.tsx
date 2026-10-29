@@ -34,7 +34,7 @@ export default async function RecipePricingPage(props: PageProps<"/cardapio/[id]
 
   return (
     <>
-      <BackLink href="/cardapio">Marmitas</BackLink>
+      <BackLink href="/cardapio">Cardápio</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
         {view.ok ? (

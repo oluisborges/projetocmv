@@ -23,7 +23,7 @@ export default async function NfePage() {
 
   return (
     <>
-      <BackLink href="/ingredientes">Insumos</BackLink>
+      <BackLink href="/ingredientes">Ingredientes</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Importar nota fiscal</h1>
         <p className="text-muted">

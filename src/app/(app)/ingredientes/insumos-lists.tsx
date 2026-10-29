@@ -7,10 +7,17 @@ import { daysSince, formatBRL, formatNumber, STALE_DAYS } from "@/lib/format";
 import type { ReceitaListItem } from "@/lib/recipes-data";
 import { PriceRows, type IngredientRow } from "./price-list";
 
-type Tab = "todos" | "receitas" | "insumos" | "embalagens";
+export type TypeFilter = "todos" | "insumos" | "receitas" | "embalagens";
 
 const norm = (t: string) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 const needsUpdate = (i: IngredientRow) => i.purchase_price <= 0 || daysSince(i.price_updated_at) > STALE_DAYS;
+
+const CHIPS: { key: TypeFilter; label: string }[] = [
+  { key: "todos", label: "Todos" },
+  { key: "insumos", label: "Insumos" },
+  { key: "receitas", label: "Receitas" },
+  { key: "embalagens", label: "Embalagens" },
+];
 
 function ReceitaRows({ receitas }: { receitas: ReceitaListItem[] }) {
   return (
@@ -35,105 +42,97 @@ function ReceitaRows({ receitas }: { receitas: ReceitaListItem[] }) {
   );
 }
 
-const EMPTY: Record<Tab, string> = {
+const EMPTY: Record<TypeFilter, string> = {
   todos: "Nada encontrado.",
-  receitas: "Nenhuma receita encontrada.",
   insumos: "Nenhum insumo encontrado.",
+  receitas: "Nenhuma receita encontrada.",
   embalagens: "Nenhuma embalagem encontrada.",
 };
 
 /**
- * O conteúdo de uma aba de Insumos: UMA busca (e os filtros) para a aba inteira, valendo para todas as seções dela
- * (receitas, insumos, embalagens). Em "Todos" as seções vêm separadas, cada uma com o próprio título.
+ * A lista de Ingredientes: uma busca e chips deslizantes (Todos, Insumos, Receitas, Embalagens, Precisa atualizar).
+ * As categorias só aparecem quando a pessoa toca na busca. Em "Todos" as seções vêm separadas, com título e contagem.
  */
-export function InsumosLists({ tab, receitas, items, canWrite, hasReceitaTip }: { tab: Tab; receitas: ReceitaListItem[]; items: IngredientRow[]; canWrite: boolean; hasReceitaTip?: boolean }) {
+export function InsumosLists({ initialType, receitas, items, canWrite }: { initialType: TypeFilter; receitas: ReceitaListItem[]; items: IngredientRow[]; canWrite: boolean }) {
+  const [type, setType] = useState<TypeFilter>(initialType);
   const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
   const [category, setCategory] = useState("");
   const [onlyPending, setOnlyPending] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const showReceitas = tab === "todos" || tab === "receitas";
-  const showInsumos = tab === "todos" || tab === "insumos";
-  const showPacks = tab === "todos" || tab === "embalagens";
-  const showFilters = showInsumos || showPacks;
+  const showReceitas = type === "todos" || type === "receitas";
+  const showInsumos = type === "todos" || type === "insumos";
+  const showPacks = type === "todos" || type === "embalagens";
 
   const insumos = useMemo(() => items.filter((i) => i.kind !== "embalagem"), [items]);
   const packs = useMemo(() => items.filter((i) => i.kind === "embalagem"), [items]);
-  const inView = useMemo(() => [...(showInsumos ? insumos : []), ...(showPacks ? packs : [])], [insumos, packs, showInsumos, showPacks]);
-  const categories = useMemo(() => [...new Set(inView.map((i) => i.category).filter((c): c is string => Boolean(c)))].sort(), [inView]);
-  const pendingCount = inView.filter(needsUpdate).length;
+  const pendingCount = items.filter(needsUpdate).length;
+  const categories = useMemo(() => [...new Set([...(showInsumos ? insumos : []), ...(showPacks ? packs : [])].map((i) => i.category).filter((c): c is string => Boolean(c)))].sort(), [insumos, packs, showInsumos, showPacks]);
 
   const q = norm(query);
   const match = (name: string) => q === "" || norm(name).includes(q);
   const pass = (i: IngredientRow) => (!category || i.category === category) && (!onlyPending || needsUpdate(i)) && match(i.name);
-  const receitasShown = showReceitas ? receitas.filter((r) => match(r.name)) : [];
+  // "Precisa atualizar" e categoria falam de preço de compra: as receitas ficam de fora enquanto algum deles está ligado.
+  const receitasShown = showReceitas && !onlyPending && !category ? receitas.filter((r) => match(r.name)) : [];
   const insumosShown = showInsumos ? insumos.filter(pass) : [];
   const packsShown = showPacks ? packs.filter(pass) : [];
   const total = receitasShown.length + insumosShown.length + packsShown.length;
 
-  const canFilter = showFilters && inView.length > 0;
-  const activeFilters = (onlyPending ? 1 : 0) + (category ? 1 : 0);
-  const chip = (active: boolean) => `h-11 shrink-0 rounded-full border px-4 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`;
-  const heading = (text: string, count: number) =>
-    tab === "todos" ? (
+  const chip = (on: boolean) => `h-11 shrink-0 rounded-full border px-4 text-sm font-semibold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground"}`;
+  const catChip = (on: boolean) => `h-9 shrink-0 rounded-full border px-3 text-xs font-semibold ${on ? "border-primary bg-tint text-primary" : "border-border bg-surface text-muted"}`;
+  const heading = (text: string, count: number, tip?: React.ReactNode) =>
+    type === "todos" ? (
       <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
         {text} <span className="font-normal">({count})</span>
+        {tip}
       </h2>
     ) : null;
+  const showCategories = (focused || query !== "" || category !== "") && categories.length > 0;
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex gap-2">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={tab === "receitas" ? "Buscar receita…" : tab === "insumos" ? "Buscar insumo…" : tab === "embalagens" ? "Buscar embalagem…" : "Buscar insumo, embalagem ou receita…"}
-          aria-label="Buscar"
-          className="h-12 min-w-0 flex-1 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-        />
-        {canFilter ? (
-          <button
-            type="button"
-            onClick={() => setFiltersOpen((v) => !v)}
-            aria-expanded={filtersOpen}
-            aria-controls="insumos-filtros"
-            className={`flex h-12 shrink-0 items-center gap-1.5 rounded-xl border px-4 text-sm font-semibold ${filtersOpen || activeFilters > 0 ? "border-primary bg-tint text-primary" : "border-border bg-surface"}`}
-          >
-            Filtros
-            {activeFilters > 0 ? <span className="flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{activeFilters}</span> : null}
-          </button>
-        ) : null}
-      </div>
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setTimeout(() => setFocused(false), 150)}
+        placeholder="Buscar insumo, receita ou embalagem…"
+        aria-label="Buscar"
+        className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+      />
 
-      {canFilter && filtersOpen ? (
-        <div id="insumos-filtros" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          <button type="button" className={chip(onlyPending)} onClick={() => setOnlyPending((v) => !v)} aria-pressed={onlyPending}>
-            Precisa atualizar ({pendingCount})
-          </button>
-          <button type="button" className={chip(category === "")} onClick={() => setCategory("")}>
-            Todas
+      {showCategories ? (
+        <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4" aria-label="Categorias">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} className={catChip(category === "")} onClick={() => setCategory("")}>
+            Todas as categorias
           </button>
           {categories.map((c) => (
-            <button key={c} type="button" className={chip(category === c)} onClick={() => setCategory(category === c ? "" : c)}>
+            <button key={c} type="button" onMouseDown={(e) => e.preventDefault()} className={catChip(category === c)} onClick={() => setCategory(category === c ? "" : c)}>
               {c}
             </button>
           ))}
         </div>
       ) : null}
 
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label="Tipo de item">
+        {CHIPS.map((c) => (
+          <button key={c.key} type="button" aria-pressed={type === c.key} onClick={() => setType(c.key)} className={chip(type === c.key)}>
+            {c.label}
+          </button>
+        ))}
+        <button type="button" aria-pressed={onlyPending} onClick={() => setOnlyPending((v) => !v)} className={`${chip(onlyPending)} ${onlyPending ? "" : "border-warning/60 text-warning"}`}>
+          Precisa atualizar ({pendingCount})
+        </button>
+      </div>
+
       {total === 0 ? (
-        <p className="card p-4 text-sm text-muted">{EMPTY[tab]}</p>
+        <p className="card p-4 text-sm text-muted">{EMPTY[type]}</p>
       ) : (
         <>
           {receitasShown.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {tab === "todos" ? (
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
-                  Receitas <span className="font-normal">({receitasShown.length})</span>
-                  {hasReceitaTip ? <Hint>O que você faz em lote (arroz, estrogonofe, purê) e usa em várias marmitas. O sal e o tempero ficam dentro do custo por kg.</Hint> : null}
-                </h2>
-              ) : null}
+              {heading("Receitas", receitasShown.length, <Hint>O que você faz em lote (arroz, estrogonofe, purê) e usa em várias marmitas. O sal e o tempero ficam dentro do custo por kg.</Hint>)}
               <ReceitaRows receitas={receitasShown} />
             </div>
           ) : null}

@@ -20,7 +20,7 @@ export default async function AdjustPage() {
 
   return (
     <>
-      <BackLink href="/ingredientes">Insumos</BackLink>
+      <BackLink href="/ingredientes">Ingredientes</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Reajustar preços</h1>
         <p className="text-muted">O fornecedor aumentou tudo? Atualize vários preços de uma vez, sem editar um por um.</p>

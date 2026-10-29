@@ -11,7 +11,7 @@ export default async function NewRecipePage() {
 
   return (
     <>
-      <BackLink href="/cardapio">Marmitas</BackLink>
+      <BackLink href="/cardapio">Cardápio</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Nova ficha técnica</h1>
         <p className="text-muted">Primeiro o básico. Os ingredientes você adiciona na próxima tela.</p>

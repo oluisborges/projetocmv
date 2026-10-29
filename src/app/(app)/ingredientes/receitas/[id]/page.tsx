@@ -28,7 +28,7 @@ export default async function ReceitaPage(props: PageProps<"/ingredientes/receit
 
   return (
     <>
-      <BackLink href="/ingredientes">Insumos</BackLink>
+      <BackLink href="/ingredientes">Ingredientes</BackLink>
       <div className="flex flex-col gap-0.5">
         <h1 className="text-2xl font-extrabold tracking-tight">{recipe.name}</h1>
         <p className="text-xs text-muted">Receita em lote. As marmitas usam por grama pronto.</p>

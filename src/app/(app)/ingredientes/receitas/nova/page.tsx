@@ -11,7 +11,7 @@ export default async function NewReceitaPage() {
 
   return (
     <>
-      <BackLink href="/ingredientes">Insumos</BackLink>
+      <BackLink href="/ingredientes">Ingredientes</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Nova receita</h1>
         <p className="text-muted">

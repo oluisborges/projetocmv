@@ -32,7 +32,7 @@ export default async function CatalogPage() {
 
   return (
     <>
-      <BackLink href="/ingredientes">Insumos</BackLink>
+      <BackLink href="/ingredientes">Ingredientes</BackLink>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Catálogo de insumos</h1>
         <p className="text-muted">Marque o que você usa. Depois é só preencher o preço que você paga em cada item.</p>
