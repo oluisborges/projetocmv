@@ -35,15 +35,15 @@ export function NewSheet() {
           </div>
           <Link href="/ingredientes/novo" onClick={close} className={option}>
             <span className="font-semibold">Novo insumo</span>
-            <span className="text-xs text-muted">Carne, arroz, tempero… o que você compra para cozinhar</span>
+            <span className="text-xs text-muted">Algo que você compra para cozinhar. Ex.: frango, arroz cru, óleo, sal.</span>
           </Link>
           <Link href="/ingredientes/receitas/nova" onClick={close} className={option}>
             <span className="font-semibold">Nova receita</span>
-            <span className="text-xs text-muted">O que você faz em lote e usa em várias marmitas (arroz, estrogonofe)</span>
+            <span className="text-xs text-muted">Algo que você prepara em lote, com outros insumos, e depois coloca nas marmitas. Ex.: arroz cozido, molho de tomate.</span>
           </Link>
           <Link href="/ingredientes/novo?tipo=embalagem" onClick={close} className={option}>
             <span className="font-semibold">Nova embalagem</span>
-            <span className="text-xs text-muted">Bandeja, filme, etiqueta, lacre</span>
+            <span className="text-xs text-muted">O que protege e fecha a marmita. Ex.: pote, tampa, filme, etiqueta.</span>
           </Link>
           <details className="rounded-xl border border-border">
             <summary className="flex min-h-12 cursor-pointer items-center px-4 text-sm font-semibold text-muted">Mais opções</summary>
