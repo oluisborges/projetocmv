@@ -9,6 +9,7 @@ import { loadIngredients, loadRecipes } from "@/lib/recipes-data";
 export type FichaLine = { ingredient: string; kind: "insumo" | "embalagem" | "receita"; qty: number; unit: string; cost: number };
 
 export type FichaReport = {
+  id: string;
   name: string;
   category: string | null;
   mode: "serving" | "batch";
@@ -52,7 +53,7 @@ export async function loadFichasReport(orgId: string, canWrite: boolean): Promis
         };
       });
       const analysis = cost !== null ? analyzePrice({ cost, settings: ctx.settings, feePct, price }) : null;
-      return { name: r.name, category: r.category, mode: r.mode, portions: r.portions, lines, cost, price, netPct: analysis?.at?.netPct ?? null };
+      return { id: r.id, name: r.name, category: r.category, mode: r.mode, portions: r.portions, lines, cost, price, netPct: analysis?.at?.netPct ?? null };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 

@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { ExportLinks } from "@/components/export-links";
-import { Hint } from "@/components/hint";
+import { ExportFichas } from "./export-fichas";
 import { MarmitasTabs } from "@/components/marmitas-tabs";
 import { SubmitButton } from "@/components/submit-button";
 import { requireMember } from "@/lib/auth";
@@ -53,19 +52,6 @@ export default async function RecipesPage() {
     };
   });
 
-  const taxCard = (
-    <div className="flex min-h-11 items-center justify-between gap-3 card px-4 text-sm font-semibold">
-      <span className="flex items-center gap-1">
-        Impostos, taxas e meta de lucro
-        <Hint>O mínimo que você quer que sobre de cada venda, depois de pagar tudo.</Hint>
-      </span>
-      <Link href="/financeiro/impostos" className="tap-area shrink-0 text-primary">
-        Ajustar →
-      </Link>
-    </div>
-  );
-  const taxFirst = ctx?.estimateReason === "tax";
-
   return (
     <>
       <section className="flex flex-col gap-1">
@@ -77,17 +63,13 @@ export default async function RecipesPage() {
 
       {canWrite ? (
         <Link href="/cardapio/nova" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">
-          + Nova marmita
+          + Novo produto
         </Link>
       ) : null}
 
-      {taxFirst ? taxCard : null}
-
-      {rows.length > 0 ? <ExportLinks base="/cardapio/exportar" label="Baixar todas as fichas" hint="PDF com uma ficha por página (para a cozinha) ou Excel (cópia de segurança, no mesmo formato da planilha de importação)." /> : null}
-
       {rows.length === 0 ? (
         <p className="card p-5 text-sm text-muted">
-          Nenhuma ficha ainda. Antes, cadastre os preços dos insumos em <Link href="/ingredientes" className="font-semibold text-primary">Insumos</Link>; depois monte a primeira ficha.
+          Nenhuma ficha ainda. Antes, cadastre os preços dos insumos em <Link href="/ingredientes" className="font-semibold text-primary">Ingredientes</Link>; depois monte a primeira ficha.
         </p>
       ) : ctx ? (
         <PricingList rows={rows} channels={ctx.channels} settings={ctx.settings} configured={!ctx.estimate} estimateReason={ctx.estimateReason} canWrite={canWrite} />
@@ -107,7 +89,7 @@ export default async function RecipesPage() {
         </>
       )}
 
-      {taxFirst ? null : taxCard}
+      {rows.length > 0 ? <ExportFichas fichas={recipes.map((r) => ({ id: r.id, name: r.name })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))} /> : null}
 
       {archived.length > 0 ? (
         <details className="card px-4">

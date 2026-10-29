@@ -11,7 +11,7 @@ export function MarmitasTabs({ active, showCombos = true, connected = false }: {
       ariaLabel="Partes do Cardápio"
       active={active}
       items={[
-        { key: "marmitas", href: "/cardapio", label: "Marmitas" },
+        { key: "marmitas", href: "/cardapio", label: "Produtos" },
         ...(showCombos || active === "combos" ? [{ key: "combos", href: "/cardapio/combos", label: "Combos" }] : []),
         { key: "sync", href: "/cardapio/sincronizar", label: "Sincronizar Cardápio", lock: connected ? undefined : { message: NOT_CONNECTED } },
       ]}

@@ -80,6 +80,7 @@ describe("fichas técnicas exportadas", () => {
     generatedAt: new Date("2026-10-02T15:00:00Z"),
     fichas: [
       {
+        id: "ficha-1",
         name: "Frango com batata doce",
         category: "Fit",
         mode: "serving" as const,
