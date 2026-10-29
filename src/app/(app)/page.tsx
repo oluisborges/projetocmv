@@ -242,11 +242,7 @@ export default async function HomePage() {
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Olá{firstName ? `, ${firstName}` : ""}!</h1>
         <p className="text-muted">
-          {steps.length === 0
-            ? "Aqui você acompanha o custo e o lucro de cada produto."
-            : next
-              ? "Falta pouco para você saber quanto ganha em cada produto."
-              : "Tudo pronto! Agora é só manter os preços dos insumos em dia."}
+          {next ? "Falta pouco para você saber quanto ganha em cada produto." : "Aqui você acompanha o custo e o lucro de cada produto."}
         </p>
       </section>
 
@@ -258,17 +254,6 @@ export default async function HomePage() {
 
       {checklist}
       {actions.length > 0 && data ? <PriceActionsCard actions={actions} targetPct={data.ctx.settings.minMarginPct} canWrite={canWrite} /> : null}
-      {allDone && actions.length === 0 ? (
-        <section className="flex items-center gap-4 rounded-2xl border border-success/30 bg-success/10 p-4">
-          <span aria-hidden className="flex size-12 shrink-0 items-center justify-center rounded-full bg-success text-2xl font-bold text-primary-foreground">
-            ✓
-          </span>
-          <p className="text-sm">
-            <strong className="block text-base">Tudo organizado!</strong>
-            Seus custos, preços e contas estão em dia. Veja os detalhes na Visão Avançada.
-          </p>
-        </section>
-      ) : null}
       {health && data ? <MonthHealthCard health={health} month={data.month.start} canWrite={canWrite} /> : null}
       {emptyMonth}
       {numbers}
