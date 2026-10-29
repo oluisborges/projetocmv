@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AccountMenu } from "@/components/account-menu";
+import { AdminLink, SettingsLink } from "@/components/header-icons";
 import { ActivityTracker } from "@/components/activity-tracker";
 import { AdminAlertBanner } from "@/components/admin-alert-banner";
 import { BottomNav } from "@/components/bottom-nav";
@@ -9,7 +9,7 @@ import { NoticesBell } from "@/components/notices-bell";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadMenuAlerts } from "@/lib/menu/server/alerts";
 import { createClient } from "@/lib/supabase/server";
-import { exitViewAs, signOut } from "./actions";
+import { exitViewAs } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 
 /** Menus travados (sempre visíveis): "Produção" até a primeira marmita. */
@@ -57,8 +57,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <NoticesBell orgId={active.orgId} />
             </>
           ) : null}
-          {/* Em "ver como", a barra é a da marmitaria: sem menu de conta nem atalhos de admin; a saída é o botão da faixa laranja. */}
-          {active?.viewingAs ? null : <AccountMenu isAdmin={session.isPlatformAdmin} alertCount={alerts.length} signOutAction={signOut} />}
+          {/* Em "ver como", a barra é a da marmitaria: sem configurações nem atalhos de admin; a saída é o botão da faixa laranja. */}
+          {active?.viewingAs ? null : (
+            <>
+              {session.isPlatformAdmin ? <AdminLink alertCount={alerts.length} /> : null}
+              <SettingsLink />
+            </>
+          )}
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-6 px-4 py-6 pb-24">
