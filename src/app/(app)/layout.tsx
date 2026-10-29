@@ -4,7 +4,7 @@ import { AdminLink, SettingsLink } from "@/components/header-icons";
 import { ActivityTracker } from "@/components/activity-tracker";
 import { AdminAlertBanner } from "@/components/admin-alert-banner";
 import { BottomNav } from "@/components/bottom-nav";
-import { menuLocksFrom, type MenuLock } from "@/lib/menu-locks";
+import { devLockApplies, menuLocksFrom, PRODUCAO_DEV_LOCK, type MenuLock } from "@/lib/menu-locks";
 import { NoticesBell } from "@/components/notices-bell";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadMenuAlerts } from "@/lib/menu/server/alerts";
@@ -25,7 +25,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const orgName = active?.orgName;
   // Equipe Shogun (fora do "ver como"): cardápios que pararam de importar aparecem em qualquer tela.
   // O aviso é um extra: se falhar (chave de serviço ausente, banco lento), a tela continua funcionando.
-  const locks = active ? await menuLocks(active.orgId).catch(() => ({ producao: null })) : { producao: null };
+  const locks = devLockApplies(session.isPlatformAdmin)
+    ? { producao: PRODUCAO_DEV_LOCK }
+    : active
+      ? await menuLocks(active.orgId).catch(() => ({ producao: null }))
+      : { producao: null };
   const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts().catch(() => []) : [];
 
   return (

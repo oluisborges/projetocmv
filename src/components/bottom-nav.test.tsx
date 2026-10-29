@@ -76,3 +76,11 @@ describe("abas travadas", () => {
     expect(painel).not.toContain("aria-disabled");
   });
 });
+
+describe("Produção em desenvolvimento", () => {
+  it("a trava de desenvolvimento vale para todos, e para a equipe Shogun só enquanto a conferência estiver ligada", async () => {
+    const { devLockApplies, DEV_LOCK_INCLUDES_ADMIN } = await import("@/lib/menu-locks");
+    expect(devLockApplies(false)).toBe(true);
+    expect(devLockApplies(true)).toBe(DEV_LOCK_INCLUDES_ADMIN);
+  });
+});
