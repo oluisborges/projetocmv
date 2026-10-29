@@ -64,7 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {/* Em "ver como", a barra é a da marmitaria: sem configurações nem atalhos de admin; a saída é o botão da faixa laranja. */}
           {active?.viewingAs ? null : (
             <>
-              {session.isPlatformAdmin ? <AdminLink alertCount={alerts.length} /> : null}
+              {session.isStaff ? <AdminLink alertCount={alerts.length} /> : null}
               <SettingsLink />
             </>
           )}

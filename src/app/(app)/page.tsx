@@ -248,7 +248,7 @@ export default async function HomePage() {
 
       {member ? <InicioTabs active="resumo" advancedLock={advancedLock} /> : null}
 
-      {!member && !session.isPlatformAdmin ? (
+      {!member && !session.isStaff ? (
         <p className="card p-4 text-sm">Sua conta ainda não está ligada a nenhuma marmitaria. Fale com o suporte do Precificaí.</p>
       ) : null}
 
@@ -260,7 +260,7 @@ export default async function HomePage() {
       {data && showDashboard ? <BreakEvenCard breakEven={data.breakEven} monthlyRevenue={data.ctx.monthlyRevenue} /> : null}
       {showDashboard && data ? <DashboardView data={data} variant="alerts" hideBelowTarget={actions.length > 0} collapseAlerts={Boolean(checklist) || actions.length > 0} /> : null}
 
-      {session.isPlatformAdmin && !member?.viewingAs ? (
+      {session.isStaff && !member?.viewingAs ? (
         <Link href="/admin" className="rounded-xl bg-primary px-4 py-3 text-center font-semibold text-primary-foreground">
           Abrir painel Shogun
         </Link>

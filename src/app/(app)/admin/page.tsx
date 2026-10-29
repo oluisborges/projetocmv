@@ -1,6 +1,6 @@
 import { SubmitButton } from "@/components/submit-button";
 import { attentionReasons, menuHealth, MENU_HEALTH_LABEL, orgFlags, orgSeverity, worstMenuHealth } from "@/lib/admin-overview";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 import { countOpenErrors } from "@/lib/errors/data";
 import { kickStalled } from "@/lib/menu/server/kick";
 import { PROVIDER_LABEL } from "@/lib/menu/types";
@@ -13,6 +13,7 @@ import { AdminForm, Field } from "./admin-form";
 import { AdminTabs } from "./admin-tabs";
 import { MenuPanel, type MenuConnectionRow } from "./menu-panel";
 import { OrgDirectory, type OrgItem } from "./org-directory";
+import { TestTagPanel } from "./test-tag-panel";
 import { UsersPanel, type UserRow } from "./users-panel";
 
 export const metadata = { title: "Painel Shogun" };
@@ -22,12 +23,13 @@ export const maxDuration = 60;
 type Activity = { org_id: string; last_activity: string; last_login: string | null; last_kind: string; last_summary: string; last_user_id: string | null; events_7d: number | string };
 
 export default async function AdminPage() {
-  await requireAdmin();
+  const session = await requireStaff();
+  const canManage = session.isPlatformAdmin; // gestor só visualiza
   const admin = createAdminClient();
   const supabase = await createClient(); // sessão do admin: a função de atividade confere quem pergunta
 
   const [{ data: orgs }, { data: memberships }, { data: usersPage }, { data: menuConns }, { data: menuCreds }, { data: activityRows }, { data: blockedRows }] = await Promise.all([
-    admin.from("organizations").select("id, name, slug, created_at").order("name"),
+    admin.from("organizations").select("id, name, slug, created_at, is_test").order("name"),
     admin.from("memberships").select("org_id, user_id, role"),
     admin.auth.admin.listUsers({ perPage: 1000 }),
     admin.from("menu_connections").select("id, org_id, provider, status, phase, merchant_name, store_code, last_sync_at, last_error, orders_imported, pending_orders, locked_until").order("created_at"),
@@ -35,11 +37,18 @@ export default async function AdminPage() {
     supabase.rpc("admin_org_activity"),
     admin.from("profiles").select("id").not("blocked_at", "is", null),
   ]);
+  // O gestor só enxerga os clientes que o admin liberou.
+  let visibleOrgs = orgs ?? [];
+  if (!canManage) {
+    const { data: allowedRows } = await admin.from("staff_org_access").select("org_id").eq("user_id", session.userId);
+    const allowed = new Set((allowedRows ?? []).map((r) => r.org_id as string));
+    visibleOrgs = visibleOrgs.filter((o) => allowed.has(o.id as string));
+  }
   const blockedIds = new Set((blockedRows ?? []).map((r) => r.id as string));
   const webhookTokens = new Map((menuCreds ?? []).map((c) => [c.connection_id as string, c.webhook_token as string]));
   const activity = new Map(((activityRows as Activity[] | null) ?? []).map((a) => [a.org_id, a]));
   // importação parada no meio? abrir o painel retoma (a corrente de ciclos pode quebrar se uma função for encerrada)
-  await kickStalled(
+  if (canManage) await kickStalled(
     (menuConns ?? []).map((c) => ({
       id: c.id as string,
       status: c.status as string,
@@ -58,7 +67,7 @@ export default async function AdminPage() {
   const now = new Date();
   const number = new Intl.NumberFormat("pt-BR");
 
-  const items: OrgItem[] = (orgs ?? []).map((org) => {
+  const items: OrgItem[] = visibleOrgs.map((org) => {
     const orgId = org.id as string;
     const members = (memberships ?? []).filter((m) => m.org_id === org.id);
     const conns = (menuConns ?? []).filter((c) => c.org_id === org.id);
@@ -111,8 +120,9 @@ export default async function AdminPage() {
       lastActor: act?.last_user_id ? userName(act.last_user_id) : null,
       events7d: Number(act?.events_7d ?? 0),
       flags,
-      severity: orgSeverity(flags, worstMenuHealth(summaries, now)),
-      reasons: attentionReasons({
+      isTest: Boolean(org.is_test),
+      severity: org.is_test ? "ok" : orgSeverity(flags, worstMenuHealth(summaries, now)),
+      reasons: org.is_test ? [] : attentionReasons({
         lastActivity,
         conns: summaries.map((s) => ({ ...s, providerLabel: PROVIDER_LABEL[s.provider] })),
         now,
@@ -142,8 +152,9 @@ export default async function AdminPage() {
           </SubmitButton>
         </form>
       ),
-      usersPanel: <UsersPanel orgId={orgId} users={userRows} />,
-      menuPanel: <MenuPanel orgId={orgId} connections={menuRows} />,
+      usersPanel: canManage ? <UsersPanel orgId={orgId} users={userRows} /> : null,
+      menuPanel: canManage ? <MenuPanel orgId={orgId} connections={menuRows} /> : null,
+      settingsPanel: canManage ? <TestTagPanel orgId={orgId} isTest={Boolean(org.is_test)} /> : null,
     };
   });
 
@@ -151,14 +162,16 @@ export default async function AdminPage() {
     <>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Painel Shogun</h1>
-        <p className="text-muted">Quem está usando o sistema, como estão os cardápios e o que precisa da sua atenção.</p>
+        <p className="text-muted">{canManage ? "Quem está usando o sistema, como estão os cardápios e o que precisa da sua atenção." : "Os clientes que você pode visualizar."}</p>
       </section>
 
-      <AdminTabs active="clients" errorCount={await countOpenErrors()} />
+      {canManage ? <AdminTabs active="clients" errorCount={await countOpenErrors()} /> : null}
 
       <OrgDirectory
         items={items}
+        canManage={canManage}
         createForm={
+        !canManage ? null : (
           <AdminForm action={createOrganization} submitLabel="Criar marmitaria">
             <Field label="Nome da marmitaria" name="orgName" />
             <Field label="Nome da primeira unidade" name="unitName" />
@@ -167,7 +180,7 @@ export default async function AdminPage() {
             <Field label="Senha (mínimo 8 caracteres)" name="ownerPassword" type="password" />
             <p className="text-xs text-muted">Depois de criar, passe o e-mail e a senha para o dono. No primeiro acesso ele cria a própria senha.</p>
           </AdminForm>
-        }
+        )}
       />
     </>
   );

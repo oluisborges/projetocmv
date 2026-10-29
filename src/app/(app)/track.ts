@@ -16,7 +16,7 @@ export async function trackPageView(path: string): Promise<void> {
     await supabase.from("activity_log").insert({
       org_id: org.orgId,
       user_id: session.userId,
-      by_admin: session.isPlatformAdmin,
+      by_admin: session.isStaff,
       kind: "view",
       summary,
       path: String(path).split("?")[0].slice(0, 200),

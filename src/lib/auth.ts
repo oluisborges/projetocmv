@@ -11,6 +11,10 @@ export type Session = {
   email: string;
   fullName: string | null;
   isPlatformAdmin: boolean;
+  /** Equipe Shogun: "admin" (tudo) ou "manager" (gestor: só visualiza os clientes que o admin liberou). */
+  staffRole: "admin" | "manager" | null;
+  /** Admin ou gestor. */
+  isStaff: boolean;
   /** A senha atual foi definida por outra pessoa (admin Shogun): precisa criar a própria antes de usar o app. */
   mustChangePassword: boolean;
   /** Acesso bloqueado pelo admin Shogun. */
@@ -27,7 +31,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (!user) return null;
 
   const [{ data: profile }, { data: memberships }] = await Promise.all([
-    supabase.from("profiles").select("full_name, is_platform_admin, must_change_password, blocked_at").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("full_name, is_platform_admin, staff_role, must_change_password, blocked_at").eq("id", user.id).maybeSingle(),
     // Ordem fixa: se um dia houver mais de uma organização, a "ativa" é sempre a mais antiga.
     supabase.from("memberships").select("role, organizations(id, name)").eq("user_id", user.id).order("created_at"),
   ]);
@@ -37,6 +41,8 @@ export const getSession = cache(async (): Promise<Session | null> => {
     email: user.email ?? "",
     fullName: profile?.full_name ?? null,
     isPlatformAdmin: profile?.is_platform_admin ?? false,
+    staffRole: profile?.is_platform_admin ? "admin" : profile?.staff_role === "manager" ? "manager" : null,
+    isStaff: Boolean(profile?.is_platform_admin) || profile?.staff_role === "manager",
     mustChangePassword: profile?.must_change_password ?? false,
     blocked: Boolean(profile?.blocked_at),
     memberships: (memberships ?? []).flatMap((m) => {
@@ -69,12 +75,13 @@ export const getActiveOrg = cache(async (): Promise<ActiveOrg | null> => {
   const session = await getSession();
   if (!session) return null;
 
-  if (session.isPlatformAdmin) {
+  if (session.isStaff) {
     const wanted = (await cookies()).get(VIEW_AS_COOKIE)?.value;
     if (wanted && UUID.test(wanted)) {
       const supabase = await createClient();
+      // Para o gestor o banco só devolve as marmitarias liberadas pelo admin (regra de acesso), então cookie forjado não abre outras.
       const { data: org } = await supabase.from("organizations").select("id, name").eq("id", wanted).maybeSingle();
-      if (org) return { orgId: org.id, orgName: org.name, canWrite: true, viewingAs: true };
+      if (org) return { orgId: org.id, orgName: org.name, canWrite: session.isPlatformAdmin, viewingAs: true };
     }
   }
 
@@ -101,5 +108,12 @@ export async function requireMember(): Promise<Member> {
 export async function requireAdmin(): Promise<Session> {
   const session = await requireUser();
   if (!session.isPlatformAdmin) notFound();
+  return session;
+}
+
+/** Admin ou gestor Shogun. O gestor só enxerga o que o admin liberou (o banco garante), sem editar nada. */
+export async function requireStaff(): Promise<Session> {
+  const session = await requireUser();
+  if (!session.isStaff) notFound();
   return session;
 }

@@ -35,7 +35,7 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-extrabold tracking-tight">Configurações</h1>
         <p className="text-muted">
           {session.email}
-          {membership ? ` · ${ROLE[membership.role] ?? membership.role}` : session.isPlatformAdmin ? " · equipe Shogun" : ""}
+          {membership ? ` · ${ROLE[membership.role] ?? membership.role}` : session.isStaff ? " · equipe Shogun" : ""}
         </p>
       </section>
 
@@ -65,7 +65,7 @@ export default async function SettingsPage() {
 
       <section className={section}>
         <h2 className={heading}>Outros</h2>
-        {session.isPlatformAdmin ? (
+        {session.isStaff ? (
           <Link href="/admin" className="tap-area font-semibold text-primary underline">
             Painel Shogun
           </Link>

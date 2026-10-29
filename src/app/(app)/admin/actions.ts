@@ -183,3 +183,20 @@ export async function setUserBlocked(_prev: AdminState, formData: FormData): Pro
 }
 
 const BAN_FOREVER = "876000h"; // ~100 anos; "none" tira o bloqueio
+
+/** Marca (ou desmarca) uma marmitaria como cliente de teste: ela some de toda estatística global e de todo alerta da rede. */
+export async function setOrgTest(_prev: AdminState, formData: FormData): Promise<AdminState> {
+  await requireAdmin();
+  const parsed = z.object({ orgId: z.uuid(), test: z.enum(["1", "0"]) }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return fail("Pedido inválido.");
+
+  const admin = createAdminClient();
+  const isTest = parsed.data.test === "1";
+  const { error } = await admin.from("organizations").update({ is_test: isTest }).eq("id", parsed.data.orgId);
+  if (error) return fail("Não foi possível salvar.");
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/resultados");
+  revalidatePath("/admin/erros");
+  return { ok: isTest ? "Marcada como cliente de teste: não entra mais em nenhuma estatística." : "Marca de teste removida: ela volta a entrar nas estatísticas." };
+}

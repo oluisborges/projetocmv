@@ -49,7 +49,7 @@ export async function loadNetwork(month: string): Promise<NetworkData> {
     session.rpc("admin_network_recipe_sales", { p_start: start.toISOString(), p_end: end.toISOString() }),
     session.rpc("admin_network_recipe_sales", { p_start: weightsFrom.toISOString(), p_end: end.toISOString() }),
     session.rpc("admin_network_setup"),
-    admin.from("organizations").select("id, name").order("name"),
+    admin.from("organizations").select("id, name, is_test").order("name"),
     admin.from("menu_connections").select("org_id, status"),
   ]);
 
@@ -121,7 +121,8 @@ export async function loadNetwork(month: string): Promise<NetworkData> {
   const recipesByOrg = new Map<string, typeof recipes>();
   for (const r of recipes) recipesByOrg.set(r.org_id as string, [...(recipesByOrg.get(r.org_id as string) ?? []), r]);
 
-  const clients: NetworkClient[] = ((orgsRes.data as { id: string; name: string }[] | null) ?? []).map((org) => {
+  // Cliente de teste fica fora de toda estatística da rede.
+  const clients: NetworkClient[] = ((orgsRes.data as { id: string; name: string; is_test: boolean | null }[] | null) ?? []).filter((org) => !org.is_test).map((org) => {
     const unitId = firstUnit.get(org.id);
     const st = unitId ? settingsByUnit.get(unitId) : undefined;
     const rates: RateSet = { taxPct: n(st?.tax_pct), feePct: unitId ? (cheapestFee.get(unitId) ?? 0) : 0, otherPct: n(st?.other_pct) };

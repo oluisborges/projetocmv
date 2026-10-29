@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireAdmin, VIEW_AS_COOKIE } from "@/lib/auth";
+import { requireStaff, VIEW_AS_COOKIE } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signOut() {
@@ -13,9 +13,9 @@ export async function signOut() {
   redirect("/login");
 }
 
-/** Admin Shogun passa a ver o app como a marmitaria escolhida (com permissão de editar). */
+/** Equipe Shogun passa a ver o app como a marmitaria escolhida: o admin com permissão de editar, o gestor só leitura (e só das liberadas). */
 export async function viewAsOrganization(formData: FormData) {
-  await requireAdmin();
+  await requireStaff();
   const orgId = z.uuid().safeParse(formData.get("orgId"));
   if (!orgId.success) redirect("/admin");
 

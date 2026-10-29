@@ -50,10 +50,14 @@ export type OrgItem = {
   /** conteúdo das abas do painel de gerenciamento (renderizado no servidor) */
   usersPanel: ReactNode;
   menuPanel: ReactNode;
+  /** aba "Geral" do Gerenciar (marca de cliente de teste) */
+  settingsPanel?: ReactNode;
+  /** cliente de teste: aparece na lista com a marca, mas fora de qualquer contagem */
+  isTest?: boolean;
 };
 
 type Filter = "all" | "inactive" | "menuProblem" | "noMenu";
-type Tab = "users" | "menu";
+type Tab = "users" | "menu" | "general";
 
 const HEALTH_STYLE: Record<MenuHealth, string> = {
   ok: "bg-success/10 text-success",
@@ -72,7 +76,7 @@ const cardButton = "flex h-11 items-center justify-center rounded-xl border bord
  * Painel Shogun: visão geral das marmitarias. O essencial de cada uma fica à vista (último acesso e cardápio); o que exige ação
  * abre num painel por cima da tela (Gerenciar), com abas, em vez de menus dentro de menus. No topo, o que precisa de atenção.
  */
-export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createForm: ReactNode }) {
+export function OrgDirectory({ items, createForm, canManage = true }: { items: OrgItem[]; createForm: ReactNode; /** gestor só visualiza: sem criar marmitaria nem gerenciar */ canManage?: boolean }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<OrgSort>("name");
@@ -81,14 +85,16 @@ export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createFo
   const [showAllAttention, setShowAllAttention] = useState(false);
   const deferred = useDeferredValue(query);
 
+  // Cliente de teste fica na lista, mas nunca entra nas contagens nem na atenção.
+  const real = useMemo(() => items.filter((i) => !i.isTest), [items]);
   const counts = useMemo(
     () => ({
-      all: items.length,
-      inactive: items.filter((i) => i.flags.inactive).length,
-      menuProblem: items.filter((i) => i.flags.menuProblem).length,
-      noMenu: items.filter((i) => i.flags.noMenu).length,
+      all: real.length,
+      inactive: real.filter((i) => i.flags.inactive).length,
+      menuProblem: real.filter((i) => i.flags.menuProblem).length,
+      noMenu: real.filter((i) => i.flags.noMenu).length,
     }),
-    [items],
+    [real],
   );
 
   const visible = useMemo(() => {
@@ -105,18 +111,18 @@ export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createFo
   // O que pede atenção, do mais urgente ao menos, de todas as marmitarias (a ordem original é mantida dentro de cada tipo).
   const attention = useMemo(
     () =>
-      items
+      real
         .flatMap((i) => i.reasons.map((reason) => ({ org: i, reason })))
         .sort((a, b) => URGENCY.indexOf(a.reason.key) - URGENCY.indexOf(b.reason.key)),
-    [items],
+    [real],
   );
   const shownAttention = showAllAttention ? attention : attention.slice(0, 4);
 
-  const connected = items.filter((i) => i.menu.length > 0);
+  const connected = real.filter((i) => i.menu.length > 0);
   const openItem = manage ? items.find((i) => i.id === manage.id) : null;
 
   const kpis: { label: string; value: string; hint: string; bad?: boolean; filter?: Filter }[] = [
-    { label: "Marmitarias", value: String(items.length), hint: `${items.filter((i) => !i.flags.inactive).length} acessaram nos últimos 7 dias`, filter: "all" },
+    { label: "Marmitarias", value: String(real.length), hint: `${real.filter((i) => !i.flags.inactive).length} acessaram nos últimos 7 dias`, filter: "all" },
     { label: "Sem acessar", value: String(counts.inactive), hint: "há 7+ dias ou nunca", bad: counts.inactive > 0, filter: "inactive" },
     { label: "Cardápio conectado", value: String(connected.length), hint: `${connected.filter((i) => !i.flags.menuProblem).length} funcionando bem` },
     { label: "Cardápio com problema", value: String(counts.menuProblem), hint: "erro ou atrasado", bad: counts.menuProblem > 0, filter: "menuProblem" },
@@ -126,9 +132,11 @@ export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createFo
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-extrabold tracking-tight">Marmitarias</h2>
-        <button type="button" onClick={() => setCreating(true)} className="h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
-          + Nova marmitaria
-        </button>
+        {canManage ? (
+          <button type="button" onClick={() => setCreating(true)} className="h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground">
+            + Nova marmitaria
+          </button>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
@@ -259,7 +267,10 @@ export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createFo
                   <article className={`flex flex-col gap-3 card border-l-4 p-4 ${ACCENT[i.severity]}`}>
                     <header className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="truncate text-lg font-bold">{i.name}</h3>
+                        <h3 className="flex items-center gap-2 text-lg font-bold">
+                          <span className="truncate">{i.name}</span>
+                          {i.isTest ? <span className="shrink-0 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">Teste</span> : null}
+                        </h3>
                         <p className="truncate text-xs text-muted">
                           {i.owner ? `${i.owner.name} · ${i.owner.email}` : "Sem dono cadastrado"}
                           {i.owner && i.members > 1 ? ` · +${i.members - 1}` : ""}
@@ -332,14 +343,18 @@ export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createFo
                       </div>
                     </dl>
 
-                    <div className="grid grid-cols-3 gap-2 border-t border-border pt-3">
+                    <div className={`grid gap-2 border-t border-border pt-3 ${canManage ? "grid-cols-3" : "grid-cols-1"}`}>
                       {i.viewAs}
-                      <Link href={i.historyHref} className={cardButton}>
-                        Histórico
-                      </Link>
-                      <button type="button" onClick={() => setManage({ id: i.id, tab: "users" })} className={cardButton}>
-                        Gerenciar
-                      </button>
+                      {canManage ? (
+                        <>
+                          <Link href={i.historyHref} className={cardButton}>
+                            Histórico
+                          </Link>
+                          <button type="button" onClick={() => setManage({ id: i.id, tab: "users" })} className={cardButton}>
+                            Gerenciar
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   </article>
                 </li>
@@ -357,6 +372,7 @@ export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createFo
                 [
                   ["users", `Usuários (${openItem.members})`],
                   ["menu", `Cardápio (${openItem.menu.length})`],
+                  ["general", "Geral"],
                 ] as const
               ).map(([tab, label]) => (
                 <button
@@ -374,7 +390,7 @@ export function OrgDirectory({ items, createForm }: { items: OrgItem[]; createFo
                 Planilha
               </Link>
             </div>
-            {manage.tab === "users" ? openItem.usersPanel : openItem.menuPanel}
+            {manage.tab === "users" ? openItem.usersPanel : manage.tab === "menu" ? openItem.menuPanel : openItem.settingsPanel}
           </>
         ) : null}
       </Sheet>

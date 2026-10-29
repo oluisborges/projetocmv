@@ -13,12 +13,13 @@ export const loadMenuAlerts = cache(async (): Promise<MenuAlert[]> => {
   const db = createAdminClient();
   const [{ data: conns }, { data: orgs }] = await Promise.all([
     db.from("menu_connections").select("id, org_id, provider, status, phase, last_sync_at, pending_orders"),
-    db.from("organizations").select("id, name"),
+    db.from("organizations").select("id, name, is_test"),
   ]);
   const names = new Map((orgs ?? []).map((o) => [o.id as string, o.name as string]));
+  const testIds = new Set((orgs ?? []).filter((o) => o.is_test).map((o) => o.id as string)); // conta de teste não gera alerta
   const now = new Date();
   return menuAlerts({
-    conns: (conns ?? []).map((c) => ({
+    conns: (conns ?? []).filter((c) => !testIds.has(c.org_id as string)).map((c) => ({
       id: c.id as string,
       orgId: c.org_id as string,
       orgName: names.get(c.org_id as string) ?? "Marmitaria",

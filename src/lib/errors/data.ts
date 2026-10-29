@@ -18,8 +18,10 @@ export type ErrorRow = {
 
 /** Quantos tipos de erro estão em aberto (para o número na aba). Só chamar depois de `requireAdmin()`. */
 export const countOpenErrors = cache(async (): Promise<number> => {
-  const { count } = await createAdminClient().from("error_events").select("id", { count: "exact", head: true }).is("resolved_at", null);
-  return count ?? 0;
+  const db = createAdminClient();
+  const [{ data: rows }, { data: tests }] = await Promise.all([db.from("error_events").select("org_id").is("resolved_at", null), db.from("organizations").select("id").eq("is_test", true)]);
+  const testIds = new Set((tests ?? []).map((o) => o.id as string)); // erro de conta de teste não conta
+  return (rows ?? []).filter((r) => !(r.org_id && testIds.has(r.org_id as string))).length;
 });
 
 /** Erros em aberto (mais recentes primeiro) e os resolvidos nos últimos 7 dias. Limpa o que foi resolvido há mais de 30 dias. */
@@ -33,10 +35,11 @@ export async function loadErrors(): Promise<{ open: ErrorRow[]; resolved: ErrorR
       .or(`resolved_at.is.null,resolved_at.gt.${new Date(Date.now() - 7 * 86_400_000).toISOString()}`)
       .order("last_seen", { ascending: false })
       .limit(200),
-    db.from("organizations").select("id, name"),
+    db.from("organizations").select("id, name, is_test"),
   ]);
   const names = new Map((orgs ?? []).map((o) => [o.id as string, o.name as string]));
-  const all: ErrorRow[] = (rows ?? []).map((r) => ({
+  const testIds = new Set((orgs ?? []).filter((o) => o.is_test).map((o) => o.id as string));
+  const all: ErrorRow[] = (rows ?? []).filter((r) => !(r.org_id && testIds.has(r.org_id as string))).map((r) => ({
     id: Number(r.id),
     source: r.source as ErrorRow["source"],
     message: r.message as string,

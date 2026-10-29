@@ -125,4 +125,24 @@ describe("painel Shogun: visão geral", () => {
     const ok = renderToStaticMarkup(<OrgDirectory items={[items[0]]} createForm={null} />);
     expect(ok).toContain("Tudo em ordem");
   });
+
+  it("cliente de teste aparece com a marca, mas fica fora das contagens e da atenção", () => {
+    const withTest = [
+      ...items,
+      base({ id: "t1", name: "Conta de Teste", isTest: true, flags: { inactive: true, menuProblem: true, noMenu: false }, severity: "ok", reasons: [{ key: "menu-error", text: "Teste com erro", tab: "menu" }] }),
+    ];
+    const html = renderToStaticMarkup(<OrgDirectory items={withTest} createForm={null} />);
+    expect(html).toContain("Conta de Teste");
+    expect(html).toContain(">Teste<");
+    const chip = (h: string) => /Sem acessar há 7\+ dias<span[^>]*>(\d+)</.exec(h)?.[1];
+    expect(chip(html)).toBe(chip(renderToStaticMarkup(<OrgDirectory items={items} createForm={null} />))); // a de teste não entra na contagem
+    expect(html).not.toContain("Teste com erro");
+  });
+
+  it("gestor só visualiza: sem criar marmitaria nem gerenciar", () => {
+    const html = renderToStaticMarkup(<OrgDirectory items={items} createForm={null} canManage={false} />);
+    expect(html).toContain("Ver como");
+    expect(html).not.toContain("+ Nova marmitaria");
+    expect(html).not.toContain("Gerenciar</button>");
+  });
 });
