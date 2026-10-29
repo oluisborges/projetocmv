@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { CostsTabs } from "@/components/costs-tabs";
 import { requireMember } from "@/lib/auth";
+import { Hint } from "@/components/hint";
 import { loadFixedCosts, loadStaff } from "@/lib/costs-data";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { summarizeFixedCosts } from "@/lib/fixed-costs-view";
+import { loadLastMonthRevenue } from "@/lib/last-month-revenue";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { StepCard } from "./step-card";
 import { AddFixedCostForm, AddStaffForm, FixedCostRow, MonthlyNumbersForm, StaffRowView } from "./costs-forms";
@@ -24,7 +26,7 @@ export default async function CostsPage() {
     );
   }
 
-  const [fixedCosts, staff] = await Promise.all([loadFixedCosts(ctx.unit.id), loadStaff(ctx.unit.id)]);
+  const [fixedCosts, staff, lastMonth] = await Promise.all([loadFixedCosts(ctx.unit.id), loadStaff(ctx.unit.id), loadLastMonthRevenue(orgId, ctx.unit.id).catch(() => null)]);
 
   const cheapest = [...ctx.channels].sort((a, b) => a.fee_pct - b.fee_pct)[0];
   const feePct = cheapest?.fee_pct ?? 0;
@@ -126,16 +128,15 @@ export default async function CostsPage() {
         <section aria-live="polite" className="flex flex-col gap-1 rounded-2xl bg-primary p-5 text-primary-foreground">
           <p className="text-xs font-semibold uppercase tracking-wider opacity-90">Total de contas e equipe</p>
           <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(summary.total)} por mês</p>
-          {summary.pctOfRevenue !== null && !overRevenue ? (
+          {lastMonth ? (
             <p className="text-sm opacity-90">
-              <span className="tabular">{formatPct(summary.pctOfRevenue)}</span> do que você fatura, já no preço. Quanto precisa vender para empatar: Início → Visão Avançada.
+              <span className="tabular">{formatPct(summary.total / lastMonth.revenue)}</span> do que você faturou no mês passado.
+              <Hint label="Como é calculado?">Contas fixas mais equipe (salários e encargos), divididos pelo que você faturou no mês passado, puxado do cardápio digital. Não inclui o gasto com insumos. Atualiza sozinho a cada mês.</Hint>
             </p>
-          ) : (
-            <p className="text-sm opacity-90">Quanto precisa vender para empatar aparece em Início → Visão Avançada.</p>
-          )}
+          ) : null}
         </section>
       ) : (
-        <p className="card p-4 text-sm">Preencha os passos abaixo e eu calculo quanto você precisa vender para empatar.</p>
+        <p className="card p-4 text-sm">Preencha os passos abaixo para ver o total das suas contas e da equipe.</p>
       )}
 
       {overRevenue ? (
