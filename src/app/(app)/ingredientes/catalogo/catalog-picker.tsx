@@ -112,7 +112,7 @@ export function CatalogPicker({ items, recipes }: { items: CatalogItem[]; recipe
         </label>
         {q !== "" ? (
           <p role="status" className="px-1 pt-1.5 text-xs text-muted">
-            {visibleCount === 0 ? "Nada encontrado. Confira a escrita ou cadastre um insumo novo em Ingredientes → + Novo." : `${visibleCount} ${visibleCount === 1 ? "resultado" : "resultados"}`}
+            {visibleCount === 0 ? "Nada encontrado. Confira a escrita ou cadastre um item novo em Ingredientes → + Novo item." : `${visibleCount} ${visibleCount === 1 ? "resultado" : "resultados"}`}
           </p>
         ) : null}
       </div>

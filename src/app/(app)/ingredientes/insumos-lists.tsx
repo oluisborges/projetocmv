@@ -14,7 +14,7 @@ const needsUpdate = (i: IngredientRow) => i.purchase_price <= 0 || daysSince(i.p
 
 const CHIPS: { key: TypeFilter; label: string }[] = [
   { key: "todos", label: "Todos" },
-  { key: "insumos", label: "Insumos" },
+  { key: "insumos", label: "Comida" },
   { key: "receitas", label: "Receitas" },
   { key: "embalagens", label: "Embalagens" },
 ];
@@ -44,7 +44,7 @@ function ReceitaRows({ receitas }: { receitas: ReceitaListItem[] }) {
 
 const EMPTY: Record<TypeFilter, string> = {
   todos: "Nada encontrado.",
-  insumos: "Nenhum insumo encontrado.",
+  insumos: "Nenhuma comida encontrada.",
   receitas: "Nenhuma receita encontrada.",
   embalagens: "Nenhuma embalagem encontrada.",
 };
@@ -98,7 +98,7 @@ export function InsumosLists({ initialType, receitas, items, canWrite }: { initi
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setTimeout(() => setFocused(false), 150)}
-        placeholder="Buscar insumo, receita ou embalagem…"
+        placeholder="Buscar comida, receita ou embalagem…"
         aria-label="Buscar"
         className="h-12 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
       />
@@ -139,7 +139,7 @@ export function InsumosLists({ initialType, receitas, items, canWrite }: { initi
           ) : null}
           {insumosShown.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {heading("Insumos", insumosShown.length)}
+              {heading("Comida", insumosShown.length)}
               <PriceRows items={insumosShown} canWrite={canWrite} />
             </div>
           ) : null}

@@ -20,8 +20,8 @@ export default async function NewIngredientPage(props: PageProps<"/ingredientes/
   return (
     <>
       <BackLink href="/ingredientes">Ingredientes</BackLink>
-      <h1 className="text-2xl font-extrabold tracking-tight">{isPack ? "Nova embalagem" : "Novo insumo"}</h1>
-      <IngredientForm action={createIngredient} submitLabel={isPack ? "Salvar embalagem" : "Salvar insumo"} categories={categories} defaults={{ kind: isPack ? "embalagem" : "insumo" }} />
+      <h1 className="text-2xl font-extrabold tracking-tight">{isPack ? "Nova embalagem" : "Novo item"}</h1>
+      <IngredientForm action={createIngredient} submitLabel={isPack ? "Salvar embalagem" : "Salvar item"} categories={categories} defaults={{ kind: isPack ? "embalagem" : "insumo" }} />
     </>
   );
 }

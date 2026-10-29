@@ -252,7 +252,7 @@ function NewIngredientForm({ kind, initialName = "", onCreated, onCancel }: { ki
 
   return (
     <div className="flex flex-col gap-3 card border-primary p-3">
-      <p className="text-sm font-semibold">{isPack ? "Nova embalagem" : "Novo insumo"}</p>
+      <p className="text-sm font-semibold">{isPack ? "Nova embalagem" : "Nova comida"}</p>
       <label className="flex flex-col gap-1.5 text-sm font-medium">
         Nome
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={isPack ? "Ex.: Bandeja 750 ml" : "Ex.: Frango sassami"} className={inputClass} />
