@@ -92,7 +92,7 @@ export default async function MenuAnalysisPage(props: PageProps<"/painel/cardapi
             ) : (
               <>
                 Informe quantas marmitas vendeu de cada ficha em{" "}
-                <Link href={`/financeiro/mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary">
+                <Link href={`/producao/fechar-mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary">
                   Fechar o mês
                 </Link>{" "}
                 (e o preço de cada uma em Cardápio, na aba Preço de venda) para ver a análise.

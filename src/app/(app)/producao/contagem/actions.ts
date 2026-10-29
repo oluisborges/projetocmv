@@ -54,7 +54,7 @@ export async function saveStockCount(month: string, ingredientId: string, rawQty
       .upsert({ org_id: c.orgId, unit_id: c.unitId, ingredient_id: c.ingredientId, month: c.month, qty_base: q.qtyBase }, { onConflict: "unit_id,ingredient_id,month" });
     if (error) return { ok: false, error: "Não foi possível salvar." };
   }
-  revalidatePath("/financeiro/mes/estoque");
+  revalidatePath("/producao/contagem");
   return { ok: true, qtyBase: q.qtyBase };
 }
 
@@ -77,7 +77,7 @@ export async function saveManualPurchase(month: string, ingredientId: string, ra
     const { error } = await supabase.from("ingredient_purchases").insert({ org_id: c.orgId, unit_id: c.unitId, ingredient_id: c.ingredientId, month: c.month, qty_base: q.qtyBase, amount: 0, source: "manual" });
     if (error) return { ok: false, error: "Não foi possível salvar." };
   }
-  revalidatePath("/financeiro/mes/estoque");
+  revalidatePath("/producao/contagem");
   return { ok: true, qtyBase: q.qtyBase };
 }
 
@@ -98,6 +98,6 @@ export async function saveFinishedStock(month: string, rawValue: string): Promis
   const supabase = await createClient();
   const { error } = await supabase.from("periods").upsert({ org_id: orgId, unit_id: unit.id, month: start, finished_stock_value: value }, { onConflict: "unit_id,month" });
   if (error) return { ok: false, error: "Não foi possível salvar." };
-  revalidatePath("/financeiro/mes/estoque");
+  revalidatePath("/producao/contagem");
   return { ok: true, value };
 }

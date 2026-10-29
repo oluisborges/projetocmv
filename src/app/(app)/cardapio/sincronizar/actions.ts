@@ -53,6 +53,6 @@ export async function saveMenuLink(productId: string, target: string, rawUnits: 
   if (error || !data?.length) return { ok: false, error: "Não foi possível salvar o vínculo." };
 
   revalidatePath("/cardapio/sincronizar");
-  revalidatePath("/financeiro/mes");
+  revalidatePath("/producao/fechar-mes");
   return { ok: true };
 }

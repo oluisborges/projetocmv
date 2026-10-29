@@ -51,10 +51,10 @@ describe("menu de baixo", () => {
     expect(html).toMatch(/href="\/"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/"/);
   });
 
-  it("Fechar o mês fica dentro do Financeiro", () => {
-    path.value = "/financeiro/mes/estoque";
+  it("Fechar o mês e a Contagem ficam dentro da Produção", () => {
+    path.value = "/producao/contagem";
     const html = renderToStaticMarkup(<BottomNav locks={open} />);
-    expect(html).toMatch(/href="\/financeiro"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/financeiro"/);
+    expect(html).toMatch(/href="\/producao"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/producao"/);
   });
 });
 
@@ -63,7 +63,7 @@ describe("abas travadas", () => {
     const costs = renderToStaticMarkup(<CostsTabs active="fixed" />);
     expect(costs).toContain("Custos fixos");
     expect(costs).toContain("Impostos e meta");
-    expect(costs).toContain("Fechar o mês");
+    expect(costs).toContain("Histórico");
     expect(renderToStaticMarkup(<MarmitasTabs active="marmitas" connected={false} />)).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Sincronizar Cardápio/);
     const painel = renderToStaticMarkup(<PainelTabs active="resumo" showCoupons={false} />);
     expect(painel).toMatch(/<button[^>]*aria-disabled="true"[^>]*>[\s\S]*?Cupons/);

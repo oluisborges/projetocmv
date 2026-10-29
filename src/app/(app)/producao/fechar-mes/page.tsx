@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { MonthChips } from "@/components/month-chips";
-import { MonthTabs } from "@/components/month-tabs";
-import { CostsTabs } from "@/components/costs-tabs";
+import { ProducaoTabs } from "@/components/producao-tabs";
 import { ExportLinks } from "@/components/export-links";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
@@ -25,7 +24,7 @@ import { MenuSalesCard } from "@/components/menu-sales-card";
 
 export const metadata = { title: "Fechar o mês" };
 
-export default async function MonthPage(props: PageProps<"/financeiro/mes">) {
+export default async function MonthPage(props: PageProps<"/producao/fechar-mes">) {
   const { orgId, canWrite } = await requireMember();
   const sp = await props.searchParams;
   const requested = monthStart(typeof sp.mes === "string" ? sp.mes : undefined);
@@ -162,14 +161,13 @@ export default async function MonthPage(props: PageProps<"/financeiro/mes">) {
   return (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Fechar o mês</h1>
-        <p className="text-muted">Quanto você gastou no mês, comparado com o que deveria.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">Produção</h1>
+        <p className="text-muted">Fechar o mês: quanto você gastou, comparado com o que deveria.</p>
       </section>
 
-      <CostsTabs active="month" />
-      <MonthTabs active="fechar" />
+      <ProducaoTabs active="fechar" />
 
-      <MonthChips months={months} current={month} basePath="/financeiro/mes" />
+      <MonthChips months={months} current={month} basePath="/producao/fechar-mes" />
 
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 

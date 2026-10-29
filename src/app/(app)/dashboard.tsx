@@ -102,7 +102,7 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
           <strong>Você gastou {formatBRL(month.deviationCost)} a mais em insumos</strong> do que as vendas do mês explicam
         </>
       ),
-      href: "/financeiro/mes",
+      href: "/producao/fechar-mes",
       cta: "Ver o mês",
     });
   }
@@ -127,8 +127,8 @@ export function DashboardView({ data, variant = "full", hideBelowTarget = false 
         <Kpi
           label="Gasto com insumos"
           value={month.cmvRealPct !== null ? formatPct(month.cmvRealPct) : "—"}
-          hint={month.cmvRealPct !== null ? "do faturamento neste mês" : "toque em Mês, no menu de baixo"}
-          href="/financeiro/mes"
+          hint={month.cmvRealPct !== null ? "do faturamento neste mês" : "toque em Produção, Fechar o mês"}
+          href="/producao/fechar-mes"
         />
         <Kpi
           label="Mão de obra"

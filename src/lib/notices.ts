@@ -49,7 +49,7 @@ export function buildNotices(input: NoticesInput): Notice[] {
       tone: "warn",
       title: `Feche ${prev.label}`,
       detail: "Falta informar o faturamento do mês para saber se deu lucro.",
-      href: `/financeiro/mes?mes=${prev.month.slice(0, 7)}`,
+      href: `/producao/fechar-mes?mes=${prev.month.slice(0, 7)}`,
       cta: "Fechar o mês",
     });
   }

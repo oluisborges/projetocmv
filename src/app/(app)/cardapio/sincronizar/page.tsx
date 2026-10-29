@@ -120,8 +120,8 @@ export default async function MenuLinksPage() {
         ) : (
           <p className="text-sm">
             <strong>Tudo vinculado.</strong> O lucro do cardápio já considera tudo que você vendeu. Veja o resultado em{" "}
-            <Link href="/financeiro/mes" className="tap-area font-semibold text-primary">
-              Mês, Fechar o mês
+            <Link href="/producao/fechar-mes" className="tap-area font-semibold text-primary">
+              Produção, Fechar o mês
             </Link>
             .
           </p>

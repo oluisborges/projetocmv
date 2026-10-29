@@ -63,7 +63,7 @@ export function MonthHealthCard({ health, month, canWrite }: { health: MonthHeal
       ) : null}
 
       {canWrite ? (
-        <Link href={`/financeiro/mes?mes=${month.slice(0, 7)}`} className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-primary">
+        <Link href={`/producao/fechar-mes?mes=${month.slice(0, 7)}`} className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-primary">
           Ver ou atualizar as contas do mês →
         </Link>
       ) : null}

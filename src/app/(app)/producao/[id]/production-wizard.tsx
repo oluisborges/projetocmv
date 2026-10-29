@@ -201,7 +201,7 @@ export function ProductionWizard({
             {source === "menu"
               ? `Sugestão pelas vendas do cardápio digital nas últimas ${weeksUsed} semanas, a tendência de cada marmita e o que já está pronto no congelador.`
               : source === "manual"
-                ? "Sugestão pela média mensal de vendas que você informou em Mês (dividida em semanas). Conecte o cardápio digital para uma sugestão por semana."
+                ? "Sugestão pela média mensal de vendas que você informou em Financeiro (dividida em semanas). Conecte o cardápio digital para uma sugestão por semana."
                 : "Ainda não há vendas para sugerir. Digite as quantidades à mão ou conecte o cardápio digital."}
             <Hint>A sugestão é a média das últimas semanas (as mais recentes pesam mais), com um ajuste leve pela tendência, menos o que já está pronto. É só um ponto de partida: você decide.</Hint>
             {plannedElsewhere > 0 ? ` Já há ${formatNumber(plannedElsewhere, 0)} marmitas planejadas em outras produções desta semana; elas já saíram da sugestão.` : ""}

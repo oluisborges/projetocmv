@@ -72,7 +72,7 @@ export function closeMonthChecklist(input: {
         : input.connected
           ? `WhatsApp, balcão, feira… Só se vendeu por fora.${input.prevOutsideRevenue > 0 ? ` Mês passado: ${brl(input.prevOutsideRevenue)}.` : ""}`
           : `Informe quanto faturou.${input.prevOutsideRevenue > 0 ? ` Mês passado: ${brl(input.prevOutsideRevenue)}.` : ""}`,
-    href: input.outsideRevenue > 0 ? undefined : `/financeiro/mes?mes=${mes}#contas-do-mes`,
+    href: input.outsideRevenue > 0 ? undefined : `/producao/fechar-mes?mes=${mes}#contas-do-mes`,
     cta: input.outsideRevenue > 0 ? undefined : "Informar",
   });
 
@@ -108,7 +108,7 @@ export function closeMonthChecklist(input: {
       input.stockCounted > 0
         ? `${input.stockCounted} ${input.stockCounted === 1 ? "insumo contado" : "insumos contados"}: o app já mostra o CMV real.`
         : "Conte o que sobrou dos insumos mais caros para ver quanto sumiu de verdade.",
-    href: `/financeiro/mes/estoque?mes=${mes}`,
+    href: `/producao/contagem?mes=${mes}`,
     cta: input.stockCounted > 0 ? "Ver" : "Contar",
   });
 

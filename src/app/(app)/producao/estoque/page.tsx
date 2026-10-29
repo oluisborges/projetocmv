@@ -56,8 +56,8 @@ export default async function EstoquePage() {
 
       <p className="text-xs text-muted">
         As compras por nota fiscal entram aqui sozinhas. A contagem do fim do mês (para o CMV real) continua em{" "}
-        <Link href="/financeiro/mes/estoque" className="font-semibold text-primary underline">
-          Financeiro → Fechar o mês → Contagem
+        <Link href="/producao/contagem" className="font-semibold text-primary underline">
+          Produção → Contagem do mês
         </Link>
         .
       </p>

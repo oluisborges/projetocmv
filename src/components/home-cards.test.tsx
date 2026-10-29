@@ -16,12 +16,12 @@ describe("cartões do início", () => {
     expect(html).toContain("Sobra até agora");
     expect(html).toContain("No ritmo de hoje");
     expect(html).toMatch(/Faltam .* para pagar todas as contas/);
-    expect(html).toContain("/financeiro/mes?mes=2026-09");
+    expect(html).toContain("/producao/fechar-mes?mes=2026-09");
   });
 
   it("sem permissão de edição não oferece o link para atualizar", () => {
     const html = renderToStaticMarkup(<MonthHealthCard health={health(null)} month="2026-09-01" canWrite={false} />);
-    expect(html).not.toContain("/financeiro/mes?mes=");
+    expect(html).not.toContain("/producao/fechar-mes?mes=");
     expect(html).not.toContain("Ponto de equilíbrio");
   });
 

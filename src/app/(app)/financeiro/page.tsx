@@ -80,7 +80,7 @@ export default async function CostsPage() {
               Calculado pela <strong>média dos {ctx.revenueMonths === 1 ? "mês" : `${ctx.revenueMonths} últimos meses`}</strong> em que você informou o faturamento. Para mudar, ajuste os meses em
               Mês.
             </p>
-            <Link href="/financeiro/mes" className="inline-flex min-h-11 items-center font-semibold text-primary">
+            <Link href="/producao/fechar-mes" className="inline-flex min-h-11 items-center font-semibold text-primary">
               Abrir o Mês →
             </Link>
           </>
@@ -88,7 +88,7 @@ export default async function CostsPage() {
           <>
             <MonthlyNumbersForm revenue={ctx.monthlyRevenue} units={ctx.monthlyUnits} />
             <p className="text-xs text-muted">
-              Quando você informar o faturamento de cada mês em <Link href="/financeiro/mes" className="tap-area font-semibold text-primary underline">Mês</Link>, o app passa a usar a média desses meses.
+              Quando você informar o faturamento de cada mês em <Link href="/producao/fechar-mes" className="tap-area font-semibold text-primary underline">Produção, Fechar o mês</Link>, o app passa a usar a média desses meses.
             </p>
           </>
         ) : (
@@ -187,7 +187,7 @@ export default async function CostsPage() {
 
       <div className="flex items-baseline justify-between text-sm">
         <h2 className="font-semibold">{doneCount === 3 ? "Tudo preenchido" : `${doneCount} de 3 preenchidos`}</h2>
-        <Link href="/financeiro/mes" className="tap-area font-semibold text-primary">
+        <Link href="/producao/fechar-mes" className="tap-area font-semibold text-primary">
           Fechar o mês →
         </Link>
       </div>

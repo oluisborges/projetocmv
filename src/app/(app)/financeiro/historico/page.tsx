@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { MonthTabs } from "@/components/month-tabs";
 import { CostsTabs } from "@/components/costs-tabs";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
@@ -72,7 +71,7 @@ function MonthCard({ entry, previous, open }: { entry: HistoryEntry; previous: H
         {!hasNumbers ? (
           <p className="text-sm text-muted">
             Nada informado neste mês ainda.{" "}
-            <Link href={`/financeiro/mes?mes=${entry.month.slice(0, 7)}`} className="font-semibold text-primary underline">
+            <Link href={`/producao/fechar-mes?mes=${entry.month.slice(0, 7)}`} className="font-semibold text-primary underline">
               Informar faturamento e compras
             </Link>
           </p>
@@ -257,17 +256,16 @@ export default async function HistoricoPage() {
   return (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Histórico</h1>
-        <p className="text-muted">O que aconteceu em cada mês.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">Financeiro</h1>
+        <p className="text-muted">Histórico: o que aconteceu em cada mês.</p>
       </section>
-      <CostsTabs active="month" />
-      <MonthTabs active="historico" />
+      <CostsTabs active="history" />
 
       {!history || history.entries.length === 0 ? (
         <p className="card p-4 text-sm">
           O histórico começa a se formar quando você informa o faturamento do mês em{" "}
-          <Link href="/financeiro/mes" className="tap-area font-semibold text-primary underline">
-            Mês → Fechar
+          <Link href="/producao/fechar-mes" className="tap-area font-semibold text-primary underline">
+            Produção → Fechar o mês
           </Link>
           . A cada mês, o app guarda também os seus custos e preços daquele momento.
         </p>

@@ -50,7 +50,7 @@ export async function savePeriod(_prev: FormState, formData: FormData): Promise<
     .upsert({ org_id: orgId, unit_id: unit.id, month, revenue: revenue.value, purchases: purchases.value }, { onConflict: "unit_id,month" });
   if (error) return { error: "Não foi possível salvar." };
 
-  revalidatePath("/financeiro/mes");
+  revalidatePath("/producao/fechar-mes");
   return { ok: "Salvo." };
 }
 
@@ -79,7 +79,7 @@ export async function setComboSoldQty(month: string, comboId: string, rawQty: st
     .maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
-  revalidatePath("/financeiro/mes");
+  revalidatePath("/producao/fechar-mes");
   return { ok: true, qty: Number(data.qty_sold) };
 }
 
@@ -108,6 +108,6 @@ export async function setSoldQty(month: string, recipeId: string, rawQty: string
     .maybeSingle();
   if (error || !data) return { ok: false, error: "Não foi possível salvar." };
 
-  revalidatePath("/financeiro/mes");
+  revalidatePath("/producao/fechar-mes");
   return { ok: true, qty: Number(data.qty_sold) };
 }

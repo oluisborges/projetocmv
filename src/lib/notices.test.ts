@@ -55,7 +55,7 @@ describe("buildNotices", () => {
     const prev = { label: "setembro", month: "2026-09-01", closed: false, soldOrRevenue: true };
     expect(buildNotices({ ...base, previousMonth: prev, dayOfMonth: 3 })).toEqual([]);
     const [n] = buildNotices({ ...base, previousMonth: prev, dayOfMonth: 4 });
-    expect(n).toMatchObject({ tone: "warn", title: "Feche setembro", href: "/financeiro/mes?mes=2026-09" });
+    expect(n).toMatchObject({ tone: "warn", title: "Feche setembro", href: "/producao/fechar-mes?mes=2026-09" });
   });
 
   it("mês anterior sem movimento ou já fechado não gera aviso", () => {

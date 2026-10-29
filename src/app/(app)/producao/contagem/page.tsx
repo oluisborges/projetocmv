@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { MonthChips } from "@/components/month-chips";
-import { MonthTabs } from "@/components/month-tabs";
-import { CostsTabs } from "@/components/costs-tabs";
+import { ProducaoTabs } from "@/components/producao-tabs";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
@@ -11,7 +10,7 @@ import { FinishedStockForm, StockRowCard } from "./stock-forms";
 
 export const metadata = { title: "Estoque do mês" };
 
-export default async function StockPage(props: PageProps<"/financeiro/mes/estoque">) {
+export default async function StockPage(props: PageProps<"/producao/contagem">) {
   const { orgId, canWrite } = await requireMember();
   const sp = await props.searchParams;
   const now = currentMonthStart();
@@ -25,11 +24,10 @@ export default async function StockPage(props: PageProps<"/financeiro/mes/estoqu
   const header = (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Estoque do mês</h1>
-        <p className="text-muted">O que você comprou, o que as fichas gastaram e o que sobrou de verdade.</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">Produção</h1>
+        <p className="text-muted">Contagem do mês: o que você comprou, o que as fichas gastaram e o que sobrou de verdade.</p>
       </section>
-      <CostsTabs active="month" />
-      <MonthTabs active="estoque" />
+      <ProducaoTabs active="contagem" />
     </>
   );
 
@@ -49,7 +47,7 @@ export default async function StockPage(props: PageProps<"/financeiro/mes/estoqu
     <>
       {header}
 
-      <MonthChips months={months} current={month} basePath="/financeiro/mes/estoque" />
+      <MonthChips months={months} current={month} basePath="/producao/contagem" />
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
       {result ? (
@@ -142,7 +140,7 @@ export default async function StockPage(props: PageProps<"/financeiro/mes/estoqu
               notas fiscais
             </Link>{" "}
             e informe as vendas em{" "}
-            <Link href={`/financeiro/mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary underline">
+            <Link href={`/producao/fechar-mes?mes=${month.slice(0, 7)}`} className="tap-area font-semibold text-primary underline">
               Fechar o mês
             </Link>
             .
