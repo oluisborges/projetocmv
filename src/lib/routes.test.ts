@@ -70,7 +70,7 @@ describe("links internos", () => {
   const links = internalLinks();
 
   it("o app tem as rotas esperadas do menu novo", () => {
-    for (const r of ["/", "/cardapio", "/cardapio/[id]", "/cardapio/[id]/preco", "/ingredientes", "/ingredientes/receitas/nova", "/ingredientes/receitas/[id]", "/producao", "/producao/[id]", "/producao/estoque", "/producao/fichas", "/painel", "/financeiro", "/financeiro/impostos", "/cardapio/sincronizar", "/producao/fechar-mes", "/producao/estoque/historico", "/financeiro/historico", "/avisos", "/configuracoes"]) {
+    for (const r of ["/", "/cardapio", "/cardapio/[id]", "/cardapio/[id]/preco", "/ingredientes", "/ingredientes/receitas/nova", "/ingredientes/receitas/[id]", "/producao", "/producao/[id]", "/producao/estoque", "/cardapio/fichas", "/cardapio/[id]/ficha", "/cardapio/[id]/nutricional", "/painel", "/financeiro", "/financeiro/impostos", "/cardapio/sincronizar", "/producao/fechar-mes", "/producao/estoque/historico", "/financeiro/historico", "/avisos", "/configuracoes"]) {
       expect(routes, `falta a rota ${r}`).toContain(r);
     }
   });

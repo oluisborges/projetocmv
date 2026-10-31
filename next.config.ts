@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/painel/exportar": ["./public/brand/logo-horizontal.png"],
     "/cardapio/exportar": ["./public/brand/logo-horizontal.png"],
-    "/producao/fichas/baixar": ["./public/brand/logo-powered-by-shogun.png", "./public/brand/icon-192.png"],
+    "/cardapio/fichas/baixar": ["./public/brand/logo-powered-by-shogun.png", "./public/brand/icon-192.png"],
   },
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
   // URLs antigas (favoritos, links enviados) continuam funcionando depois da reorganização do menu.
@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
       to("/custos/estoque", "/producao/estoque/historico"),
       to("/painel/historico", "/financeiro/historico"),
       to("/producao/contagem", "/producao/estoque/historico"),
+      to("/producao/fichas", "/cardapio/fichas"),
       to("/financeiro/mes", "/producao/fechar-mes"),
       to("/financeiro/mes/estoque", "/producao/estoque/historico"),
       to("/financeiro/mes/historico", "/financeiro/historico"),

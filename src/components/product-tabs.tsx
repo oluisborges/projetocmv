@@ -7,17 +7,24 @@ function Pending({ children }: { children: React.ReactNode }) {
   return <span className={pending ? "animate-pulse" : undefined}>{children}</span>;
 }
 
-/** Dentro de uma marmita: a ficha (receita e custo) e o preço de venda. */
-export function ProductTabs({ id, active }: { id: string; active: "ficha" | "preco" }) {
-  const item = (on: boolean) => `flex h-11 flex-1 items-center justify-center rounded-lg text-sm font-semibold ${on ? "bg-surface shadow-sm" : "text-muted"}`;
+export type ProductTab = "itens" | "ficha" | "nutricional" | "preco";
+
+/** Dentro de um produto: os itens (receita e custo), a ficha técnica para baixar, a tabela nutricional e o preço de venda. */
+export function ProductTabs({ id, active }: { id: string; active: ProductTab }) {
+  const item = (on: boolean) => `flex min-h-11 flex-1 items-center justify-center rounded-lg px-1 text-center text-[13px] font-semibold leading-tight ${on ? "bg-surface shadow-sm" : "text-muted"}`;
+  const tabs: { key: ProductTab; href: string; label: string }[] = [
+    { key: "itens", href: `/cardapio/${id}`, label: "Itens" },
+    { key: "ficha", href: `/cardapio/${id}/ficha`, label: "Ficha Técnica" },
+    { key: "nutricional", href: `/cardapio/${id}/nutricional`, label: "Tabela Nutricional" },
+    { key: "preco", href: `/cardapio/${id}/preco`, label: "Preço de Venda" },
+  ];
   return (
-    <nav aria-label="Partes da marmita" className="flex gap-1 rounded-xl bg-border/60 p-1">
-      <Link href={`/cardapio/${id}`} aria-current={active === "ficha" ? "page" : undefined} className={item(active === "ficha")}>
-        <Pending>Ficha</Pending>
-      </Link>
-      <Link href={`/cardapio/${id}/preco`} aria-current={active === "preco" ? "page" : undefined} className={item(active === "preco")}>
-        <Pending>Preço de venda</Pending>
-      </Link>
+    <nav aria-label="Partes do produto" className="flex gap-1 rounded-xl bg-border/60 p-1">
+      {tabs.map((t) => (
+        <Link key={t.key} href={t.href} aria-current={active === t.key ? "page" : undefined} className={item(active === t.key)}>
+          <Pending>{t.label}</Pending>
+        </Link>
+      ))}
     </nav>
   );
 }

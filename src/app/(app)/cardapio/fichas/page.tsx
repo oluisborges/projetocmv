@@ -1,30 +1,29 @@
 import Link from "next/link";
-import { ProducaoTabs } from "@/components/producao-tabs";
+import { MarmitasTabs } from "@/components/marmitas-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadFichaOptions } from "@/lib/ficha-tecnica-data";
-import { requireProductionAccess } from "@/lib/production-access";
+import { hasMenuConnection } from "@/lib/menu-data";
 import { FichasList } from "./fichas-list";
 
 export const metadata = { title: "Fichas técnicas" };
 
 export default async function FichasTecnicasPage() {
-  await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
-  const options = await loadFichaOptions(orgId, canWrite);
+  const [options, connected] = await Promise.all([loadFichaOptions(orgId, canWrite), hasMenuConnection(orgId)]);
 
   return (
     <>
       <section className="flex flex-col gap-1">
-        <h1 className="text-2xl font-extrabold tracking-tight">Produção</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">Cardápio</h1>
         <p className="text-muted">Fichas técnicas para imprimir: escolha um produto ou receita, toque em Baixar ficha técnica, monte o modelo e baixe em PDF ou Excel, com a marca da sua marmitaria.</p>
       </section>
 
-      <ProducaoTabs active="fichas" />
+      <MarmitasTabs active="fichas" showCombos connected={connected} />
 
       {options.length === 0 ? (
         <p className="card p-4 text-sm">
           Você ainda não tem produtos nem receitas. Crie em{" "}
-          <Link href="/cardapio" className="tap-area font-semibold text-primary underline">
+          <Link href="/cardapio/nova" className="tap-area font-semibold text-primary underline">
             Cardápio
           </Link>{" "}
           ou{" "}

@@ -22,7 +22,7 @@ const EXACT: Record<string, string> = {
   "/cardapio/combos": "Abriu Combos",
   "/producao": "Abriu a Produção",
   "/producao/estoque": "Abriu o estoque da produção",
-  "/producao/fichas": "Abriu as fichas técnicas para imprimir",
+  "/cardapio/fichas": "Abriu as fichas técnicas para imprimir",
   "/avisos": "Abriu Avisos",
   "/configuracoes": "Abriu as Configurações",
   "/conta/senha": "Abriu Trocar senha",

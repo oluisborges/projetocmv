@@ -10,7 +10,7 @@ import { loadIngredients, loadRecipe, loadRecipes } from "@/lib/recipes-data";
 import { archiveRecipe, duplicateRecipe } from "../actions";
 import { RecipeEditor } from "./recipe-editor";
 
-export const metadata = { title: "Ficha técnica" };
+export const metadata = { title: "Itens" };
 
 export default async function RecipePage(props: PageProps<"/cardapio/[id]">) {
   const { orgId, canWrite } = await requireMember();
@@ -39,7 +39,7 @@ export default async function RecipePage(props: PageProps<"/cardapio/[id]">) {
         ) : null}
       </div>
 
-      <ProductTabs id={recipe.id} active="ficha" />
+      <ProductTabs id={recipe.id} active="itens" />
 
       <RecipeEditor
         recipe={{

@@ -3,14 +3,12 @@ import { requireMember } from "@/lib/auth";
 import { camposFromParam } from "@/lib/ficha-campos";
 import { loadFichaTecnica } from "@/lib/ficha-tecnica-data";
 import { fichaToPdf, fichaToXlsx } from "@/lib/ficha-tecnica-export";
-import { requireProductionAccess } from "@/lib/production-access";
 import { slugify } from "@/lib/slug";
 
 export const maxDuration = 60;
 
 /** Ficha técnica de um produto ou receita em PDF ou Excel: `?id=<uuid>&formato=pdf|xlsx&campos=ingredientes,custo,…` (sem `campos`, vale o modelo Financeiro). */
 export async function GET(request: Request) {
-  await requireProductionAccess();
   const { orgId, canWrite, orgName } = await requireMember();
   const params = new URL(request.url).searchParams;
   const id = z.uuid().safeParse(params.get("id"));

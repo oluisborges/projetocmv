@@ -222,7 +222,7 @@ export function PersonalizarModal({ campos, itemId, itemName, onSave, onClose }:
               {(["pdf", "xlsx"] as const).map((formato) => (
                 <a
                   key={formato}
-                  href={`/producao/fichas/baixar?id=${itemId}&formato=${formato}&campos=${encodeURIComponent(camposToParam(draft))}`}
+                  href={`/cardapio/fichas/baixar?id=${itemId}&formato=${formato}&campos=${encodeURIComponent(camposToParam(draft))}`}
                   download
                   onClick={() => {
                     onSave(draft);

@@ -72,7 +72,7 @@ export type FichaTecnica = {
 const FACTOR_OF: Record<string, number> = { kg: 1000, g: 1, l: 1000, ml: 1, un: 1 };
 
 /** Quantidade na unidade-base -> como foi digitada ("0,5 kg"). */
-function netLabel(qtyBase: number, qtyUnit: string | null, purchaseUnit: string): string {
+export function netLabel(qtyBase: number, qtyUnit: string | null, purchaseUnit: string): string {
   const base = isPurchaseUnit(purchaseUnit) ? baseUnitOf(purchaseUnit) : "g";
   if (qtyUnit && FACTOR_OF[qtyUnit] !== undefined) return `${formatNumber(qtyBase / FACTOR_OF[qtyUnit], 3)} ${qtyUnit === "l" ? "l" : qtyUnit}`;
   return formatBaseQty(qtyBase, base);

@@ -1,25 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CAMPOS_PADRAO, camposFromParam, camposToParam, type FichaCampos } from "@/lib/ficha-campos";
-import { PersonalizarModal } from "./personalizar-modal";
+import { useMemo, useState } from "react";
+import { BaixarFichaButton } from "@/components/baixar-ficha";
+import { FichaItems } from "@/components/ficha-items";
 import type { FichaOption } from "@/lib/ficha-tecnica-data";
-
-const STORAGE_KEY = "precificai:ficha-campos";
 
 const norm = (t: string) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 type Filter = "todas" | "marmita" | "receita";
 
-const TAG_LABEL = { insumo: "Ingrediente", receita: "Receita", embalagem: "Embalagem" } as const;
-const TAG_STYLE = { insumo: "bg-primary/10 text-primary", receita: "bg-warning/10 text-warning", embalagem: "bg-black/10 text-muted" } as const;
-
-const download = "flex h-11 flex-1 items-center justify-center rounded-xl border px-3 text-sm font-semibold";
-
-/** Escolher um produto ou receita e baixar a ficha técnica em PDF e/ou Excel. */
+/** Escolher um produto ou receita (a seta mostra o que tem dentro) e baixar a ficha técnica. */
 export function FichasList({ options }: { options: FichaOption[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("todas");
-  const [baixando, setBaixando] = useState<FichaOption | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
   const toggle = (id: string) =>
     setOpen((prev) => {
@@ -27,22 +19,6 @@ export function FichasList({ options }: { options: FichaOption[] }) {
       if (!next.delete(id)) next.add(id);
       return next;
     });
-  const [campos, setCampos] = useState<FichaCampos>({ ...CAMPOS_PADRAO });
-
-  // Lembra a escolha neste aparelho (só conveniência: se o navegador bloquear, segue com o padrão).
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- ler o localStorage só é possível no navegador, depois da hidratação
-      if (saved !== null) setCampos(camposFromParam(saved));
-    } catch {}
-  }, []);
-  const escolher = (next: FichaCampos) => {
-    setCampos(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, camposToParam(next));
-    } catch {}
-  };
 
   const counts = useMemo(() => ({ todas: options.length, marmita: options.filter((o) => o.kind === "marmita").length, receita: options.filter((o) => o.kind === "receita").length }), [options]);
   const q = norm(query);
@@ -51,8 +27,6 @@ export function FichasList({ options }: { options: FichaOption[] }) {
 
   return (
     <section className="flex flex-col gap-3">
-      {baixando ? <PersonalizarModal campos={campos} itemId={baixando.id} itemName={baixando.name} onSave={escolher} onClose={() => setBaixando(null)} /> : null}
-
       <input
         type="search"
         value={query}
@@ -97,23 +71,8 @@ export function FichasList({ options }: { options: FichaOption[] }) {
                 </button>
                 {!o.complete ? <span className="shrink-0 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">custo incompleto</span> : null}
               </div>
-              {open.has(o.id) ? (
-                o.items.length === 0 ? (
-                  <p className="rounded-lg bg-black/5 px-3 py-2 text-xs text-muted">Ainda sem itens.</p>
-                ) : (
-                  <ul className="flex flex-col divide-y divide-border rounded-lg bg-black/5 px-3 py-1 text-sm">
-                    {o.items.map((it, i) => (
-                      <li key={`${it.name}-${i}`} className="flex items-center justify-between gap-2 py-1.5">
-                        <span className="min-w-0 truncate">{it.name}</span>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${TAG_STYLE[it.tag]}`}>{TAG_LABEL[it.tag]}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )
-              ) : null}
-              <button type="button" onClick={() => setBaixando(o)} className={`${download} w-full border-primary bg-primary text-primary-foreground`}>
-                Baixar ficha técnica
-              </button>
+              {open.has(o.id) ? <FichaItems items={o.items} /> : null}
+              <BaixarFichaButton id={o.id} name={o.name} />
             </li>
           ))}
         </ul>

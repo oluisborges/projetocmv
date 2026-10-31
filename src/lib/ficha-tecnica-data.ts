@@ -1,11 +1,17 @@
 import "server-only";
-import { buildFichaTecnica, type FichaIngredient, type FichaTecnica } from "@/lib/ficha-tecnica";
+import { buildFichaTecnica, netLabel, type FichaIngredient, type FichaTecnica } from "@/lib/ficha-tecnica";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
 import { loadIngredients, loadReceitaRows, loadReceitas, loadRecipe, loadRecipes } from "@/lib/recipes-data";
 
-export type FichaOptionItem = { name: string; tag: "insumo" | "receita" | "embalagem" };
+export type FichaOptionItem = { name: string; tag: "insumo" | "receita" | "embalagem"; /** Quanto entra, como foi digitado ("120 g", "1 un"). */ net: string };
 export type FichaOption = { id: string; name: string; kind: "marmita" | "receita"; category: string | null; complete: boolean; /** O que tem dentro, só para a pessoa conferir qual item é. */ items: FichaOptionItem[] };
+
+/** Ingredientes e receitas primeiro, embalagens no fim. */
+const ordered = (list: FichaOptionItem[]) => [...list.filter((i) => i.tag !== "embalagem"), ...list.filter((i) => i.tag === "embalagem")];
+
+/** O conteúdo de uma ficha já montada, no mesmo formato da lista. */
+export const fichaItems = (f: FichaTecnica): FichaOptionItem[] => [...f.lines, ...f.packaging].map((l) => ({ name: l.name, tag: l.tag, net: l.net }));
 
 /** Produtos e receitas que podem ter a ficha técnica impressa, com a indicação de quais estão completas (com preço de tudo). */
 export async function loadFichaOptions(orgId: string, canWrite: boolean): Promise<FichaOption[]> {
@@ -17,7 +23,7 @@ export async function loadFichaOptions(orgId: string, canWrite: boolean): Promis
   const marmitas: FichaOption[] = recipes.map((r) => {
     const costItems = items.filter((i) => i.recipe_id === r.id && byId.has(i.ingredient_id)).map((i) => ({ ingredient: byId.get(i.ingredient_id)!, netQty: i.net_qty, scope: i.scope }));
     const view = computeRecipe(recipeCostSettings(r, margin), costItems);
-    const contents = items.filter((i) => i.recipe_id === r.id).flatMap((i) => (byId.has(i.ingredient_id) ? [{ name: byId.get(i.ingredient_id)!.name, tag: byId.get(i.ingredient_id)!.kind }] : []));
+    const contents = ordered(items.filter((i) => i.recipe_id === r.id).flatMap((i) => (byId.has(i.ingredient_id) ? [{ name: byId.get(i.ingredient_id)!.name, tag: byId.get(i.ingredient_id)!.kind, net: netLabel(i.net_qty, i.qty_unit, byId.get(i.ingredient_id)!.purchase_unit) }] : [])));
     return { id: r.id, name: r.name, kind: "marmita" as const, category: r.category, complete: view.ok && view.missingPrices === 0, items: contents };
   });
   const receitaOptions: FichaOption[] = receitas.map((r) => ({
@@ -26,7 +32,7 @@ export async function loadFichaOptions(orgId: string, canWrite: boolean): Promis
     kind: "receita" as const,
     category: null,
     complete: r.costPerKg !== null,
-    items: (receitaRows.find((x) => x.id === r.id)?.items ?? []).flatMap((i) => (i.ingredient_id && byId.has(i.ingredient_id) ? [{ name: byId.get(i.ingredient_id)!.name, tag: byId.get(i.ingredient_id)!.kind }] : [])),
+    items: ordered((receitaRows.find((x) => x.id === r.id)?.items ?? []).flatMap((i) => (i.ingredient_id && byId.has(i.ingredient_id) ? [{ name: byId.get(i.ingredient_id)!.name, tag: byId.get(i.ingredient_id)!.kind, net: netLabel(i.net_qty, null, byId.get(i.ingredient_id)!.purchase_unit) }] : []))),
   }));
   return [...marmitas, ...receitaOptions].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 }
