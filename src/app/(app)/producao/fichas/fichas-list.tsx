@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CAMPOS_PADRAO, CAMPO_GRUPOS, CAMPO_LABEL, MODELOS, camposFromParam, camposToParam, modeloDe, type FichaCampo, type FichaCampos } from "@/lib/ficha-campos";
+import { CAMPOS_PADRAO, MODELOS, camposFromParam, camposToParam, modeloDe, type FichaCampos } from "@/lib/ficha-campos";
+import { PersonalizarModal } from "./personalizar-modal";
 import type { FichaOption } from "@/lib/ficha-tecnica-data";
 
 const STORAGE_KEY = "precificai:ficha-campos";
@@ -15,6 +16,7 @@ const download = "flex h-11 flex-1 items-center justify-center rounded-xl border
 export function FichasList({ options }: { options: FichaOption[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("todas");
+  const [aberto, setAberto] = useState(false);
   const [campos, setCampos] = useState<FichaCampos>({ ...CAMPOS_PADRAO });
 
   // Lembra a escolha neste aparelho (só conveniência: se o navegador bloquear, segue com o padrão).
@@ -33,7 +35,6 @@ export function FichasList({ options }: { options: FichaOption[] }) {
   };
   const modelo = modeloDe(campos);
   const camposParam = encodeURIComponent(camposToParam(campos));
-  const nenhum = camposToParam(campos) === "";
 
   const counts = useMemo(() => ({ todas: options.length, marmita: options.filter((o) => o.kind === "marmita").length, receita: options.filter((o) => o.kind === "receita").length }), [options]);
   const q = norm(query);
@@ -43,45 +44,18 @@ export function FichasList({ options }: { options: FichaOption[] }) {
   return (
     <section className="flex flex-col gap-3">
       <div className="card flex flex-col gap-3 p-4">
-        <div>
-          <p className="font-semibold">O que vai na ficha</p>
-          <p className="text-xs text-muted">Escolha um modelo e, se quiser, ajuste os campos. Vale para o PDF e para o Excel.</p>
-        </div>
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Modelo">
-          {MODELOS.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              aria-pressed={modelo === m.id}
-              onClick={() => escolher({ ...m.campos })}
-              className={`min-h-11 rounded-xl border px-3 py-2 text-left ${modelo === m.id ? "border-primary bg-primary/10" : "border-border bg-surface"}`}
-            >
-              <span className="block text-sm font-semibold">{m.nome}</span>
-              <span className="block text-xs leading-snug text-muted">{m.descricao}</span>
-            </button>
-          ))}
-        </div>
-        <details className="group">
-          <summary className="tap-area flex cursor-pointer items-center justify-between text-sm font-semibold text-primary">
-            <span>{modelo ? `Ajustar campos (modelo ${MODELOS.find((m) => m.id === modelo)?.nome})` : "Ajustar campos (personalizada)"}</span>
-          </summary>
-          <div className="mt-2 flex flex-col gap-4">
-            {CAMPO_GRUPOS.map((g) => (
-              <fieldset key={g.titulo} className="flex flex-col gap-1">
-                <legend className="text-xs font-semibold uppercase tracking-wide text-muted">{g.titulo}</legend>
-                {g.dica ? <p className="text-xs text-muted">{g.dica}</p> : null}
-                {g.campos.map((c: FichaCampo) => (
-                  <label key={c} className="tap-area flex items-center gap-3 text-sm">
-                    <input type="checkbox" checked={campos[c]} onChange={(e) => escolher({ ...campos, [c]: e.target.checked })} className="size-5 accent-[var(--color-primary)]" />
-                    {CAMPO_LABEL[c]}
-                  </label>
-                ))}
-              </fieldset>
-            ))}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">O que vai na ficha</p>
+            <p className="font-semibold">{modelo ? `Modelo ${MODELOS.find((m) => m.id === modelo)?.nome}` : "Personalizada"}</p>
+            <p className="text-xs text-muted">{camposToParam(campos) === "" ? "Nenhum campo marcado" : `${camposToParam(campos).split(",").length} campos marcados`}</p>
           </div>
-        </details>
-        {nenhum ? <p className="text-xs font-semibold text-warning">Nenhum campo marcado: a ficha sai só com o nome. Marque ao menos um.</p> : null}
+          <button type="button" onClick={() => setAberto(true)} className="h-11 shrink-0 rounded-xl border border-primary bg-primary px-4 text-sm font-semibold text-primary-foreground">
+            Personalizar
+          </button>
+        </div>
       </div>
+      {aberto ? <PersonalizarModal campos={campos} onApply={escolher} onClose={() => setAberto(false)} /> : null}
 
       <input
         type="search"
