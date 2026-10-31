@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildFichaTecnica, type FichaIngredient, type FichaRecipeInput } from "./ficha-tecnica";
+import { MODELOS, camposFromParam, camposToParam, modeloDe } from "./ficha-campos";
 import { fichaToPdf, fichaToXlsx } from "./ficha-tecnica-export";
 
 const ing = (id: string, name: string, kind: FichaIngredient["kind"], purchase_unit: string, unit_cost: number, correction_factor = 1, cooking_yield = 1): FichaIngredient => ({
@@ -71,6 +72,36 @@ describe("ficha técnica", () => {
     expect(f.receita?.perUnit).toBeCloseTo(((0.009 * 822 * 1.089) / 26000) * 1000, 5);
     expect(f.receita?.perUnitLabel).toBe("Custo por kg");
   });
+
+  it("campos: modelos, parâmetro da URL e modelo reconhecido", () => {
+    expect(camposFromParam(null)).toEqual(MODELOS[1].campos); // sem parâmetro = Financeiro
+    expect(modeloDe(MODELOS[0].campos)).toBe("cozinha");
+    expect(MODELOS[0].campos.custo).toBe(false); // cozinha não vê valores
+    expect(MODELOS[0].campos.modoPreparo).toBe(true);
+    expect(MODELOS[1].campos.modoPreparo).toBe(false);
+    const custom = camposFromParam("ingredientes,custo,lixo");
+    expect(custom).toMatchObject({ ingredientes: true, custo: true, embalagens: false, cmv: false });
+    expect(modeloDe(custom)).toBeNull();
+    expect(camposFromParam(camposToParam(MODELOS[0].campos))).toEqual(MODELOS[0].campos);
+    expect(camposToParam(camposFromParam(""))).toBe(""); // vazio = nada marcado
+  });
+
+  it("gera o PDF e o Excel em cada modelo e com tudo desmarcado", async () => {
+    const f = buildFichaTecnica({ recipe: penne, items, ingredients, safetyMarginPct: 0.1, price: 24 });
+    const when = new Date("2026-10-31T15:00:00Z");
+    const nada = camposFromParam("");
+    for (const campos of [MODELOS[0].campos, MODELOS[1].campos, nada, camposFromParam("custoPorMarmita")]) {
+      expect((await fichaToPdf(f, "Hibiscus", when, campos)).subarray(0, 4).toString()).toBe("%PDF");
+      expect((await fichaToXlsx(f, "Hibiscus", when, campos)).subarray(0, 2).toString()).toBe("PK");
+    }
+    // a receita também
+    const molho: FichaRecipeInput = { id: "r2", kind: "receita", name: "Molho", category: null, mode: "batch", portions: 1, portion_weight: 26000, portion_weight_unit: "kg", cooking_loss_pct: 0 };
+    const rec = buildFichaTecnica({ recipe: molho, items: [{ ingredient_id: "cebola", net_qty: 822, qty_unit: "g", scope: "batch" }], ingredients, safetyMarginPct: 0.1, price: null });
+    for (const campos of [MODELOS[0].campos, MODELOS[1].campos, nada]) {
+      expect((await fichaToPdf(rec, "Hibiscus", when, campos)).subarray(0, 4).toString()).toBe("%PDF");
+      expect((await fichaToXlsx(rec, "Hibiscus", when, campos)).subarray(0, 2).toString()).toBe("PK");
+    }
+  }, 60_000);
 
   it("gera o PDF e o Excel sem quebrar", async () => {
     const f = buildFichaTecnica({ recipe: penne, items, ingredients, safetyMarginPct: 0.1, price: 24 });

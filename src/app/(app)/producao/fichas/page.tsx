@@ -38,7 +38,7 @@ export default async function FichasTecnicasPage() {
       )}
 
       <p className="text-xs text-muted">
-        A ficha leva os pesos líquido e bruto de cada ingrediente, o custo, o preço de venda e o CMV (nos produtos), e um espaço em branco para o modo de preparo.
+        Use o modelo Cozinha para quem prepara (pesos e modo de preparo, sem valores) e o Financeiro para quem cuida do custo (FC, custos, preço de venda e CMV). Sua escolha fica salva neste aparelho.
       </p>
     </>
   );
