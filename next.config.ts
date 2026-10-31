@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/painel/exportar": ["./public/brand/logo-horizontal.png"],
     "/cardapio/exportar": ["./public/brand/logo-horizontal.png"],
+    "/cardapio/[id]/nutricional/baixar": ["./public/brand/logo-powered-by-shogun.png", "./public/brand/icon-192.png"],
     "/cardapio/fichas/baixar": ["./public/brand/logo-powered-by-shogun.png", "./public/brand/icon-192.png"],
   },
   experimental: { serverActions: { bodySizeLimit: "4mb" } },

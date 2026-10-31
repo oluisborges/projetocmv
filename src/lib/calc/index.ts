@@ -10,3 +10,4 @@ export * from "./menu-profit";
 export * from "./production";
 export * from "./stock";
 export * from "./forecast";
+export * from "./nutrition";

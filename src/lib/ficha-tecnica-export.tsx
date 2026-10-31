@@ -6,9 +6,9 @@ import type { FichaLine, FichaTecnica } from "@/lib/ficha-tecnica";
 import { CAMPOS_PADRAO, type FichaCampos } from "@/lib/ficha-campos";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 
-const C = { teal: "#0F766E", deep: "#0B4D4B", lime: "#9ACB39", tint: "#E6F4F1", zebra: "#F3F8F7", muted: "#475569", line: "#CBD5E1", ink: "#0F172A", amber: "#92400E", amberBg: "#FEF3C7" };
+export const C = { teal: "#0F766E", deep: "#0B4D4B", lime: "#9ACB39", tint: "#E6F4F1", zebra: "#F3F8F7", muted: "#475569", line: "#CBD5E1", ink: "#0F172A", amber: "#92400E", amberBg: "#FEF3C7" };
 
-const brand = (file: string): Buffer | null => {
+export const brand = (file: string): Buffer | null => {
   try {
     return fs.readFileSync(path.join(process.cwd(), "public", "brand", file));
   } catch {
@@ -53,7 +53,7 @@ const s = StyleSheet.create({
 });
 
 /** O "P" do Precificaí, em vetor (nítido em qualquer zoom e na impressão). */
-function Mark({ size = 34 }: { size?: number }) {
+export function Mark({ size = 34 }: { size?: number }) {
   return (
     <Svg viewBox="0 0 120 128" style={{ width: size, height: (size * 128) / 120 }}>
       <Path d="M36 6H84A30 30 0 0 1 114 36V58A30 30 0 0 1 84 88H48A6 6 0 0 0 42 94V112A10 10 0 0 1 32 122H16A10 10 0 0 1 6 112V36A30 30 0 0 1 36 6Z" fill={C.teal} />
@@ -67,7 +67,7 @@ function Mark({ size = 34 }: { size?: number }) {
 }
 
 const money = (v: number | null) => (v === null ? "—" : formatBRL(v));
-const dateBR = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "long", year: "numeric" });
+export const dateBR = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "long", year: "numeric" });
 
 function Table({ title, lines, campos }: { title: string; lines: FichaLine[]; campos: FichaCampos }) {
   return (
