@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CAMPO_GRUPOS, CAMPO_LABEL, MODELOS, camposToParam, modeloDe, type FichaCampo, type FichaCampos } from "@/lib/ficha-campos";
 
@@ -48,7 +48,7 @@ function Preview({ c }: { c: FichaCampos }) {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[420px] rounded-md bg-white p-3 text-[#0F172A] shadow-md ring-1 ring-black/10" aria-label="Exemplo de como a ficha vai sair">
+    <div className="w-[340px] rounded-md bg-white p-3 text-[#0F172A] shadow-md ring-1 ring-black/10" aria-label="Exemplo de como a ficha vai sair">
       <div className="flex items-center gap-2">
         <span className="grid size-7 place-items-center rounded-lg text-sm font-black text-white" style={{ background: T.teal }}>P</span>
         <div className="leading-tight">
@@ -107,10 +107,45 @@ function Preview({ c }: { c: FichaCampos }) {
   );
 }
 
-/** Janela para montar a ficha: modelos prontos, caixinhas e uma prévia ao vivo. */
+/** A ficha inteira, encolhida para caber na área (sem rolar), com a largura de papel de 340 px. */
+function FitPreview({ c, height }: { c: FichaCampos; height: number }) {
+  const box = useRef<HTMLDivElement>(null);
+  const page = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ scale: 0.8, left: 0 });
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (!box.current || !page.current) return;
+      const w = box.current.clientWidth;
+      const h = box.current.clientHeight;
+      const scale = Math.min(w / 340, h / page.current.offsetHeight, 1.4);
+      setFit({ scale, left: (w - 340 * scale) / 2 });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (box.current) ro.observe(box.current);
+    if (page.current) ro.observe(page.current);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={box} className="relative w-full overflow-hidden" style={{ height }}>
+      <div ref={page} className="absolute top-0 origin-top-left" style={{ left: fit.left, transform: `scale(${fit.scale})` }}>
+        <Preview c={c} />
+      </div>
+    </div>
+  );
+}
+
+const chip = (on: boolean) =>
+  `flex h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground"}`;
+
+/** Janela para montar a ficha: prévia ao vivo no alto (a ficha inteira), modelos e campos embaixo, botão fixo. */
 export function PersonalizarModal({ campos, onApply, onClose }: { campos: FichaCampos; onApply: (c: FichaCampos) => void; onClose: () => void }) {
   const [draft, setDraft] = useState<FichaCampos>({ ...campos });
+  const [grande, setGrande] = useState(false);
   const modelo = modeloDe(draft);
+  const marcados = camposToParam(draft) === "" ? 0 : camposToParam(draft).split(",").length;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -119,69 +154,74 @@ export function PersonalizarModal({ campos, onApply, onClose }: { campos: FichaC
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Personalizar a ficha técnica" onClick={onClose}>
-      <div className="flex h-[94dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-surface sm:h-[85dvh] sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div>
-            <p className="font-extrabold">Personalizar a ficha</p>
-            <p className="text-xs text-muted">A prévia muda conforme você marca.</p>
-          </div>
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 lg:items-center lg:p-4" role="dialog" aria-modal="true" aria-label="Personalizar a ficha técnica" onClick={onClose}>
+      <div className="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-surface lg:h-[85dvh] lg:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-2 border-b border-border py-1 pl-4 pr-1">
+          <p className="font-extrabold">Personalizar a ficha</p>
           <button type="button" onClick={onClose} aria-label="Fechar" className="grid size-11 place-items-center rounded-full text-xl text-muted">
             ✕
           </button>
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <div className="h-[40%] shrink-0 overflow-y-auto border-b border-border bg-black/5 p-3 lg:h-auto lg:flex-1 lg:border-b-0 lg:border-r">
-            <Preview c={draft} />
-            <p className="mt-2 text-center text-[11px] text-muted">Exemplo com dados fictícios. Na ficha real entram os seus.</p>
+          {/* Prévia */}
+          <div className="shrink-0 border-b border-border bg-black/5 px-3 pb-2 pt-3 lg:flex lg:flex-1 lg:flex-col lg:border-b-0 lg:border-r">
+            <div className="lg:hidden">
+              <FitPreview c={draft} height={grande ? 460 : 250} />
+            </div>
+            <div className="hidden lg:block">
+              <FitPreview c={draft} height={520} />
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p className="text-[11px] text-muted">Exemplo com dados fictícios</p>
+              <button type="button" onClick={() => setGrande((g) => !g)} className="h-9 rounded-full px-3 text-xs font-semibold text-primary lg:hidden">
+                {grande ? "Reduzir prévia" : "Ampliar prévia"}
+              </button>
+            </div>
           </div>
 
+          {/* Controles */}
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:w-[380px] lg:flex-none">
-            <div className="grid grid-cols-2 gap-2" role="group" aria-label="Modelo">
-              {MODELOS.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  aria-pressed={modelo === m.id}
-                  onClick={() => setDraft({ ...m.campos })}
-                  className={`min-h-11 rounded-xl border px-3 py-2 text-left ${modelo === m.id ? "border-primary bg-primary/10" : "border-border bg-surface"}`}
-                >
-                  <span className="block text-sm font-semibold">{m.nome}</span>
-                  <span className="block text-xs leading-snug text-muted">{m.descricao}</span>
-                </button>
-              ))}
+            <div>
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Modelo pronto</p>
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Modelo">
+                {MODELOS.map((m) => (
+                  <button key={m.id} type="button" aria-pressed={modelo === m.id} onClick={() => setDraft({ ...m.campos })} className={`h-12 rounded-xl border text-sm font-semibold ${modelo === m.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface"}`}>
+                    {m.nome}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-xs text-muted">{modelo ? MODELOS.find((m) => m.id === modelo)?.descricao : "Personalizada: ajuste os campos abaixo."}</p>
             </div>
 
             {CAMPO_GRUPOS.map((g) => (
-              <fieldset key={g.titulo} className="flex flex-col">
-                <legend className="text-xs font-semibold uppercase tracking-wide text-muted">{g.titulo}</legend>
-                {g.dica ? <p className="mb-1 text-xs text-muted">{g.dica}</p> : null}
-                {g.campos.map((c: FichaCampo) => (
-                  <label key={c} className="tap-area flex items-center gap-3 text-sm">
-                    <input type="checkbox" checked={draft[c]} onChange={(e) => setDraft({ ...draft, [c]: e.target.checked })} className="size-5 accent-[var(--color-primary)]" />
-                    {CAMPO_LABEL[c]}
-                  </label>
-                ))}
-              </fieldset>
+              <div key={g.titulo}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">{g.titulo}</p>
+                {g.dica ? <p className="mb-1.5 text-xs text-muted">{g.dica}</p> : <div className="mb-1.5" />}
+                <div className="flex flex-wrap gap-2">
+                  {g.campos.map((c: FichaCampo) => (
+                    <button key={c} type="button" aria-pressed={draft[c]} onClick={() => setDraft({ ...draft, [c]: !draft[c] })} className={chip(draft[c])}>
+                      <span aria-hidden>{draft[c] ? "✓" : "+"}</span>
+                      {CAMPO_LABEL[c]}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-        <div className="flex gap-2 border-t border-border p-3">
-          <button type="button" onClick={onClose} className="h-12 flex-1 rounded-xl border border-border bg-surface text-sm font-semibold">
-            Cancelar
-          </button>
+        <div className="border-t border-border bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
-            disabled={camposToParam(draft) === ""}
+            disabled={marcados === 0}
             onClick={() => {
               onApply(draft);
               onClose();
             }}
-            className="h-12 flex-[2] rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className="h-12 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground disabled:opacity-50"
           >
-            Usar esta ficha
+            {marcados === 0 ? "Marque ao menos um campo" : `Usar esta ficha (${marcados} ${marcados === 1 ? "campo" : "campos"})`}
           </button>
         </div>
       </div>
