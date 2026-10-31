@@ -141,7 +141,7 @@ const chip = (on: boolean) =>
   `flex h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground"}`;
 
 /** Janela para montar a ficha: prévia ao vivo no alto (a ficha inteira), modelos e campos embaixo, botão fixo. */
-export function PersonalizarModal({ campos, onApply, onClose }: { campos: FichaCampos; onApply: (c: FichaCampos) => void; onClose: () => void }) {
+export function PersonalizarModal({ campos, itemId, itemName, onSave, onClose }: { campos: FichaCampos; itemId: string; itemName: string; onSave: (c: FichaCampos) => void; onClose: () => void }) {
   const [draft, setDraft] = useState<FichaCampos>({ ...campos });
   const [grande, setGrande] = useState(false);
   const modelo = modeloDe(draft);
@@ -154,10 +154,13 @@ export function PersonalizarModal({ campos, onApply, onClose }: { campos: FichaC
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 lg:items-center lg:p-4" role="dialog" aria-modal="true" aria-label="Personalizar a ficha técnica" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 lg:items-center lg:p-4" role="dialog" aria-modal="true" aria-label="Baixar ficha técnica" onClick={onClose}>
       <div className="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-surface lg:h-[85dvh] lg:rounded-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-2 border-b border-border py-1 pl-4 pr-1">
-          <p className="font-extrabold">Personalizar a ficha</p>
+          <div className="min-w-0">
+            <p className="font-extrabold leading-tight">Baixar ficha técnica</p>
+            <p className="truncate text-xs text-muted">{itemName}</p>
+          </div>
           <button type="button" onClick={onClose} aria-label="Fechar" className="grid size-11 place-items-center rounded-full text-xl text-muted">
             ✕
           </button>
@@ -212,17 +215,26 @@ export function PersonalizarModal({ campos, onApply, onClose }: { campos: FichaC
         </div>
 
         <div className="border-t border-border bg-surface p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            disabled={marcados === 0}
-            onClick={() => {
-              onApply(draft);
-              onClose();
-            }}
-            className="h-12 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground disabled:opacity-50"
-          >
-            {marcados === 0 ? "Marque ao menos um campo" : `Usar esta ficha (${marcados} ${marcados === 1 ? "campo" : "campos"})`}
-          </button>
+          {marcados === 0 ? (
+            <p className="py-3 text-center text-sm font-semibold text-warning">Marque ao menos um campo para baixar</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {(["pdf", "xlsx"] as const).map((formato) => (
+                <a
+                  key={formato}
+                  href={`/producao/fichas/baixar?id=${itemId}&formato=${formato}&campos=${encodeURIComponent(camposToParam(draft))}`}
+                  download
+                  onClick={() => {
+                    onSave(draft);
+                    setTimeout(onClose, 400);
+                  }}
+                  className={`flex h-12 items-center justify-center rounded-xl border text-base font-semibold ${formato === "pdf" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`}
+                >
+                  {formato === "pdf" ? "Baixar PDF" : "Baixar Excel"}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>,

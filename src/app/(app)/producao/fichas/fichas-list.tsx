@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CAMPOS_PADRAO, MODELOS, camposFromParam, camposToParam, modeloDe, type FichaCampos } from "@/lib/ficha-campos";
+import { CAMPOS_PADRAO, camposFromParam, camposToParam, type FichaCampos } from "@/lib/ficha-campos";
 import { PersonalizarModal } from "./personalizar-modal";
 import type { FichaOption } from "@/lib/ficha-tecnica-data";
 
@@ -19,7 +19,7 @@ const download = "flex h-11 flex-1 items-center justify-center rounded-xl border
 export function FichasList({ options }: { options: FichaOption[] }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("todas");
-  const [aberto, setAberto] = useState(false);
+  const [baixando, setBaixando] = useState<FichaOption | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
   const toggle = (id: string) =>
     setOpen((prev) => {
@@ -43,8 +43,6 @@ export function FichasList({ options }: { options: FichaOption[] }) {
       localStorage.setItem(STORAGE_KEY, camposToParam(next));
     } catch {}
   };
-  const modelo = modeloDe(campos);
-  const camposParam = encodeURIComponent(camposToParam(campos));
 
   const counts = useMemo(() => ({ todas: options.length, marmita: options.filter((o) => o.kind === "marmita").length, receita: options.filter((o) => o.kind === "receita").length }), [options]);
   const q = norm(query);
@@ -53,19 +51,7 @@ export function FichasList({ options }: { options: FichaOption[] }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="card flex flex-col gap-3 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">O que vai na ficha</p>
-            <p className="font-semibold">{modelo ? `Modelo ${MODELOS.find((m) => m.id === modelo)?.nome}` : "Personalizada"}</p>
-            <p className="text-xs text-muted">{camposToParam(campos) === "" ? "Nenhum campo marcado" : `${camposToParam(campos).split(",").length} campos marcados`}</p>
-          </div>
-          <button type="button" onClick={() => setAberto(true)} className="h-11 shrink-0 rounded-xl border border-primary bg-primary px-4 text-sm font-semibold text-primary-foreground">
-            Personalizar
-          </button>
-        </div>
-      </div>
-      {aberto ? <PersonalizarModal campos={campos} onApply={escolher} onClose={() => setAberto(false)} /> : null}
+      {baixando ? <PersonalizarModal campos={campos} itemId={baixando.id} itemName={baixando.name} onSave={escolher} onClose={() => setBaixando(null)} /> : null}
 
       <input
         type="search"
@@ -125,14 +111,9 @@ export function FichasList({ options }: { options: FichaOption[] }) {
                   </ul>
                 )
               ) : null}
-              <div className="flex gap-2">
-                <a href={`/producao/fichas/baixar?id=${o.id}&formato=pdf&campos=${camposParam}`} download className={`${download} border-primary bg-primary text-primary-foreground`}>
-                  Baixar PDF
-                </a>
-                <a href={`/producao/fichas/baixar?id=${o.id}&formato=xlsx&campos=${camposParam}`} download className={`${download} border-border bg-surface`}>
-                  Baixar Excel
-                </a>
-              </div>
+              <button type="button" onClick={() => setBaixando(o)} className={`${download} w-full border-primary bg-primary text-primary-foreground`}>
+                Baixar ficha técnica
+              </button>
             </li>
           ))}
         </ul>

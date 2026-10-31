@@ -16,7 +16,7 @@ export default async function FichasTecnicasPage() {
     <>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Produção</h1>
-        <p className="text-muted">Fichas técnicas para imprimir: escolha um produto ou receita e baixe em PDF ou Excel, com a marca da sua marmitaria.</p>
+        <p className="text-muted">Fichas técnicas para imprimir: escolha um produto ou receita, toque em Baixar ficha técnica, monte o modelo e baixe em PDF ou Excel, com a marca da sua marmitaria.</p>
       </section>
 
       <ProducaoTabs active="fichas" />
