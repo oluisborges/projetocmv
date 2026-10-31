@@ -91,7 +91,7 @@ const baseOfUnit = (u: unknown): ReceitaBase => (u === "ml" || u === "l" ? "ml" 
 type ReceitaRow = { id: string; name: string; portion_weight: number | null; base: ReceitaBase; active: boolean; items: { recipe_id: string; ingredient_id: string | null; net_qty: number }[] };
 
 /** Receitas da marmitaria (inclusive arquivadas: marmitas que já usam continuam calculando) com os ingredientes de cada uma. */
-async function loadReceitaRows(orgId: string): Promise<ReceitaRow[]> {
+export async function loadReceitaRows(orgId: string): Promise<ReceitaRow[]> {
   const supabase = await createClient();
   const { data: recipes } = await supabase.from("recipes").select("id, name, portion_weight, portion_weight_unit, active").eq("org_id", orgId).eq("kind", "receita");
   if (!recipes?.length) return [];
