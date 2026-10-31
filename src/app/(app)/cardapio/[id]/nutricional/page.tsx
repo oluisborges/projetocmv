@@ -3,6 +3,7 @@ import { z } from "zod";
 import { BackLink } from "@/components/back-link";
 import { ProductTabs } from "@/components/product-tabs";
 import { requireMember } from "@/lib/auth";
+import type { NutrientKey } from "@/lib/calc/nutrition";
 import { loadProductNutrition } from "@/lib/nutrition-data";
 import { nutritionRows } from "@/lib/nutrition-rows";
 import { NutritionView } from "./nutrition-view";
@@ -33,6 +34,7 @@ export default async function ProductNutritionPage(props: PageProps<"/cardapio/[
         lines={data.lines}
         missing={data.missing}
         hasOverride={data.override !== null}
+        overriddenKeys={Object.keys(data.override?.values ?? {}) as NutrientKey[]}
         canWrite={data.canWrite}
       />
     </>

@@ -18,6 +18,8 @@ type Props = {
   lines: NutritionLine[];
   missing: number;
   hasOverride: boolean;
+  /** Nutrientes que o cliente já corrigiu antes. */
+  overriddenKeys: NutrientKey[];
   canWrite: boolean;
 };
 
@@ -27,13 +29,14 @@ const inputClass = "h-11 w-full rounded-lg border border-border bg-surface px-3 
 const fmtInput = (v: number | null) => (v === null ? "" : String(v).replace(".", ","));
 
 /** Tabela nutricional pronta para baixar, imprimir ou corrigir, e a origem de cada número (ingrediente → alimento da TACO). */
-export function NutritionView({ recipeId, rows, perPortion, portionGrams, householdMeasure, lines, missing, hasOverride, canWrite }: Props) {
+export function NutritionView({ recipeId, rows, perPortion, portionGrams, householdMeasure, lines, missing, hasOverride, overriddenKeys, canWrite }: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [picking, setPicking] = useState<NutritionLine | null>(null);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [vals, setVals] = useState<Record<string, string>>({});
+  const [initial, setInitial] = useState<Record<string, string>>({});
   const [grams, setGrams] = useState("");
   const [measure, setMeasure] = useState("");
 
@@ -47,12 +50,17 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
     });
 
   const openEdit = () => {
-    setVals(Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, fmtInput(roundForLabel(k, perPortion[k]))])));
+    const start = Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, fmtInput(roundForLabel(k, perPortion[k]))]));
+    setVals(start);
+    setInitial(start);
     setGrams(fmtInput(portionGrams));
     setMeasure(householdMeasure);
     setError(null);
     setEditing(true);
   };
+
+  // Só vira correção o que a pessoa mexeu (ou o que já era correção antes); o resto continua automático.
+  const changedOnly = () => Object.fromEntries(Object.entries(vals).filter(([k, v]) => v !== initial[k] || overriddenKeys.includes(k as NutrientKey)));
 
   const portion = portionGrams ? `${portionGrams.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} g` : "—";
 
@@ -112,7 +120,7 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
         <section className="flex flex-col gap-3 card p-4">
           <div>
             <h2 className="font-semibold">Alterar valores</h2>
-            <p className="text-sm text-muted">Digite o valor de uma porção. O que você deixar vazio continua automático. Os números por 100 g e o %VD são refeitos sozinhos.</p>
+            <p className="text-sm text-muted">Digite o valor de uma porção. O que você não mexer continua automático. Os números por 100 g e o %VD são refeitos sozinhos.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-sm font-medium">
@@ -140,7 +148,7 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
             <button
               type="button"
               disabled={pending}
-              onClick={() => run(() => saveNutritionOverride({ recipeId, values: vals, portionGrams: grams, householdMeasure: measure }), () => setEditing(false))}
+              onClick={() => run(() => saveNutritionOverride({ recipeId, values: changedOnly(),  portionGrams: grams, householdMeasure: measure }), () => setEditing(false))}
               className="h-12 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
               {pending ? "Salvando…" : "Salvar"}

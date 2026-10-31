@@ -15,7 +15,8 @@ export function tacoNutrition(id: number): Nutrition | null {
   const r = BY_ID.get(id);
   if (!r) return null;
   const n = emptyNutrition();
-  n.kcal = r[3];
+  // Sal (516, 517) não tem energia: a TACO deixa em branco, mas o valor é zero.
+  n.kcal = r[3] ?? (id === 516 || id === 517 ? 0 : null);
   n.protein = r[4];
   n.fat = r[5];
   n.carbs = r[6];
