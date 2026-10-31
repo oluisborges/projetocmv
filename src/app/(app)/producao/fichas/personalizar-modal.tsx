@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { CAMPO_GRUPOS, CAMPO_LABEL, MODELOS, camposToParam, modeloDe, type FichaCampo, type FichaCampos } from "@/lib/ficha-campos";
 
 const T = { teal: "#0F766E", deep: "#0B4D4B", lime: "#9ACB39", tint: "#E6F4F1", zebra: "#F3F8F7", muted: "#475569" };
@@ -117,8 +118,8 @@ export function PersonalizarModal({ campos, onApply, onClose }: { campos: FichaC
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Personalizar a ficha técnica" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label="Personalizar a ficha técnica" onClick={onClose}>
       <div className="flex h-[94dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-surface sm:h-[85dvh] sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div>
@@ -184,6 +185,7 @@ export function PersonalizarModal({ campos, onApply, onClose }: { campos: FichaC
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
