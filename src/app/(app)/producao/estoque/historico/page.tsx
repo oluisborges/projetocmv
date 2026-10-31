@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { MonthChips } from "@/components/month-chips";
+import { EstoqueTabs } from "@/components/estoque-tabs";
 import { ProducaoTabs } from "@/components/producao-tabs";
 import { Hint } from "@/components/hint";
 import { requireMember } from "@/lib/auth";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
 import { loadStockMonth } from "@/lib/stock-data";
-import { FinishedStockForm, StockRowCard } from "./stock-forms";
+import { StockRowReadOnly } from "./stock-rows";
 import { requireProductionAccess } from "@/lib/production-access";
 
-export const metadata = { title: "Estoque do mês" };
+export const metadata = { title: "Histórico do estoque" };
 
-export default async function StockPage(props: PageProps<"/producao/contagem">) {
+export default async function StockHistoryPage(props: PageProps<"/producao/estoque/historico">) {
   await requireProductionAccess();
   const { orgId, canWrite } = await requireMember();
   const sp = await props.searchParams;
@@ -27,9 +28,10 @@ export default async function StockPage(props: PageProps<"/producao/contagem">) 
     <>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Produção</h1>
-        <p className="text-muted">Contagem do mês: o que você comprou, o que as fichas gastaram e o que sobrou de verdade.</p>
+        <p className="text-muted">Histórico do estoque: mês a mês, o que você comprou, o que as fichas gastaram e o que sobrou de verdade.</p>
       </section>
-      <ProducaoTabs active="contagem" />
+      <ProducaoTabs active="estoque" />
+      <EstoqueTabs active="historico" />
     </>
   );
 
@@ -49,7 +51,7 @@ export default async function StockPage(props: PageProps<"/producao/contagem">) 
     <>
       {header}
 
-      <MonthChips months={months} current={month} basePath="/producao/contagem" />
+      <MonthChips months={months} current={month} basePath="/producao/estoque/historico" />
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
       {result ? (
@@ -104,7 +106,11 @@ export default async function StockPage(props: PageProps<"/producao/contagem">) 
       ) : (
         <section className="flex flex-col gap-2 card p-4 text-sm">
           <p>
-            <strong>Para ver o CMV real do mês:</strong> no fim do mês, conte o que sobrou dos insumos mais caros (frango, carnes, queijo…) e digite abaixo, em &quot;Contei&quot;. O resto o app calcula.
+            <strong>Para ver o CMV real do mês:</strong> conte o que sobrou dos insumos mais caros (frango, carnes, queijo…) em{" "}
+            <Link href="/producao/estoque" className="tap-area font-semibold text-primary underline">
+              Estoque agora
+            </Link>
+            . A contagem e as compras que você lança lá entram aqui sozinhas, no mês em que aconteceram.
           </p>
           <p className="text-muted">Não precisa contar tudo. Comece pelos de cima da lista: são os que mais pesam no seu custo.</p>
         </section>
@@ -124,11 +130,9 @@ export default async function StockPage(props: PageProps<"/producao/contagem">) 
       ) : null}
       {!data.hasOpening && data.rows.length > 0 ? (
         <p className="rounded-xl bg-primary/10 p-3 text-sm">
-          Não há contagem do mês anterior, então o app parte de zero no começo deste mês. Para ter o começo certo, conte o estoque em <span className="first-letter:uppercase">{monthLabel(lastMonths(month, 2)[1])}</span> também.
+          Não há contagem do mês anterior, então o app parte de zero no começo deste mês. Para ter o começo certo, tenha uma contagem em <span className="first-letter:uppercase">{monthLabel(lastMonths(month, 2)[1])}</span> também.
         </p>
       ) : null}
-
-      <FinishedStockForm key={`fin-${month}`} month={month} initial={data.finishedClosing} canWrite={canWrite} />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
@@ -150,12 +154,12 @@ export default async function StockPage(props: PageProps<"/producao/contagem">) 
         ) : (
           <ul className="divide-y divide-border card px-4">
             {data.rows.map((r) => (
-              <StockRowCard key={`${r.id}-${month}`} month={month} row={r} canWrite={canWrite} />
+              <StockRowReadOnly key={`${r.id}-${month}`} row={r} />
             ))}
           </ul>
         )}
         <p className="text-xs text-muted">
-          O uso esperado é o que as marmitas vendidas gastam pelas fichas (com perda de limpeza e rendimento). Compras vêm das notas fiscais importadas; o que você comprou sem nota entra em &quot;Comprei sem nota&quot;.
+          O uso esperado é o que as marmitas vendidas gastam pelas fichas (com perda de limpeza e rendimento). As compras vêm das notas fiscais importadas e do que você lança em Estoque agora.
         </p>
       </section>
     </>

@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/painel/exportar": ["./public/brand/logo-horizontal.png"],
     "/cardapio/exportar": ["./public/brand/logo-horizontal.png"],
+    "/producao/fichas/baixar": ["./public/brand/logo-powered-by-shogun.png", "./public/brand/icon-192.png"],
   },
   experimental: { serverActions: { bodySizeLimit: "4mb" } },
   // URLs antigas (favoritos, links enviados) continuam funcionando depois da reorganização do menu.
@@ -32,10 +33,11 @@ const nextConfig: NextConfig = {
       to("/precificacao/ajustes", "/financeiro/impostos"),
       to("/precificacao/:id([0-9a-fA-F-]{36})", "/cardapio/:id/preco"),
       to("/custos/mes", "/producao/fechar-mes"),
-      to("/custos/estoque", "/producao/contagem"),
+      to("/custos/estoque", "/producao/estoque/historico"),
       to("/painel/historico", "/financeiro/historico"),
+      to("/producao/contagem", "/producao/estoque/historico"),
       to("/financeiro/mes", "/producao/fechar-mes"),
-      to("/financeiro/mes/estoque", "/producao/contagem"),
+      to("/financeiro/mes/estoque", "/producao/estoque/historico"),
       to("/financeiro/mes/historico", "/financeiro/historico"),
       to("/ajustes", "/financeiro"),
       to("/ajustes/custos", "/financeiro"),
@@ -50,7 +52,7 @@ const nextConfig: NextConfig = {
       to("/custos", "/financeiro"),
       to("/custos/:path*", "/financeiro/:path*"),
       to("/mes", "/producao/fechar-mes"),
-      to("/mes/estoque", "/producao/contagem"),
+      to("/mes/estoque", "/producao/estoque/historico"),
       to("/mes/historico", "/financeiro/historico"),
     ];
   },

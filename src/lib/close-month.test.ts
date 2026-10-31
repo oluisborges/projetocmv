@@ -52,7 +52,7 @@ describe("fechar o mês", () => {
     const r = closeMonthChecklist(full);
     const stock = r.items.find((i) => i.key === "stock")!;
     expect(stock.optional).toBe(true);
-    expect(stock.href).toBe("/producao/contagem?mes=2026-09");
+    expect(stock.href).toBe("/producao/estoque/historico?mes=2026-09");
     expect(r.ready).toBe(true);
     expect(closeMonthChecklist({ ...full, stockCounted: 12 }).items.find((i) => i.key === "stock")!.done).toBe(true);
   });

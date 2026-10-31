@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EstoqueTabs } from "@/components/estoque-tabs";
 import { ProducaoTabs } from "@/components/producao-tabs";
 import { requireMember } from "@/lib/auth";
 import { loadProductionBase, loadProductions } from "@/lib/production-data";
@@ -49,6 +50,7 @@ export default async function EstoquePage() {
       </section>
 
       <ProducaoTabs active="estoque" />
+      <EstoqueTabs active="agora" />
 
       {base ? (
         <StockManager ingredients={ingredients} finished={finished} canWrite={canWrite} focusIds={[...focus]} focusLabel={open.length === 1 ? productionName(open[0]) : open.length > 1 ? `${open.length} produções em montagem` : null} />
@@ -57,9 +59,9 @@ export default async function EstoquePage() {
       )}
 
       <p className="text-xs text-muted">
-        As compras por nota fiscal entram aqui sozinhas. A contagem do fim do mês (para o CMV real) continua em{" "}
-        <Link href="/producao/contagem" className="font-semibold text-primary underline">
-          Produção → Contagem do mês
+        As compras por nota fiscal entram aqui sozinhas. O fechamento de cada mês (CMV real) sai do que você conta e lança aqui e fica guardado em{" "}
+        <Link href="/producao/estoque/historico" className="font-semibold text-primary underline">
+          Histórico dos meses
         </Link>
         .
       </p>

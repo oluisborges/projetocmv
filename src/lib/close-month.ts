@@ -108,7 +108,7 @@ export function closeMonthChecklist(input: {
       input.stockCounted > 0
         ? `${input.stockCounted} ${input.stockCounted === 1 ? "insumo contado" : "insumos contados"}: o app já mostra o CMV real.`
         : "Conte o que sobrou dos insumos mais caros para ver quanto sumiu de verdade.",
-    href: `/producao/contagem?mes=${mes}`,
+    href: `/producao/estoque/historico?mes=${mes}`,
     cta: input.stockCounted > 0 ? "Ver" : "Contar",
   });
 

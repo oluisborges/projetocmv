@@ -9,6 +9,7 @@ import { activeUnit } from "@/lib/pricing-data";
 import { createClient } from "@/lib/supabase/server";
 import type { Result } from "../../cardapio/actions";
 import { requireProductionAccess } from "@/lib/production-access";
+import { syncMonthFromLedger } from "@/lib/stock-sync";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 
@@ -65,8 +66,10 @@ export async function saveStockCounts(input: { counts: { ingredientId: string; t
   }
   const { error } = await supabase.from("stock_movements").insert(rows);
   if (error) return { ok: false, error: "Não foi possível salvar a contagem." };
+  await syncMonthFromLedger(ctx.orgId, ctx.unitId, { ingredientIds: rows.map((r) => r.ingredient_id) });
 
   revalidatePath("/producao/estoque");
+  revalidatePath("/producao/estoque/historico");
   revalidatePath("/producao/calcular");
   return { ok: true, saved: rows.length };
 }
@@ -97,8 +100,10 @@ export async function addIngredientMovement(input: z.input<typeof moveInput>): P
   const qty = v.kind === "waste" ? -base.qty : base.qty;
   const { error } = await supabase.from("stock_movements").insert({ org_id: ctx.orgId, unit_id: ctx.unitId, ingredient_id: v.ingredientId, kind: v.kind, qty_base: qty, note: v.note?.trim() || null });
   if (error) return { ok: false, error: "Não foi possível salvar." };
+  await syncMonthFromLedger(ctx.orgId, ctx.unitId, { ingredientIds: [v.ingredientId] });
 
   revalidatePath("/producao/estoque");
+  revalidatePath("/producao/estoque/historico");
   revalidatePath("/producao/calcular");
   return { ok: true };
 }
@@ -126,8 +131,10 @@ export async function addFinishedMovement(input: z.input<typeof finishedInput>):
     .from("stock_movements")
     .insert({ org_id: ctx.orgId, unit_id: ctx.unitId, recipe_id: v.recipeId, kind: v.kind, qty_base: v.kind === "waste" ? -units : units });
   if (error) return { ok: false, error: "Não foi possível salvar." };
+  await syncMonthFromLedger(ctx.orgId, ctx.unitId, { finished: true });
 
   revalidatePath("/producao/estoque");
+  revalidatePath("/producao/estoque/historico");
   revalidatePath("/producao");
   return { ok: true };
 }

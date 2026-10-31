@@ -52,7 +52,7 @@ describe("menu de baixo", () => {
   });
 
   it("Fechar o mês e a Contagem ficam dentro da Produção", () => {
-    path.value = "/producao/contagem";
+    path.value = "/producao/estoque/historico";
     const html = renderToStaticMarkup(<BottomNav locks={open} />);
     expect(html).toMatch(/href="\/producao"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/producao"/);
   });

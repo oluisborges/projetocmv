@@ -46,3 +46,6 @@ supabase/.temp/
 
 # estado local do oh-my-claudecode (em qualquer pasta)
 **/.omc/
+
+# cópias de dados de clientes (nunca no git)
+/backups/

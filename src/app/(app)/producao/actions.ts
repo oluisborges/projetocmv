@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { brtDate, weekStartOf } from "@/lib/week";
 import type { Result } from "../cardapio/actions";
 import { requireProductionAccess } from "@/lib/production-access";
+import { syncMonthFromLedger } from "@/lib/stock-sync";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 
@@ -137,7 +138,9 @@ export async function setBought(input: z.input<typeof boughtInput>): Promise<Res
     const { error } = await supabase.from("stock_movements").delete().eq("org_id", ctx.orgId).eq("plan_id", v.planId).eq("ingredient_id", v.ingredientId).eq("kind", "purchase");
     if (error) return { ok: false, error: "Não foi possível desmarcar." };
   }
+  await syncMonthFromLedger(ctx.orgId, ctx.unitId, { ingredientIds: [v.ingredientId] });
   revalidatePath("/producao/estoque");
+  revalidatePath("/producao/estoque/historico");
   return { ok: true };
 }
 
@@ -187,7 +190,9 @@ export async function registerProduction(input: z.input<typeof productionInput>)
   }
   for (const p of produced) await supabase.from("production_plan_items").update({ produced_qty: p.qty }).eq("org_id", ctx.orgId).eq("plan_id", planId).eq("recipe_id", p.recipeId);
 
+  await syncMonthFromLedger(ctx.orgId, ctx.unitId, { ingredientIds: [...needs.ingredients.keys()], finished: true });
   revalidatePath("/producao");
   revalidatePath("/producao/estoque");
+  revalidatePath("/producao/estoque/historico");
   return { ok: true, ingredients: needs.ingredients.size, marmitas: done.reduce((n, p) => n + p.qty, 0) };
 }
