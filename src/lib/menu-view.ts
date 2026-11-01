@@ -37,6 +37,8 @@ export function buildMenuMonth(input: {
   combos: Map<string, LinkTarget>;
   /** imposto + taxa do canal, em fração */
   variablePct: number;
+  /** Por produto-combo: vendas cujas marmitas já vieram nas opções do pedido. Não entram no custo do combo (senão contaria duas vezes). */
+  comboCovered?: Map<string, number>;
 }): MenuMonthView {
   const byId = new Map(input.products.map((p) => [p.id, p]));
   const lines: MenuLine[] = [];
@@ -58,7 +60,9 @@ export function buildMenuMonth(input: {
       });
     } else if (p.combo_id) {
       const t = input.combos.get(p.combo_id);
-      lines.push({ status: "linked", qty: s.qty, revenue: s.net, costPerSale: t?.cost ?? null, unitsPerSale: t?.units ?? 1 });
+      // O valor pago fica inteiro (a receita é do combo); só o custo e as marmitas descontam o que as opções já trouxeram.
+      const covered = Math.min(s.qty, input.comboCovered?.get(p.id) ?? 0);
+      lines.push({ status: "linked", qty: s.qty - covered, revenue: s.net, costPerSale: t?.cost ?? null, unitsPerSale: t?.units ?? 1 });
     } else {
       unlinkedProducts++;
       lines.push({ status: "unlinked", qty: s.qty, revenue: s.net });

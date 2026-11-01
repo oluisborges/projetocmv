@@ -1,6 +1,6 @@
 import "server-only";
 import { isPurchaseUnit } from "@/lib/calc";
-import { hasMenuConnection, loadMenuRecipeSales } from "@/lib/menu-data";
+import { hasMenuConnection, loadMenuRecipeUnits } from "@/lib/menu-data";
 import { lastMonths, monthBounds } from "@/lib/month-view";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings, recipeUsage } from "@/lib/recipe-cost";
@@ -60,7 +60,7 @@ export async function loadStockMonth(orgId: string, canWrite: boolean, month: st
   }
   if (await hasMenuConnection(orgId)) {
     const { start, end } = monthBounds(month);
-    for (const [recipeId, s] of await loadMenuRecipeSales(unitId, start, end)) units.set(recipeId, (units.get(recipeId) ?? 0) + s.units);
+    for (const [recipeId, n] of await loadMenuRecipeUnits(unitId, start, end)) units.set(recipeId, (units.get(recipeId) ?? 0) + n);
   }
 
   // Uso esperado de cada insumo e custo esperado (sem margem de segurança: aqui interessa o que realmente sai da prateleira).

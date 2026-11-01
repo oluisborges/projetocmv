@@ -7,7 +7,7 @@ import { requireMember } from "@/lib/auth";
 import { summarizeCombo } from "@/lib/combo-view";
 import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
 import { loadStaff } from "@/lib/costs-data";
-import { hasMenuConnection, isImporting, loadMenuMonth, loadMenuProducts, loadMenuStatus } from "@/lib/menu-data";
+import { hasMenuConnection, isImporting, loadMenuComboCovered, loadMenuMonth, loadMenuProducts, loadMenuStatus } from "@/lib/menu-data";
 import { kickStalled } from "@/lib/menu/server/kick";
 import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
@@ -113,6 +113,7 @@ export default async function MonthPage(props: PageProps<"/producao/fechar-mes">
         recipes: new Map(dishes.map((d) => [d.id, { cost: d.cost }])),
         combos: new Map(comboRows.map((c) => [c.id, { cost: c.cost, units: c.units }])),
         variablePct: menuVariablePct,
+        comboCovered: await loadMenuComboCovered(ctx.unit.id, bounds.start, bounds.end),
       })
     : null;
 

@@ -1,6 +1,6 @@
 import "server-only";
 import { baseUnitOf, finishedBalance, isPurchaseUnit, stockBalance, type BaseUnit, type Movement } from "@/lib/calc";
-import { hasMenuConnection, loadMenuRecipeSales } from "@/lib/menu-data";
+import { hasMenuConnection, loadMenuRecipeUnits } from "@/lib/menu-data";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { lastFullWeeks, weekBounds } from "@/lib/week";
 import { computeRecipe, recipeCostSettings, recipeUsage } from "@/lib/recipe-cost";
@@ -91,8 +91,7 @@ export async function loadStockBalances(orgId: string, unitId: string): Promise<
       if (connected && since) {
         const key = since.slice(0, 10);
         if (!soldCache.has(key)) {
-          const sales = await loadMenuRecipeSales(unitId, new Date(since), now);
-          soldCache.set(key, new Map([...sales].map(([rid, s]) => [rid, s.units])));
+          soldCache.set(key, await loadMenuRecipeUnits(unitId, new Date(since), now));
         }
         sold = soldCache.get(key)?.get(id) ?? 0;
       }
@@ -178,12 +177,12 @@ export type WeeklySales = {
 export async function loadWeeklySales(orgId: string, unitId: string, hasMenu: boolean, now: Date = new Date(), count = 6): Promise<WeeklySales> {
   const weeks = lastFullWeeks(now, count);
   if (hasMenu) {
-    const perWeek = await Promise.all(weeks.map((w) => loadMenuRecipeSales(unitId, weekBounds(w).start, weekBounds(w).end)));
+    const perWeek = await Promise.all(weeks.map((w) => loadMenuRecipeUnits(unitId, weekBounds(w).start, weekBounds(w).end)));
     const byRecipe: Record<string, number[]> = {};
     perWeek.forEach((sales, i) => {
-      for (const [recipeId, s] of sales) {
+      for (const [recipeId, units] of sales) {
         byRecipe[recipeId] ??= Array(weeks.length).fill(0);
-        byRecipe[recipeId][i] = s.units;
+        byRecipe[recipeId][i] = units;
       }
     });
     if (Object.keys(byRecipe).length > 0) return { weeks, byRecipe, source: "menu" };

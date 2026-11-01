@@ -78,6 +78,26 @@ export async function loadMenuRecipeSales(unitId: string, start: Date, end: Date
   );
 }
 
+/**
+ * Marmitas vendidas por ficha, contando também o que vem dentro dos combos, sem tirar duas vezes:
+ * combo fixo vira as marmitas dele; quando o pedido traz as opções (as marmitas escolhidas), valem as opções e o combo não é expandido.
+ * Se a função ainda não existir no banco, cai para as vendas por ficha (sem os combos).
+ */
+export async function loadMenuRecipeUnits(unitId: string, start: Date, end: Date): Promise<Map<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("menu_recipe_units", { p_unit: unitId, p_start: start.toISOString(), p_end: end.toISOString() });
+  if (error) return new Map([...(await loadMenuRecipeSales(unitId, start, end))].map(([id, s]) => [id, s.units]));
+  return new Map(((data as { recipe_id: string; units: number | string }[] | null) ?? []).map((r) => [r.recipe_id, Number(r.units)]));
+}
+
+/** Por produto-combo, quantas vendas já têm as marmitas nas opções do pedido (e por isso não podem ser custeadas de novo pelo combo). */
+export async function loadMenuComboCovered(unitId: string, start: Date, end: Date): Promise<Map<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("menu_combo_covered", { p_unit: unitId, p_start: start.toISOString(), p_end: end.toISOString() });
+  if (error) return new Map();
+  return new Map(((data as { product_id: string; qty: number | string }[] | null) ?? []).map((r) => [r.product_id, Number(r.qty)]));
+}
+
 /** Quanto, em média, cada marmita foi paga no cardápio nos últimos 30 dias (já com o cupom). Só fichas com venda no período. */
 export async function loadMenuAveragePrices(unitId: string, now: Date = new Date()): Promise<Map<string, { price: number; units: number }>> {
   const sales = await loadMenuRecipeSales(unitId, new Date(now.getTime() - 30 * 86_400_000), now);

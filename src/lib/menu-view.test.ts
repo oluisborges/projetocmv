@@ -139,3 +139,26 @@ describe("sugestão de vínculo por nome", () => {
     expect(suggestLink("350g", cands)).toBeNull();
   });
 });
+
+describe("combo cujas marmitas já vieram nas opções do pedido", () => {
+  it("não custeia o combo de novo: o custo e as marmitas descontam as vendas cobertas, a receita fica inteira", () => {
+    const sales = [
+      { product_id: "p4", qty: 4, revenue: 760, net: 760 }, // 4 combos vendidos; em 3 deles as marmitas vieram nas opções
+      { product_id: "p1", qty: 30, revenue: 597, net: 597 }, // as marmitas escolhidas, vendidas como opções ligadas à ficha
+    ];
+    const without = buildMenuMonth({ products, recipes, combos, variablePct: 0, sales });
+    const withCovered = buildMenuMonth({ products, recipes, combos, variablePct: 0, sales, comboCovered: new Map([["p4", 3]]) });
+    // sem o desconto: 4 × 80 + 30 × 8,50 (conta o combo e as opções)
+    expect(without.summary.cost.toNumber()).toBe(320 + 255);
+    // com o desconto: só 1 combo é custeado pelo combo (80); as outras 3 vendas já estão nas opções
+    expect(withCovered.summary.cost.toNumber()).toBe(80 + 255);
+    expect(withCovered.summary.linkedUnits.toNumber()).toBe(10 + 30);
+    expect(withCovered.summary.linkedRevenue.toNumber()).toBe(760 + 597); // o valor pago não muda
+  });
+
+  it("nunca desconta mais do que foi vendido", () => {
+    const v = buildMenuMonth({ products, recipes, combos, variablePct: 0, sales: [{ product_id: "p4", qty: 2, revenue: 380, net: 380 }], comboCovered: new Map([["p4", 9]]) });
+    expect(v.summary.cost.toNumber()).toBe(0);
+    expect(v.summary.linkedUnits.toNumber()).toBe(0);
+  });
+});

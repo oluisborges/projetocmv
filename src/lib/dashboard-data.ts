@@ -4,7 +4,7 @@ import { saveMonthSnapshot } from "@/lib/snapshot-data";
 import type { MenuLine, MenuMonth, OutsideEstimate } from "@/lib/calc";
 import { summarizeCombo } from "@/lib/combo-view";
 import { loadCombos, loadSalesWeights } from "@/lib/combos-data";
-import { hasMenuConnection, loadMenuMonth, loadMenuProducts, loadMenuRecipeSales } from "@/lib/menu-data";
+import { hasMenuConnection, loadMenuComboCovered, loadMenuMonth, loadMenuProducts, loadMenuRecipeSales } from "@/lib/menu-data";
 import { buildMenuMonth, menuProfit, usesMenu } from "@/lib/menu-view";
 import { summarizeFixedCosts, type FixedCostSummary } from "@/lib/fixed-costs-view";
 import { summarizePanel, type PanelSummary } from "@/lib/panel-view";
@@ -168,7 +168,8 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
       );
       // Os cardápios cobram mensalidade fixa (custo fixo), não % por pedido: aqui só impostos e outras taxas.
       const variablePct = ctx.settings.taxPct + (ctx.settings.otherPct ?? 0);
-      const view = buildMenuMonth({ products, sales: data.sales, recipes: recipeCosts, combos: comboTargets, variablePct });
+      const comboCovered = await loadMenuComboCovered(ctx.unit.id, monthBounds(monthStart).start, monthBounds(monthStart).end);
+      const view = buildMenuMonth({ products, sales: data.sales, recipes: recipeCosts, combos: comboTargets, variablePct, comboCovered });
       const profit = menuProfit(view, { typedRevenue: typedOutside, dishes: dishes.map((d) => ({ qty: qty.get(d.id) ?? 0, price: d.price, cost: monthCost(d) })), variablePct });
       menu = {
         orders: data.orders,
