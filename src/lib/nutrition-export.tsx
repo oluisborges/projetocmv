@@ -81,7 +81,7 @@ export async function nutritionToPdf(n: ProductNutrition, orgName: string, gener
         </Text>
 
         <Text style={s.warn}>
-          Tabela gerada automaticamente a partir dos ingredientes do produto, com base na Tabela Brasileira de Composição de Alimentos (TACO, 4ª edição, NEPA/UNICAMP) e no formato da RDC 429/2020 e da IN 75/2020 da Anvisa. A revisão dos valores antes do uso no rótulo é responsabilidade da marmitaria.
+          Tabela gerada automaticamente a partir dos ingredientes do produto, com base na Tabela Brasileira de Composição de Alimentos (TACO, 4ª edição, NEPA/UNICAMP) e no formato da RDC 429/2020 e da IN 75/2020 da Anvisa. A conferência e a validação dos valores antes da utilização no rótulo são de responsabilidade do usuário.
           {n.override ? " Alguns valores foram ajustados manualmente." : ""}
         </Text>
 

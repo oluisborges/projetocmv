@@ -70,7 +70,7 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
 
       <p className="rounded-xl bg-warning/10 p-3 text-sm leading-snug text-warning">
         <strong>Tabela criada automaticamente</strong> a partir dos ingredientes e receitas do produto, com base na Tabela Brasileira de Composição de Alimentos (TACO, 4ª edição, NEPA/Unicamp) e no formato da RDC 429/2020 e da IN 75/2020 (Anvisa).{" "}
-        <strong>A revisão dos valores é responsabilidade da sua marmitaria</strong> antes de usar no rótulo.
+        <strong>A conferência e a validação dos valores antes da utilização no rótulo são de responsabilidade do usuário.</strong>
       </p>
 
       {missing > 0 ? (
