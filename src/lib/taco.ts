@@ -42,6 +42,8 @@ const tokens = (t: string) =>
     .map(stem);
 
 const INDEX = TACO_FOODS.map((r) => ({ id: r[0], toks: tokens(r[1]), first: tokens(r[1])[0] }));
+/** Miúdos: só entram na sugestão se o nome do ingrediente os pedir. */
+const OFFAL = new Set(["coracao", "figado", "moela", "miolo", "rim", "bucho", "lingua", "pele"].map(stem));
 const PREPARED = new Set(["cozid", "grelhad", "frit", "assad", "refogad", "ensopad", "cru", "defumad", "empanad", "braseado"].map(stem));
 
 /** Busca alimentos da TACO pelo nome (todas as palavras digitadas precisam aparecer), para a pessoa escolher o certo. */
@@ -74,6 +76,12 @@ const ALIASES: Record<string, number> = {
   parmesao: 464,
   arroz: 3,
   "arroz branco": 3,
+  frango: 405,
+  "peito de frango": 409,
+  "file de frango": 409,
+  "coxa de frango": 399,
+  "sobrecoxa de frango": 414,
+  sobrecoxa: 414,
   ovo: 489,
   ovos: 489,
   "ovo de galinha": 489,
@@ -98,6 +106,7 @@ export function suggestTaco(ingredientName: string): TacoFood | null {
     score += f.toks[0] === q[0] ? 0.3 : 0;
     score -= Math.max(0, f.toks.length - hits) * 0.04;
     if (!wantsState && f.toks.includes(stem("cru"))) score += 0.12;
+    if (f.toks.some((w) => OFFAL.has(w) && !q.includes(w))) score -= 0.5;
     if (!best || score > best.score) best = { id: f.id, score };
   }
   return best ? tacoFood(best.id) : null;

@@ -81,6 +81,8 @@ describe("TACO", () => {
     expect(suggestTaco("Cebola in natura")?.name).toMatch(/^Cebola, crua/);
     expect(suggestTaco("Alho")?.name).toMatch(/^Alho/);
     expect(suggestTaco("Brócolis")?.name).toMatch(/^Brócolis/);
+    expect(suggestTaco("Frango")?.name).toBe("Frango, inteiro, sem pele, cru"); // nunca miúdos por padrão
+    expect(suggestTaco("Peito de frango")?.name).toMatch(/^Frango, peito, sem pele/);
     expect(suggestTaco("Embalagem 750 ml")).toBeNull();
     expect(suggestTaco("")).toBeNull();
   });
