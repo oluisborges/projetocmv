@@ -2,7 +2,7 @@ import { CostsTabs } from "@/components/costs-tabs";
 import { requireMember } from "@/lib/auth";
 import { Hint } from "@/components/hint";
 import { loadPricingContext } from "@/lib/pricing-data";
-import { AddChannelForm, ChannelRow, SettingsForm } from "./forms";
+import { AddChannelForm, ChannelRow, SafetyMarginCard, SettingsForm } from "./forms";
 
 export const metadata = { title: "Impostos e meta de lucro" };
 
@@ -23,6 +23,8 @@ export default async function PricingSettingsPage() {
       ) : canWrite ? (
         <>
           <SettingsForm settings={ctx.settings} fixedAuto={ctx.fixedAuto} configured={ctx.configured} />
+
+          <SafetyMarginCard value={ctx.settings.safetyMarginPct ?? 0.1} />
 
           <section className="flex flex-col gap-3 pt-2">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">

@@ -66,6 +66,28 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
   return { ok: "Ajustes salvos." };
 }
 
+/** Margem de segurança sobre o custo dos insumos de todas as fichas. 0 a 50%; vazio vale 0. */
+export async function saveSafetyMargin(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { orgId, canWrite } = await requireMember();
+  if (!canWrite) return { error: NO_PERMISSION };
+  const safety = percent(formData.get("safety"), "Margem de segurança");
+  if (!safety.ok) return { error: safety.error };
+  if (safety.value > 0.5) return { error: "Margem de segurança: use no máximo 50%." };
+
+  const unit = await activeUnit(orgId);
+  if (!unit) return { error: "Sua conta ainda não tem unidade cadastrada." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("unit_settings").upsert({ unit_id: unit.id, org_id: orgId, safety_margin_pct: safety.value }, { onConflict: "unit_id" });
+  if (error) return { error: "Não foi possível salvar a margem." };
+
+  recordSnapshot();
+  revalidatePath("/financeiro/impostos");
+  revalidatePath("/cardapio", "layout");
+  revalidatePath("/producao", "layout");
+  return { ok: "Margem de segurança salva." };
+}
+
 const channelInput = (formData: FormData) => {
   const name = String(formData.get("name") ?? "").trim();
   const fee = percent(formData.get("fee"), "Taxa");

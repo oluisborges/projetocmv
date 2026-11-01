@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ActionForm, TextField } from "@/components/forms";
 import { Hint } from "@/components/hint";
 import { ConfirmButton } from "@/components/confirm-button";
-import { addChannel, deleteChannel, saveSettings, updateChannel } from "./actions";
+import { addChannel, deleteChannel, saveSafetyMargin, saveSettings, updateChannel } from "./actions";
 
 const pct = (fraction: number) => String(Number((fraction * 100).toFixed(2))).replace(".", ",");
 
@@ -98,14 +98,6 @@ export function SettingsForm({
             required={false}
             hint={<Hint>Comissão de vendedor, taxa de plataforma ou qualquer outra porcentagem que sai de cada venda e não é imposto nem taxa de canal. Sem nenhuma, deixe 0.</Hint>}
           />
-          <TextField
-            label="Margem de segurança nos insumos (%)"
-            name="safety"
-            inputMode="decimal"
-            defaultValue={pct(settings.safetyMarginPct ?? 0)}
-            required={false}
-            hint={<Hint>Soma esse percentual ao custo dos ingredientes de cada ficha para cobrir perdas e desperdício. Para retirar, deixe 0.</Hint>}
-          />
           {!fixedAuto ? (
             <TextField
               label="Despesas fixas à mão (% do que vende)"
@@ -119,6 +111,53 @@ export function SettingsForm({
         </div>
       </details>
     </ActionForm>
+  );
+}
+
+const MARGIN_PRESETS = [0, 5, 10, 15, 20] as const;
+
+/** Margem de segurança da empresa: percentual somado ao custo dos ingredientes de todas as fichas (padrão 10%). */
+export function SafetyMarginCard({ value }: { value: number }) {
+  const [text, setText] = useState(pct(value));
+  const typed = Number(text.replace(",", "."));
+  return (
+    <section className="flex flex-col gap-3 card p-4">
+      <div>
+        <h2 className="font-semibold">
+          Margem de segurança
+          <Hint>
+            Um percentual a mais sobre o custo dos ingredientes de cada ficha, para cobrir perdas, quebra e desperdício que não aparecem na receita. Vale para todos os produtos e receitas.
+            O custo das embalagens não leva margem.
+          </Hint>
+        </h2>
+        <p className="text-sm text-muted">Quanto você quer somar ao custo dos ingredientes. O padrão é 10%.</p>
+      </div>
+      <ActionForm action={saveSafetyMargin} submitLabel="Salvar margem">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Margem de segurança">
+          {MARGIN_PRESETS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              aria-pressed={typed === p}
+              onClick={() => setText(String(p))}
+              className={`h-11 min-w-14 rounded-full border px-4 text-sm font-semibold ${typed === p ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`}
+            >
+              {p}%
+            </button>
+          ))}
+        </div>
+        <label className="flex flex-col gap-1.5 text-sm font-medium">
+          Outro valor (%)
+          <input
+            name="safety"
+            inputMode="decimal"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="h-12 rounded-xl border border-border bg-surface px-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+        </label>
+      </ActionForm>
+    </section>
   );
 }
 
