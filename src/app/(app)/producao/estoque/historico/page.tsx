@@ -60,7 +60,7 @@ export default async function StockHistoryPage(props: PageProps<"/producao/estoq
           <p>
             {data.hasOpening
               ? "O estoque que sobrou vale mais do que o que entrou: provavelmente falta lançar alguma compra em Estoque agora, ou informar o total de compras em Fechar o mês."
-              : "Falta a contagem do mês anterior (o app parte de zero) e as compras do mês. Conte o estoque no fim do mês passado e lance as compras (ou informe o total em Fechar o mês)."}
+              : "Faltam as compras do mês: lance-as em Estoque agora ou informe o total em Fechar o mês. (A contagem do mês anterior está explicada logo abaixo.)"}
           </p>
           <p className="tabular text-xs text-muted">
             Começou com {formatBRL(result.openingValue)} · comprou {formatBRL(data.purchasesTotal)} · terminou com {formatBRL(result.closingValue)}.
