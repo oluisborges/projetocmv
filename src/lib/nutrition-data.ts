@@ -94,6 +94,8 @@ export async function loadProductNutrition(id: string): Promise<ProductNutrition
   // Receitas (preparos) usadas no produto: nutrientes por 100 g pronto = soma dos insumos ÷ peso que a receita rende.
   const receitaPer100 = new Map<string, Nutrition | null>();
   const receitaChildren = new Map<string, NutritionLine[]>();
+  // Quantos ingredientes de cada receita ficaram fora da conta dela (a dúvida sobe para o produto).
+  const receitaMissing = new Map<string, number>();
   for (const r of receitaRows) {
     const parts: NutritionPart[] = [];
     const children: NutritionLine[] = [];
@@ -109,7 +111,8 @@ export async function loadProductNutrition(id: string): Promise<ProductNutrition
       parts.push({ grams: it.net_qty, per100 });
     }
     receitaChildren.set(r.id, children);
-    const { total } = sumNutrition(parts);
+    const { total, missing: inside } = sumNutrition(parts);
+    receitaMissing.set(r.id, inside);
     const ready = r.portion_weight && r.portion_weight > 0 ? r.portion_weight : netGrams;
     receitaPer100.set(r.id, ready > 0 && parts.length > 0 ? scaleNutrition(total, ready, 100) : null);
   }
@@ -136,7 +139,8 @@ export async function loadProductNutrition(id: string): Promise<ProductNutrition
     parts.push({ grams: grams ?? 0, per100: grams === null ? null : per100 });
   }
 
-  const { total, missing } = sumNutrition(parts);
+  const { total, missing: direct } = sumNutrition(parts);
+  const missing = direct + lines.reduce((n, l) => n + (l.kind === "receita" ? (receitaMissing.get(l.ingredientId) ?? 0) : 0), 0);
   const autoPortionGrams = recipe.portion_weight && recipe.portion_weight > 0 ? recipe.portion_weight : weighed > 0 ? weighed : null;
 
   const o = overrideRes.data as { values: Record<string, unknown> | null; portion_grams: unknown; household_measure: string | null } | null;
