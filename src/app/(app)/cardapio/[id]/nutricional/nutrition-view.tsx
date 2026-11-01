@@ -79,27 +79,47 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
         </p>
       ) : null}
 
-      <section id="nutri-print" className="mx-auto w-full max-w-[420px] border-2 border-black bg-white p-2 text-black card">
-        <h2 className="border-b border-black pb-1 text-lg font-extrabold leading-tight">INFORMAÇÃO NUTRICIONAL</h2>
-        <p className="border-b-[5px] border-black py-1 text-xs">
+      <section id="nutri-print" className="mx-auto w-full max-w-[440px] border-2 border-black bg-white p-3 text-black card">
+        <h2 className="border-b border-black pb-1.5 text-xl font-extrabold leading-tight tracking-tight">INFORMAÇÃO NUTRICIONAL</h2>
+        <p className="border-b-[6px] border-black py-1.5 text-[13px] leading-snug">
           Porções por embalagem: 1<br />
-          Porção: {portion} ({householdMeasure})
+          Porção: <strong>{portion}</strong> ({householdMeasure})
         </p>
-        <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-2 text-[13px]">
-          <span className="border-b border-black py-1" />
-          <span className="border-b border-black py-1 text-right text-xs font-bold">100 g</span>
-          <span className="border-b border-black py-1 text-right text-xs font-bold">{portion}</span>
-          <span className="border-b border-black py-1 text-right text-xs font-bold">%VD*</span>
-          {rows.map((r) => (
-            <div key={r.key} className="col-span-4 grid grid-cols-subgrid items-center border-b border-black/60">
-              <span className={`py-1.5 ${r.indent ? "pl-3" : "font-bold"}`}>{r.label}</span>
-              <span className="tabular py-1.5 text-right">{r.per100}</span>
-              <span className="tabular py-1.5 text-right">{r.perPortion}</span>
-              <span className="tabular py-1.5 text-right">{r.vd}</span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-1 text-[10px] leading-tight">*Percentual de valores diários fornecidos pela porção, com base em uma dieta de 2.000 kcal ou 8.400 kJ. **%VD não estabelecido.</p>
+        <table className="w-full table-fixed border-collapse text-[13px]">
+          <colgroup>
+            <col />
+            <col className="w-[22%]" />
+            <col className="w-[22%]" />
+            <col className="w-[13%]" />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-black text-right text-xs font-bold">
+              <th className="py-1.5" />
+              <th className="py-1.5 pl-1 font-bold">100 g</th>
+              <th className="py-1.5 pl-1 font-bold">{portion}</th>
+              <th className="py-1.5 pl-1 font-bold">%VD*</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key} className="border-b border-black/50 align-middle">
+                <th scope="row" className={`py-2 pr-1 text-left ${r.indent ? "pl-3 font-normal" : "font-bold"}`}>
+                  {r.label}
+                </th>
+                <td className="tabular py-2 pl-1 text-right leading-tight">
+                  {r.per100}
+                  {r.per100Sub ? <span className="block text-[11px] text-black/60">{r.per100Sub}</span> : null}
+                </td>
+                <td className="tabular py-2 pl-1 text-right leading-tight">
+                  {r.perPortion}
+                  {r.perPortionSub ? <span className="block text-[11px] text-black/60">{r.perPortionSub}</span> : null}
+                </td>
+                <td className="tabular py-2 pl-1 text-right font-semibold">{r.vd}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-2 text-[10px] leading-snug">*Percentual de valores diários fornecidos pela porção, com base em uma dieta de 2.000 kcal ou 8.400 kJ. Seus valores diários podem ser maiores ou menores, dependendo de suas necessidades energéticas. **%VD não estabelecido.</p>
       </section>
 
       <div className="grid grid-cols-2 gap-2">

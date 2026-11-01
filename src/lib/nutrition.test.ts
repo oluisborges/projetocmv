@@ -99,7 +99,8 @@ describe("tabela nutricional pronta", () => {
     const rows = nutritionRows(data.per100, data.perPortion);
     expect(rows.map((r) => r.label)).toEqual(["Valor energético", "Carboidratos totais", "Açúcares totais", "Açúcares adicionados", "Proteínas", "Gorduras totais", "Gorduras saturadas", "Gorduras trans", "Fibra alimentar", "Sódio"]);
     // 150 g de arroz (128 kcal/100 g) + 150 g de frango (159 kcal/100 g) = 430,5 kcal
-    expect(rows[0].perPortion).toBe("431 kcal = 1.803 kJ");
+    expect(rows[0].perPortion).toBe("431 kcal");
+    expect(rows[0].perPortionSub).toBe("1.803 kJ");
     expect(rows[0].vd).toBe("22");
     expect(rows[2].perPortion).toBe("—"); // açúcares: sem dado
     expect(rows[2].vd).toBe("**");

@@ -12,15 +12,16 @@ const s = StyleSheet.create({
   date: { fontSize: 8, color: C.muted, textAlign: "right" },
   bar: { height: 3, backgroundColor: C.lime, marginTop: 10, borderRadius: 2 },
   title: { fontSize: 21, fontFamily: "Helvetica-Bold", color: C.deep, marginTop: 18, marginBottom: 14 },
-  box: { borderWidth: 1.4, borderColor: "#000000", alignSelf: "center", width: 370, padding: 7 },
+  box: { borderWidth: 1.4, borderColor: "#000000", alignSelf: "center", width: 340, padding: 7 },
   boxTitle: { fontSize: 15, fontFamily: "Helvetica-Bold", borderBottomWidth: 1, borderBottomColor: "#000000", paddingBottom: 3 },
   small: { fontSize: 9, paddingTop: 3, paddingBottom: 3, borderBottomWidth: 4, borderBottomColor: "#000000" },
   cols: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#000000", paddingVertical: 3 },
   row: { flexDirection: "row", borderBottomWidth: 0.6, borderBottomColor: "#000000", paddingVertical: 3.5, alignItems: "center" },
   label: { flex: 1, fontSize: 9.5 },
-  cell: { width: 86, textAlign: "right", fontSize: 9 },
+  cell: { width: 66, fontSize: 9 },
+  sub: { fontSize: 7.5, color: C.muted, textAlign: "right" },
   cellVd: { width: 34, textAlign: "right", fontSize: 9 },
-  note: { fontSize: 8, color: C.muted, marginTop: 8, lineHeight: 1.4, alignSelf: "center", width: 370 },
+  note: { fontSize: 8, color: C.muted, marginTop: 8, lineHeight: 1.4, alignSelf: "center", width: 340 },
   warn: { backgroundColor: C.amberBg, color: C.amber, fontSize: 8.5, padding: 8, borderRadius: 6, marginTop: 18, lineHeight: 1.4 },
   footer: { position: "absolute", left: 38, right: 38, bottom: 18, alignItems: "center" },
   footerLine: { height: 0.6, backgroundColor: C.line, alignSelf: "stretch", marginBottom: 8 },
@@ -56,15 +57,21 @@ export async function nutritionToPdf(n: ProductNutrition, orgName: string, gener
           </Text>
           <View style={s.cols}>
             <Text style={s.label} />
-            <Text style={[s.cell, { fontFamily: "Helvetica-Bold" }]}>100 g</Text>
-            <Text style={[s.cell, { fontFamily: "Helvetica-Bold" }]}>{portion}</Text>
+            <Text style={[s.cell, { fontFamily: "Helvetica-Bold", textAlign: "right" }]}>100 g</Text>
+            <Text style={[s.cell, { fontFamily: "Helvetica-Bold", textAlign: "right" }]}>{portion}</Text>
             <Text style={[s.cellVd, { fontFamily: "Helvetica-Bold" }]}>%VD*</Text>
           </View>
           {rows.map((r) => (
             <View key={r.key} style={s.row}>
               <Text style={[s.label, r.indent ? { paddingLeft: 10 } : { fontFamily: "Helvetica-Bold" }]}>{r.label}</Text>
-              <Text style={s.cell}>{r.per100}</Text>
-              <Text style={s.cell}>{r.perPortion}</Text>
+              <View style={s.cell}>
+                <Text style={{ textAlign: "right" }}>{r.per100}</Text>
+                {r.per100Sub ? <Text style={s.sub}>{r.per100Sub}</Text> : null}
+              </View>
+              <View style={s.cell}>
+                <Text style={{ textAlign: "right" }}>{r.perPortion}</Text>
+                {r.perPortionSub ? <Text style={s.sub}>{r.perPortionSub}</Text> : null}
+              </View>
               <Text style={s.cellVd}>{r.vd}</Text>
             </View>
           ))}
