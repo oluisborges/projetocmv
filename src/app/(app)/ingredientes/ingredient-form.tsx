@@ -24,34 +24,21 @@ const inputClass =
   "h-12 w-full min-w-0 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 /**
- * Rendimento depois de pronto, perguntado do jeito da cozinha ("1 kg cru vira quantos kg?"), com a ajuda SEMPRE visível:
+ * Fator de cocção (rendimento depois de pronto), perguntado do jeito da cozinha ("1 kg cru vira quantos kg?"), com a ajuda SEMPRE visível:
  * quem deixa 1 num arroz ou numa carne faz a ficha cobrar o dobro ou mais, e ninguém percebe.
  */
 function YieldField({ defaultValue }: { defaultValue: number }) {
   const [value, setValue] = useState(decimal(defaultValue) ?? "1");
-  const chip = (active: boolean) =>
-    `h-11 rounded-full border px-4 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface"}`;
 
   return (
     <div className="flex flex-col gap-2">
       <label className="flex flex-col gap-1.5 text-sm font-medium">
-        Depois de pronto, 1 kg (cru e limpo) vira quantos kg?
+        Depois de pronto, 1 kg (cru e limpo) vira quantos kg? (fator de cocção)
         <input name="cooking_yield" value={value} onChange={(e) => setValue(e.target.value)} inputMode="decimal" autoComplete="off" className={inputClass} />
       </label>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Atalhos de rendimento">
-        <button type="button" className={chip(value === "1")} onClick={() => setValue("1")}>
-          Não muda (1)
-        </button>
-        <button type="button" className={chip(value === "2,5")} onClick={() => setValue("2,5")}>
-          Cresce: arroz, feijão, massa
-        </button>
-        <button type="button" className={chip(value === "0,75")} onClick={() => setValue("0,75")}>
-          Encolhe: carnes
-        </button>
-      </div>
       <p className="text-xs leading-relaxed text-muted">
-        Arroz 2,5 · Feijão 2,2 · Macarrão 2,3 · Frango grelhado 0,75 · Carne moída 0,7 · Salada, molho, queijo 1. É assim que o app converte os gramas
-        PRONTOS do produto para o que você compra cru.
+        Pense só no cozimento, já com o item limpo. Se o peso não muda (salada, molho, queijo), deixe 1. Se ele absorve água e cresce (arroz, feijão, macarrão), o número
+        fica acima de 1: arroz costuma chegar a 2,5. Se perde água e gordura e encolhe (carnes grelhadas ou refogadas), fica abaixo de 1: frango grelhado costuma ser 0,75.
       </p>
     </div>
   );
@@ -134,7 +121,7 @@ export function IngredientForm({
       {kind === "insumo" ? (
         <details open={!defaults.id} className="card">
           <summary className="flex min-h-14 cursor-pointer flex-col justify-center px-4 py-2 text-sm">
-            <span className="font-semibold text-primary">Perdas e rendimento (avançado)</span>
+            <span className="font-semibold text-primary">Fator de correção e fator de cocção (avançado)</span>
             {defaults.id ? (
               <span className="text-xs text-muted">
                 Compra {decimal(defaults.correction_factor) ?? "1"}× para aproveitar 1 · cru vira {decimal(defaults.cooking_yield) ?? "1"}× depois de pronto
@@ -144,18 +131,18 @@ export function IngredientForm({
             )}
           </summary>
           <div className="flex flex-col gap-4 border-t border-border p-4">
-        <TextField
-          label="Perda na limpeza (fator de correção)"
-          name="correction_factor"
-          inputMode="decimal"
-          defaultValue={decimal(defaults.correction_factor) ?? "1"}
-          hint={
-            <Hint>
-              Quanto você precisa comprar para aproveitar 1 kg limpo. Frango com aparas e gordura: 1,15 (compra 1,15 kg para aproveitar 1 kg).
-              Se não tem perda nenhuma, deixe 1.
-            </Hint>
-          }
-        />
+        <div className="flex flex-col gap-2">
+          <TextField
+            label="Quanto você precisa comprar para ter 1 kg depois da limpeza? (fator de correção)"
+            name="correction_factor"
+            inputMode="decimal"
+            defaultValue={decimal(defaults.correction_factor) ?? "1"}
+          />
+          <p className="text-xs leading-relaxed text-muted">
+            Pense só na limpeza, antes de cozinhar: casca, osso, gordura, aparas. Se não tem perda nenhuma, deixe 1. Se você compra 1,15 kg para aproveitar 1 kg limpo, digite 1,15
+            (é o caso de um frango com aparas e gordura).
+          </p>
+        </div>
             <YieldField defaultValue={defaults.cooking_yield ?? 1} />
           </div>
         </details>
