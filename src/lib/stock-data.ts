@@ -5,7 +5,7 @@ import { lastMonths, monthBounds } from "@/lib/month-view";
 import { loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings, recipeUsage } from "@/lib/recipe-cost";
 import { loadIngredients, loadReceitaUsage, loadRecipes } from "@/lib/recipes-data";
-import { buildStock, stockResult, type StockResult, type StockRow } from "@/lib/stock-view";
+import { buildStock, purchasesValue, stockResult, type StockResult, type StockRow } from "@/lib/stock-view";
 import { createClient } from "@/lib/supabase/server";
 
 export type StockMonth = {
@@ -15,6 +15,8 @@ export type StockMonth = {
   result: StockResult | null;
   revenue: number;
   purchasesTotal: number;
+  /** O total veio do que foi lançado em Estoque agora (pelo preço cadastrado), não de um valor informado no fechamento. */
+  purchasesFromStock: boolean;
   theoreticalCost: number | null;
   /** Marmitas prontas no freezer (R$ ao custo) no fim do mês e no fim do anterior. */
   finishedClosing: number | null;
@@ -40,7 +42,7 @@ export async function loadStockMonth(orgId: string, canWrite: boolean, month: st
     loadRecipes(),
     supabase.from("periods").select("id, revenue, purchases, finished_stock_value").eq("unit_id", unitId).eq("month", month).maybeSingle(),
     supabase.from("periods").select("finished_stock_value").eq("unit_id", unitId).eq("month", previous).maybeSingle(),
-    supabase.from("ingredient_purchases").select("ingredient_id, qty_base, source").eq("unit_id", unitId).eq("month", month),
+    supabase.from("ingredient_purchases").select("ingredient_id, qty_base, amount, source").eq("unit_id", unitId).eq("month", month),
     supabase.from("ingredient_stock_counts").select("ingredient_id, qty_base").eq("unit_id", unitId).eq("month", month),
     supabase.from("ingredient_stock_counts").select("ingredient_id, qty_base").eq("unit_id", unitId).eq("month", previous),
   ]);
@@ -107,7 +109,11 @@ export async function loadStockMonth(orgId: string, canWrite: boolean, month: st
   const rows = buildStock({ ingredients: stockIngredients, opening: toMap(prevCounts), purchasedNfe, purchasedManual, used, counts: toMap(counts) });
 
   const revenue = Number(period?.revenue ?? 0);
-  const purchasesTotal = Number(period?.purchases ?? 0);
+  const { value: purchasesTotal, fromStock: purchasesFromStock } = purchasesValue(
+    Number(period?.purchases ?? 0),
+    (purchases ?? []).map((p) => ({ ingredientId: p.ingredient_id as string, qty: Number(p.qty_base), amount: Number(p.amount ?? 0) })),
+    new Map(stockIngredients.map((i) => [i.id, i.unitCost])),
+  );
   const theoreticalCost = counted ? theoretical : null;
   const finishedOpening = Number(prevPeriod?.finished_stock_value ?? 0);
   const finishedClosing = period?.finished_stock_value === null || period?.finished_stock_value === undefined ? null : Number(period.finished_stock_value);
@@ -119,6 +125,7 @@ export async function loadStockMonth(orgId: string, canWrite: boolean, month: st
     result: stockResult({ rows, purchasesTotal, theoreticalCost, revenue, finishedOpening, finishedClosing: finishedClosing ?? 0 }),
     revenue,
     purchasesTotal,
+    purchasesFromStock,
     theoreticalCost,
     finishedClosing,
     finishedOpening,

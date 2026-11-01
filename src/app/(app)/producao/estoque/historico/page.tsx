@@ -54,7 +54,19 @@ export default async function StockHistoryPage(props: PageProps<"/producao/estoq
       <MonthChips months={months} current={month} basePath="/producao/estoque/historico" />
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
-      {result ? (
+      {result && !result.reliable ? (
+        <section aria-label="CMV real" className="flex flex-col gap-2 rounded-2xl border-2 border-warning/40 bg-warning/10 p-4 text-sm">
+          <p className="font-semibold">Ainda não dá para calcular o CMV real deste mês.</p>
+          <p>
+            {data.hasOpening
+              ? "O estoque que sobrou vale mais do que o que entrou: provavelmente falta lançar alguma compra em Estoque agora, ou informar o total de compras em Fechar o mês."
+              : "Falta a contagem do mês anterior (o app parte de zero) e as compras do mês. Conte o estoque no fim do mês passado e lance as compras (ou informe o total em Fechar o mês)."}
+          </p>
+          <p className="tabular text-xs text-muted">
+            Começou com {formatBRL(result.openingValue)} · comprou {formatBRL(data.purchasesTotal)} · terminou com {formatBRL(result.closingValue)}.
+          </p>
+        </section>
+      ) : result ? (
         <section aria-label="CMV real" className={`flex flex-col gap-3 rounded-2xl border-2 p-4 ${result.gap !== null && result.gap > 0 && Math.abs(result.gapPct ?? 0) >= 0.02 ? "border-danger/40 bg-danger/10" : "border-success/40 bg-success/10"}`}>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted">
             CMV real do mês
@@ -96,7 +108,7 @@ export default async function StockHistoryPage(props: PageProps<"/producao/estoq
             <p className="text-sm text-muted">Complete as fichas das marmitas vendidas para comparar com o esperado.</p>
           )}
           <p className="tabular text-xs text-muted">
-            Começou com {formatBRL(result.openingValue)} em insumos · comprou {formatBRL(data.purchasesTotal)} · terminou com {formatBRL(result.closingValue)}
+            Começou com {formatBRL(result.openingValue)} em insumos · comprou {formatBRL(data.purchasesTotal)}{data.purchasesFromStock ? " (pelo preço cadastrado)" : ""} · terminou com {formatBRL(result.closingValue)}
             {data.finishedOpening > 0 || (data.finishedClosing ?? 0) > 0 ? ` · freezer: ${formatBRL(data.finishedOpening)} → ${formatBRL(data.finishedClosing ?? 0)}` : ""}.
           </p>
           {result.countedCount < 5 ? (

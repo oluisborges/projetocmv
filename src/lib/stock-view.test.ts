@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { recipeUsage } from "./recipe-cost";
-import { buildStock, stockResult } from "./stock-view";
+import { buildStock, purchasesValue, stockResult } from "./stock-view";
 
 const frango = { id: "frango", name: "Peito de frango", purchaseUnit: "kg", unitCost: 0.0179 }; // R$ 17,90/kg
 const arroz = { id: "arroz", name: "Arroz", purchaseUnit: "kg", unitCost: 0.0056 }; // R$ 5,60/kg
@@ -85,5 +85,48 @@ describe("estoque do mês", () => {
     expect(r.cogs).toBeCloseTo(r.consumption + 300, 6);
     expect(r.gap).toBeNull();
     expect(r.gapPct).toBeNull();
+  });
+});
+
+describe("CMV real confiável", () => {
+  const rowsCounted = () =>
+    buildStock({
+      ingredients: [frango],
+      opening: new Map(), // sem contagem do mês anterior
+      purchasedNfe: new Map(),
+      purchasedManual: new Map(),
+      used: new Map(),
+      counts: new Map([["frango", 7_000]]),
+    });
+
+  it("sem estoque anterior e sem compras valorizadas a conta dá negativa e não é confiável", () => {
+    const r = stockResult({ rows: rowsCounted(), purchasesTotal: 0, theoreticalCost: null, revenue: 0, finishedOpening: 0, finishedClosing: 0 })!;
+    expect(r.cogs).toBeLessThan(0);
+    expect(r.reliable).toBe(false);
+  });
+
+  it("com as compras valorizadas a conta fecha e é confiável", () => {
+    const r = stockResult({ rows: rowsCounted(), purchasesTotal: 200, theoreticalCost: null, revenue: 0, finishedOpening: 0, finishedClosing: 0 })!;
+    expect(r.cogs).toBeGreaterThan(0);
+    expect(r.reliable).toBe(true);
+  });
+});
+
+describe("valor das compras do mês", () => {
+  const costs = new Map([["frango", 0.0179], ["arroz", 0.0056]]);
+  it("o total informado no fechamento sempre vale", () => {
+    expect(purchasesValue(3_000, [{ ingredientId: "frango", qty: 10_000, amount: 0 }], costs)).toEqual({ value: 3_000, fromStock: false });
+  });
+  it("sem total informado, compra de Estoque agora (sem valor) vale quantidade × preço cadastrado", () => {
+    const r = purchasesValue(0, [{ ingredientId: "frango", qty: 10_000, amount: 0 }], costs);
+    expect(r.value).toBeCloseTo(179, 6);
+    expect(r.fromStock).toBe(true);
+  });
+  it("compra de nota fiscal vale o valor da nota", () => {
+    const r = purchasesValue(0, [{ ingredientId: "frango", qty: 10_000, amount: 150 }, { ingredientId: "arroz", qty: 5_000, amount: 0 }], costs);
+    expect(r.value).toBeCloseTo(150 + 28, 6);
+  });
+  it("sem nada, zero e não vem do estoque", () => {
+    expect(purchasesValue(0, [], costs)).toEqual({ value: 0, fromStock: false });
   });
 });

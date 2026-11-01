@@ -80,7 +80,23 @@ export type StockResult = {
   /** Real − esperado pelas fichas. Positivo = gastou mais do que as vendas explicam. */
   gap: number | null;
   gapPct: number | null;
+  /** `false` quando a conta dá negativa (ex.: sem contagem do mês anterior e compras sem valor): o número não deve ser mostrado como CMV. */
+  reliable: boolean;
 };
+
+/**
+ * Valor das compras do mês: o total que a pessoa informou no fechamento. Sem ele, vale o que foi lançado em Estoque agora e nas notas:
+ * o valor da nota quando existe, senão a quantidade comprada pelo preço cadastrado (compra sem preço não pode valer R$ 0).
+ */
+export function purchasesValue(
+  informed: number,
+  rows: { ingredientId: string; qty: number; amount: number }[],
+  unitCostById: Map<string, number>,
+): { value: number; fromStock: boolean } {
+  if (informed > 0) return { value: informed, fromStock: false };
+  const value = rows.reduce((s, r) => s + (r.amount > 0 ? r.amount : r.qty * (unitCostById.get(r.ingredientId) ?? 0)), 0);
+  return { value, fromStock: value > 0 };
+}
 
 /** Só tem CMV real quando algo foi contado no fim do mês. */
 export function stockResult(input: {
@@ -107,5 +123,6 @@ export function stockResult(input: {
     theoreticalCost: input.theoreticalCost,
     gap,
     gapPct: gap !== null && input.revenue > 0 ? gap / input.revenue : null,
+    reliable: cogs >= 0,
   };
 }

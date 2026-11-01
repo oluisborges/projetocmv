@@ -63,7 +63,7 @@ export async function loadReport(orgId: string, canWrite: boolean, month: string
       .map((i) => ({ name: i.name, kind: i.kind, category: i.category, purchaseQty: i.purchase_qty, purchaseUnit: i.purchase_unit, purchasePrice: i.purchase_price }))
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
     stock:
-      stock && stock.result
+      stock && stock.result && stock.result.reliable
         ? {
             cogs: stock.result.cogs,
             theoretical: stock.result.theoreticalCost,
