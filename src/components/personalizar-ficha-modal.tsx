@@ -52,7 +52,7 @@ function Preview({ c }: { c: FichaCampos }) {
       <div className="flex items-center gap-2">
         <span className="grid size-7 place-items-center rounded-lg text-sm font-black text-white" style={{ background: T.teal }}>P</span>
         <div className="leading-tight">
-          <p className="text-[12px] font-bold" style={{ color: T.deep }}>Sua Marmitaria</p>
+          <p className="text-[12px] font-bold" style={{ color: T.deep }}>Nome da sua empresa</p>
           <p className="text-[7px] uppercase tracking-widest" style={{ color: T.muted }}>Ficha técnica</p>
         </div>
       </div>

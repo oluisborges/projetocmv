@@ -27,7 +27,7 @@ export default async function ProductFichaPage(props: PageProps<"/cardapio/[id]/
       <section className="flex flex-col gap-3 card p-4">
         <div>
           <h2 className="font-semibold">Ficha técnica para imprimir</h2>
-          <p className="text-sm text-muted">Escolha o modelo (Cozinha ou Financeiro), veja como fica e baixe em PDF ou Excel, com a marca da sua marmitaria.</p>
+          <p className="text-sm text-muted">Escolha o modelo (Cozinha ou Financeiro), veja como fica e baixe em PDF ou Excel, com a sua marca.</p>
         </div>
         <BaixarFichaButton id={ficha.id} name={ficha.name} />
       </section>
