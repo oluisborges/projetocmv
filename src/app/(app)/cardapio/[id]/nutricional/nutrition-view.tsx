@@ -187,23 +187,19 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
         <ul className="flex flex-col divide-y divide-border card px-4">
           {lines.map((l) => (
             <li key={l.ingredientId} className="flex flex-col gap-1 py-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="min-w-0 font-semibold">{l.name}</span>
-                <span className="tabular shrink-0 text-xs text-muted">= {l.grams === null ? "sem peso (unidade)" : `${l.grams.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} g`}</span>
-              </div>
+              <LineInfo l={l} canWrite={canWrite} onPick={setPicking} />
               {l.kind === "receita" ? (
-                <p className="text-xs text-muted">Receita: soma dos ingredientes dela, pelo peso que ela rende.</p>
-              ) : (
-                <div className="flex items-center justify-between gap-2">
-                  <p className="min-w-0 text-xs text-muted">{l.tacoName ?? "Nenhum alimento da TACO ligado"}</p>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${SOURCE_STYLE[l.source]}`}>{SOURCE_LABEL[l.source]}</span>
+                <div className="mt-1 flex flex-col gap-1 border-l-2 border-primary/30 pl-3">
+                  <p className="text-xs text-muted">Receita: a soma dos ingredientes dela, pelo peso que ela rende. As quantidades abaixo são as do lote.</p>
+                  {(l.children ?? []).length === 0 ? <p className="text-xs text-muted">Esta receita ainda não tem ingredientes.</p> : null}
+                  <ul className="flex flex-col divide-y divide-border/60">
+                    {(l.children ?? []).map((c) => (
+                      <li key={c.ingredientId} className="flex flex-col gap-1 py-2">
+                        <LineInfo l={c} canWrite={canWrite} onPick={setPicking} compact />
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              )}
-              {l.lacksEnergy ? <p className="text-xs text-warning">A TACO não traz a energia deste alimento: troque por outro parecido.</p> : null}
-              {l.kind === "insumo" && canWrite ? (
-                <button type="button" onClick={() => setPicking(l)} className="tap-area self-start text-sm font-semibold text-primary">
-                  {l.tacoId === null ? "Escolher alimento" : "Trocar alimento"}
-                </button>
               ) : null}
             </li>
           ))}
@@ -219,6 +215,30 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
           onClose={() => setPicking(null)}
           onPick={(tacoId) => run(() => saveTacoLink({ recipeId, ingredientId: picking.ingredientId, tacoId }), () => setPicking(null))}
         />
+      ) : null}
+    </>
+  );
+}
+
+/** Uma linha de "De onde vêm os números": o ingrediente, quanto entra e o alimento da TACO ligado (com o botão de trocar). */
+function LineInfo({ l, canWrite, onPick, compact = false }: { l: NutritionLine; canWrite: boolean; onPick: (l: NutritionLine) => void; compact?: boolean }) {
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className={`min-w-0 ${compact ? "text-sm font-medium" : "font-semibold"}`}>{l.name}</span>
+        <span className="tabular shrink-0 text-xs text-muted">= {l.grams === null ? "sem peso (unidade)" : `${l.grams.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} g`}</span>
+      </div>
+      {l.kind === "receita" ? null : (
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 text-xs text-muted">{l.tacoName ?? "Nenhum alimento da TACO ligado"}</p>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${SOURCE_STYLE[l.source]}`}>{SOURCE_LABEL[l.source]}</span>
+        </div>
+      )}
+      {l.lacksEnergy ? <p className="text-xs text-warning">A TACO não traz a energia deste alimento: troque por outro parecido.</p> : null}
+      {l.kind === "insumo" && canWrite ? (
+        <button type="button" onClick={() => onPick(l)} className="tap-area self-start text-sm font-semibold text-primary">
+          {l.tacoId === null ? "Escolher alimento" : "Trocar alimento"}
+        </button>
       ) : null}
     </>
   );

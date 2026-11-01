@@ -17,6 +17,8 @@ export type NutritionLine = {
   source: "salvo" | "sugerido" | "sem";
   /** O alimento da TACO escolhido não tem energia cadastrada. */
   lacksEnergy: boolean;
+  /** Receita: os ingredientes dela e o alimento da TACO ligado a cada um (a quantidade é a do lote da receita). */
+  children?: NutritionLine[];
 };
 
 export type Override = { values: Partial<Record<NutrientKey, number>>; portionGrams: number | null; householdMeasure: string | null };
@@ -65,16 +67,23 @@ export async function loadProductNutrition(id: string): Promise<ProductNutrition
 
   // Receitas (preparos) usadas no produto: nutrientes por 100 g pronto = soma dos insumos ÷ peso que a receita rende.
   const receitaPer100 = new Map<string, Nutrition | null>();
+  const receitaChildren = new Map<string, NutritionLine[]>();
   for (const r of receitaRows) {
     const parts: NutritionPart[] = [];
+    const children: NutritionLine[] = [];
     let netGrams = 0;
     for (const it of r.items) {
       const ing = it.ingredient_id ? byId.get(it.ingredient_id) : undefined;
-      if (!ing || ing.purchase_unit === "un") continue;
-      netGrams += it.net_qty;
+      if (!ing || ing.kind === "embalagem") continue;
       const t = tacoOf(ing.id, ing.name);
-      parts.push({ grams: it.net_qty, per100: t.id === null ? null : tacoNutrition(t.id) });
+      const per100 = t.id === null ? null : tacoNutrition(t.id);
+      const unitless = ing.purchase_unit === "un";
+      children.push({ ingredientId: ing.id, name: ing.name, kind: "insumo", grams: unitless ? null : it.net_qty, tacoId: t.id, tacoName: t.id === null ? null : (tacoFood(t.id)?.name ?? null), source: t.source, lacksEnergy: per100 !== null && per100.kcal === null });
+      if (unitless) continue;
+      netGrams += it.net_qty;
+      parts.push({ grams: it.net_qty, per100 });
     }
+    receitaChildren.set(r.id, children);
     const { total } = sumNutrition(parts);
     const ready = r.portion_weight && r.portion_weight > 0 ? r.portion_weight : netGrams;
     receitaPer100.set(r.id, ready > 0 && parts.length > 0 ? scaleNutrition(total, ready, 100) : null);
@@ -93,7 +102,7 @@ export async function loadProductNutrition(id: string): Promise<ProductNutrition
     let line: NutritionLine;
     if (ing.kind === "receita") {
       per100 = receitaPer100.get(ing.id) ?? null;
-      line = { ingredientId: ing.id, name: ing.name, kind: "receita", grams, tacoId: null, tacoName: null, source: per100 ? "salvo" : "sem", lacksEnergy: per100 !== null && per100.kcal === null };
+      line = { ingredientId: ing.id, name: ing.name, kind: "receita", grams, tacoId: null, tacoName: null, source: per100 ? "salvo" : "sem", lacksEnergy: per100 !== null && per100.kcal === null, children: receitaChildren.get(ing.id) ?? [] };
     } else {
       const t = tacoOf(ing.id, ing.name);
       per100 = t.id === null ? null : tacoNutrition(t.id);
