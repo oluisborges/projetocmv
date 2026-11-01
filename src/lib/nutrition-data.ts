@@ -13,8 +13,11 @@ export type NutritionLine = {
   grams: number | null;
   tacoId: number | null;
   tacoName: string | null;
-  /** salvo = a pessoa escolheu; sugerido = achado pelo nome (confira); sem = nada encontrado. */
-  source: "salvo" | "sugerido" | "sem";
+  /** salvo = a pessoa escolheu; sugerido = achado pelo nome com clareza (confira); possivel = há dúvida, fica fora da conta até confirmar; sem = nada encontrado. */
+  source: "salvo" | "sugerido" | "possivel" | "sem";
+  /** Só em "possivel": o alimento que parece o certo, para a pessoa confirmar com um toque. */
+  candidateId: number | null;
+  candidateName: string | null;
   /** O alimento da TACO escolhido não tem energia cadastrada. */
   lacksEnergy: boolean;
   /** Receita: os ingredientes dela e o alimento da TACO ligado a cada um (a quantidade é a do lote da receita). */
@@ -58,11 +61,34 @@ export async function loadProductNutrition(id: string): Promise<ProductNutrition
   const links = new Map<string, number>((linksRes.data ?? []).map((l) => [l.ingredient_id as string, Number(l.taco_id)]));
 
   // Alimento da TACO de um ingrediente real: o escolhido, ou o sugerido pelo nome.
-  const tacoOf = (ingredientId: string, name: string): { id: number | null; source: NutritionLine["source"] } => {
+  // Só entra na conta o alimento escolhido pela pessoa ou a sugestão clara; a "possível" espera a confirmação.
+  const tacoOf = (ingredientId: string, name: string): { id: number | null; source: NutritionLine["source"]; candidate: number | null } => {
     const saved = links.get(ingredientId);
-    if (saved !== undefined && tacoFood(saved)) return { id: saved, source: "salvo" };
-    const suggested = suggestTaco(name);
-    return suggested ? { id: suggested.id, source: "sugerido" } : { id: null, source: "sem" };
+    if (saved !== undefined && tacoFood(saved)) return { id: saved, source: "salvo", candidate: null };
+    const s = suggestTaco(name);
+    if (!s) return { id: null, source: "sem", candidate: null };
+    return s.confidence === "alta" ? { id: s.food.id, source: "sugerido", candidate: null } : { id: null, source: "possivel", candidate: s.food.id };
+  };
+
+  /** A linha de um insumo (e os nutrientes por 100 g que ela traz para a conta). */
+  const insumoLine = (ing: { id: string; name: string }, grams: number | null): { line: NutritionLine; per100: Nutrition | null } => {
+    const t = tacoOf(ing.id, ing.name);
+    const per100 = t.id === null ? null : tacoNutrition(t.id);
+    return {
+      per100,
+      line: {
+        ingredientId: ing.id,
+        name: ing.name,
+        kind: "insumo",
+        grams,
+        tacoId: t.id,
+        tacoName: t.id === null ? null : (tacoFood(t.id)?.name ?? null),
+        source: t.source,
+        candidateId: t.candidate,
+        candidateName: t.candidate === null ? null : (tacoFood(t.candidate)?.name ?? null),
+        lacksEnergy: per100 !== null && per100.kcal === null,
+      },
+    };
   };
 
   // Receitas (preparos) usadas no produto: nutrientes por 100 g pronto = soma dos insumos ÷ peso que a receita rende.
@@ -75,10 +101,9 @@ export async function loadProductNutrition(id: string): Promise<ProductNutrition
     for (const it of r.items) {
       const ing = it.ingredient_id ? byId.get(it.ingredient_id) : undefined;
       if (!ing || ing.kind === "embalagem") continue;
-      const t = tacoOf(ing.id, ing.name);
-      const per100 = t.id === null ? null : tacoNutrition(t.id);
       const unitless = ing.purchase_unit === "un";
-      children.push({ ingredientId: ing.id, name: ing.name, kind: "insumo", grams: unitless ? null : it.net_qty, tacoId: t.id, tacoName: t.id === null ? null : (tacoFood(t.id)?.name ?? null), source: t.source, lacksEnergy: per100 !== null && per100.kcal === null });
+      const { line, per100 } = insumoLine(ing, unitless ? null : it.net_qty);
+      children.push(line);
       if (unitless) continue;
       netGrams += it.net_qty;
       parts.push({ grams: it.net_qty, per100 });
@@ -102,11 +127,9 @@ export async function loadProductNutrition(id: string): Promise<ProductNutrition
     let line: NutritionLine;
     if (ing.kind === "receita") {
       per100 = receitaPer100.get(ing.id) ?? null;
-      line = { ingredientId: ing.id, name: ing.name, kind: "receita", grams, tacoId: null, tacoName: null, source: per100 ? "salvo" : "sem", lacksEnergy: per100 !== null && per100.kcal === null, children: receitaChildren.get(ing.id) ?? [] };
+      line = { ingredientId: ing.id, name: ing.name, kind: "receita", grams, tacoId: null, tacoName: null, source: per100 ? "salvo" : "sem", candidateId: null, candidateName: null, lacksEnergy: per100 !== null && per100.kcal === null, children: receitaChildren.get(ing.id) ?? [] };
     } else {
-      const t = tacoOf(ing.id, ing.name);
-      per100 = t.id === null ? null : tacoNutrition(t.id);
-      line = { ingredientId: ing.id, name: ing.name, kind: "insumo", grams, tacoId: t.id, tacoName: t.id === null ? null : (tacoFood(t.id)?.name ?? null), source: t.source, lacksEnergy: per100 !== null && per100.kcal === null };
+      ({ line, per100 } = insumoLine(ing, grams));
     }
     lines.push(line);
     if (grams !== null) weighed += grams;

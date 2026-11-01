@@ -87,27 +87,44 @@ const ALIASES: Record<string, number> = {
   "ovo de galinha": 489,
 };
 
+export type TacoSuggestion = {
+  food: TacoFood;
+  /** alta = pode entrar na conta (nome bate de forma clara); possivel = há dúvida, só vale depois da pessoa confirmar. */
+  confidence: "alta" | "possivel";
+};
+
 /**
- * Sugere o alimento da TACO para o nome de um ingrediente ("Cebola in natura" → "Cebola, crua"). Só devolve quando as
- * palavras do ingrediente aparecem no alimento; é uma sugestão, a pessoa confere e troca se precisar.
+ * Sugere o alimento da TACO para o nome de um ingrediente ("Cebola in natura" → "Cebola, crua"). A sugestão é "alta" quando
+ * todas as palavras do ingrediente aparecem no alimento, sobra no máximo uma palavra a mais (cru/cozido…) e nenhum outro
+ * alimento chega perto; do contrário é só "possível" (ex.: "Carne moída" tem vários cortes), e a pessoa precisa confirmar.
  */
-export function suggestTaco(ingredientName: string): TacoFood | null {
+export function suggestTaco(ingredientName: string): TacoSuggestion | null {
   const alias = ALIASES[fold(ingredientName).replace(/[^a-z0-9]+/g, " ").trim()];
-  if (alias !== undefined) return tacoFood(alias);
+  if (alias !== undefined) {
+    const food = tacoFood(alias);
+    return food ? { food, confidence: "alta" } : null;
+  }
   const q = tokens(ingredientName);
   if (q.length === 0) return null;
   const wantsState = q.some((w) => PREPARED.has(w));
-  let best: { id: number; score: number } | null = null;
+  const found: { id: number; score: number; hits: number; extra: number }[] = [];
   for (const f of INDEX) {
     const hits = q.filter((w) => f.toks.includes(w)).length;
     if (hits === 0 || hits < Math.ceil(q.length * 0.6)) continue;
     if (!f.toks.includes(q[0]) && !f.toks.slice(0, 2).some((t) => q.includes(t))) continue;
+    const extra = Math.max(0, f.toks.length - hits);
     let score = hits / q.length;
     score += f.toks[0] === q[0] ? 0.3 : 0;
-    score -= Math.max(0, f.toks.length - hits) * 0.04;
+    score -= extra * 0.04;
     if (!wantsState && f.toks.includes(stem("cru"))) score += 0.12;
     if (f.toks.some((w) => OFFAL.has(w) && !q.includes(w))) score -= 0.5;
-    if (!best || score > best.score) best = { id: f.id, score };
+    found.push({ id: f.id, score, hits, extra });
   }
-  return best ? tacoFood(best.id) : null;
+  found.sort((a, b) => b.score - a.score);
+  const [best, second] = found;
+  if (!best) return null;
+  const food = tacoFood(best.id);
+  if (!food) return null;
+  const clear = best.hits === q.length && best.extra <= 1 && (!second || best.score - second.score >= 0.08);
+  return { food, confidence: clear ? "alta" : "possivel" };
 }

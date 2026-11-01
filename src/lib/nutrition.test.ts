@@ -77,12 +77,15 @@ describe("TACO", () => {
     expect(searchTaco("zzzz")).toEqual([]);
   });
 
-  it("sugere o alimento certo para nomes de ingredientes de marmitaria", () => {
-    expect(suggestTaco("Cebola in natura")?.name).toMatch(/^Cebola, crua/);
-    expect(suggestTaco("Alho")?.name).toMatch(/^Alho/);
-    expect(suggestTaco("Brócolis")?.name).toMatch(/^Brócolis/);
-    expect(suggestTaco("Frango")?.name).toBe("Frango, inteiro, sem pele, cru"); // nunca miúdos por padrão
-    expect(suggestTaco("Peito de frango")?.name).toMatch(/^Frango, peito, sem pele/);
+  it("sugere com clareza só quando o nome bate; do contrário é só uma possibilidade", () => {
+    expect(suggestTaco("Cebola in natura")).toMatchObject({ confidence: "alta", food: { name: "Cebola, crua" } });
+    expect(suggestTaco("Brócolis")).toMatchObject({ confidence: "alta" });
+    expect(suggestTaco("Frango")).toMatchObject({ confidence: "alta", food: { name: "Frango, inteiro, sem pele, cru" } }); // nunca miúdos
+    expect(suggestTaco("Peito de frango")?.food.name).toMatch(/^Frango, peito, sem pele/);
+    expect(suggestTaco("Sal")).toMatchObject({ confidence: "alta", food: { name: "Sal, grosso" } });
+    // vários cortes possíveis: não entra na conta sozinho
+    expect(suggestTaco("Carne moída")).toMatchObject({ confidence: "possivel" });
+    expect(suggestTaco("Macarrão")).toMatchObject({ confidence: "possivel" });
     expect(suggestTaco("Embalagem 750 ml")).toBeNull();
     expect(suggestTaco("")).toBeNull();
   });

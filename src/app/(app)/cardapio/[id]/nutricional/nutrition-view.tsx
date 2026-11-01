@@ -23,8 +23,8 @@ type Props = {
   canWrite: boolean;
 };
 
-const SOURCE_LABEL = { salvo: "escolhido", sugerido: "sugerido: confira", sem: "sem correspondência" } as const;
-const SOURCE_STYLE = { salvo: "bg-primary/10 text-primary", sugerido: "bg-warning/10 text-warning", sem: "bg-danger/10 text-danger" } as const;
+const SOURCE_LABEL = { salvo: "escolhido", sugerido: "sugerido: confira", possivel: "a confirmar", sem: "sem correspondência" } as const;
+const SOURCE_STYLE = { salvo: "bg-primary/10 text-primary", sugerido: "bg-warning/10 text-warning", possivel: "bg-danger/10 text-danger", sem: "bg-danger/10 text-danger" } as const;
 const inputClass = "h-11 w-full rounded-lg border border-border bg-surface px-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
 const fmtInput = (v: number | null) => (v === null ? "" : String(v).replace(".", ","));
 
@@ -62,6 +62,10 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
   // Só vira correção o que a pessoa mexeu (ou o que já era correção antes); o resto continua automático.
   const changedOnly = () => Object.fromEntries(Object.entries(vals).filter(([k, v]) => v !== initial[k] || overriddenKeys.includes(k as NutrientKey)));
 
+  const useCandidate = (l: NutritionLine) => {
+    if (l.candidateId !== null) run(() => saveTacoLink({ recipeId, ingredientId: l.ingredientId, tacoId: l.candidateId! }));
+  };
+
   const portion = portionGrams ? `${portionGrams.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} g` : "—";
 
   return (
@@ -75,7 +79,7 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
 
       {missing > 0 ? (
         <p className="text-sm text-warning">
-          {missing} {missing === 1 ? "ingrediente ficou" : "ingredientes ficaram"} fora da soma (sem alimento da TACO ou sem peso). Veja em &ldquo;De onde vêm os números&rdquo; e escolha o alimento certo.
+          {missing} {missing === 1 ? "ingrediente ficou" : "ingredientes ficaram"} fora da soma (alimento da TACO a confirmar ou sem peso). Veja em &ldquo;De onde vêm os números&rdquo; e confirme o alimento certo.
         </p>
       ) : null}
 
@@ -187,7 +191,7 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
         <ul className="flex flex-col divide-y divide-border card px-4">
           {lines.map((l) => (
             <li key={l.ingredientId} className="flex flex-col gap-1 py-3">
-              <LineInfo l={l} canWrite={canWrite} onPick={setPicking} />
+              <LineInfo l={l} canWrite={canWrite} onPick={setPicking} onUse={useCandidate} />
               {l.kind === "receita" ? (
                 <div className="mt-1 flex flex-col gap-1 border-l-2 border-primary/30 pl-3">
                   <p className="text-xs text-muted">Receita: a soma dos ingredientes dela, pelo peso que ela rende. As quantidades abaixo são as do lote.</p>
@@ -195,7 +199,7 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
                   <ul className="flex flex-col divide-y divide-border/60">
                     {(l.children ?? []).map((c) => (
                       <li key={c.ingredientId} className="flex flex-col gap-1 py-2">
-                        <LineInfo l={c} canWrite={canWrite} onPick={setPicking} compact />
+                        <LineInfo l={c} canWrite={canWrite} onPick={setPicking} onUse={useCandidate} compact />
                       </li>
                     ))}
                   </ul>
@@ -221,7 +225,7 @@ export function NutritionView({ recipeId, rows, perPortion, portionGrams, househ
 }
 
 /** Uma linha de "De onde vêm os números": o ingrediente, quanto entra e o alimento da TACO ligado (com o botão de trocar). */
-function LineInfo({ l, canWrite, onPick, compact = false }: { l: NutritionLine; canWrite: boolean; onPick: (l: NutritionLine) => void; compact?: boolean }) {
+function LineInfo({ l, canWrite, onPick, onUse, compact = false }: { l: NutritionLine; canWrite: boolean; onPick: (l: NutritionLine) => void; onUse: (l: NutritionLine) => void; compact?: boolean }) {
   return (
     <>
       <div className="flex items-baseline justify-between gap-2">
@@ -230,15 +234,23 @@ function LineInfo({ l, canWrite, onPick, compact = false }: { l: NutritionLine; 
       </div>
       {l.kind === "receita" ? null : (
         <div className="flex items-center justify-between gap-2">
-          <p className="min-w-0 text-xs text-muted">{l.tacoName ?? "Nenhum alimento da TACO ligado"}</p>
+          <p className="min-w-0 text-xs text-muted">{l.tacoName ?? (l.candidateName ? `Possível: ${l.candidateName}` : "Nenhum alimento da TACO ligado")}</p>
           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${SOURCE_STYLE[l.source]}`}>{SOURCE_LABEL[l.source]}</span>
         </div>
       )}
       {l.lacksEnergy ? <p className="text-xs text-warning">A TACO não traz a energia deste alimento: troque por outro parecido.</p> : null}
+      {l.kind === "insumo" && l.source === "possivel" ? <p className="text-xs text-danger">Ainda fora da conta: confirme o alimento para ele entrar na tabela.</p> : null}
       {l.kind === "insumo" && canWrite ? (
-        <button type="button" onClick={() => onPick(l)} className="tap-area self-start text-sm font-semibold text-primary">
-          {l.tacoId === null ? "Escolher alimento" : "Trocar alimento"}
-        </button>
+        <div className="flex flex-wrap gap-x-4">
+          {l.source === "possivel" && l.candidateId !== null ? (
+            <button type="button" onClick={() => onUse(l)} className="tap-area text-sm font-semibold text-primary">
+              Usar este alimento
+            </button>
+          ) : null}
+          <button type="button" onClick={() => onPick(l)} className="tap-area text-sm font-semibold text-primary">
+            {l.tacoId === null ? "Escolher outro alimento" : "Trocar alimento"}
+          </button>
+        </div>
       ) : null}
     </>
   );
