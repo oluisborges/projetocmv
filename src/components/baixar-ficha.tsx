@@ -31,7 +31,7 @@ export function BaixarFichaButton({ id, name }: { id: string; name: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="flex h-11 w-full items-center justify-center rounded-xl border border-primary bg-primary px-3 text-sm font-semibold text-primary-foreground">
+      <button type="button" onClick={() => setOpen(true)} className="flex min-h-11 w-full items-center justify-center rounded-xl border border-primary bg-primary px-3 py-1 text-center text-sm font-semibold leading-tight text-primary-foreground">
         Baixar ficha técnica
       </button>
       {open ? <PersonalizarModal campos={campos} itemId={id} itemName={name} onSave={save} onClose={() => setOpen(false)} /> : null}

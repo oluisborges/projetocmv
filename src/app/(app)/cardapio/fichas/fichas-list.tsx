@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BaixarFichaButton } from "@/components/baixar-ficha";
 import { FichaItems } from "@/components/ficha-items";
@@ -72,7 +73,14 @@ export function FichasList({ options }: { options: FichaOption[] }) {
                 {!o.complete ? <span className="shrink-0 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-semibold text-warning">custo incompleto</span> : null}
               </div>
               {open.has(o.id) ? <FichaItems items={o.items} /> : null}
-              <BaixarFichaButton id={o.id} name={o.name} />
+              <div className={`grid gap-2 ${o.kind === "marmita" ? "grid-cols-2" : ""}`}>
+                <BaixarFichaButton id={o.id} name={o.name} />
+                {o.kind === "marmita" ? (
+                  <Link href={`/cardapio/${o.id}/nutricional`} className="flex min-h-11 items-center justify-center rounded-xl border border-border bg-surface px-3 py-1 text-center text-sm font-semibold leading-tight">
+                    Baixar tabela nutricional
+                  </Link>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>
