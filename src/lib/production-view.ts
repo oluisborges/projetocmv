@@ -58,7 +58,11 @@ export function shoppingText(title: string, rows: BuyRow[], total: number): stri
   const lines: string[] = [title, ""];
   for (const g of groupBySupplier(rows)) {
     if (g.supplier) lines.push(`*${g.supplier}*`);
-    for (const r of g.rows) lines.push(`• ${r.name}: ${r.packs ?? r.buy}${r.packs ? ` (${r.buy})` : ""}`);
+    for (const r of g.rows) {
+      // O parêntese é o total comprado (3 pacotes de 500 g = 1,5 kg). Com 1 pacote só, seria repetir a mesma quantidade.
+      const onePack = r.packs !== null && /^1 \S+ de /.test(r.packs);
+      lines.push(`• ${r.name}: ${r.packs ?? r.buy}${r.packs && !onePack ? ` (${r.buy})` : ""}`);
+    }
     lines.push("");
   }
   if (total > 0) lines.push(`Total estimado: ${formatBRL(total)}`);

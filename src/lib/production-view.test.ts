@@ -52,6 +52,13 @@ describe("lista de compras na tela", () => {
     expect(text).toContain("Total estimado: R$");
   });
 
+  it("texto para WhatsApp: com um pacote só, não repete a quantidade entre parênteses", () => {
+    const list = shoppingList(new Map([["queijo", 400]]), new Map(), new Map([["queijo", 500]]));
+    const text = shoppingText("Compras", buyRows(list, ingredients, () => false).toBuy, 10);
+    expect(text).toContain("• Queijo muçarela: 1 pacote de 500 g");
+    expect(text).not.toContain("1 pacote de 500 g (");
+  });
+
   it("lotes de receita no plural certo", () => {
     expect(batchesLabel(1)).toBe("1 lote");
     expect(batchesLabel(1.152)).toBe("1,15 lotes");
