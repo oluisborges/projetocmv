@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getActiveOrg, requireUser } from "@/lib/auth";
 import { loadDashboard } from "@/lib/dashboard-data";
-import { formatNumber, formatPct } from "@/lib/format";
+import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 import { BreakEvenCard, MonthHealthCard, PriceActionsCard } from "@/components/home-cards";
 import { monthHealth } from "@/lib/month-health";
 import { priceActions } from "@/lib/price-actions";
@@ -10,13 +10,19 @@ import { devLockApplies } from "@/lib/menu-locks";
 import { loadAdvancedLock } from "@/lib/menu-locks-data";
 import { hasMenuConnection } from "@/lib/menu-data";
 import { loadProductionNeed } from "@/lib/production-need";
-import { monthLabel } from "@/lib/month-view";
+import { MonthChips } from "@/components/month-chips";
+import { currentMonthStart, lastMonths, monthLabel, monthStart } from "@/lib/month-view";
 import { DashboardView, Kpi } from "./dashboard";
 
 type Step = { key: string; title: string; detail: string; href: string; cta: string; minutes: number; done: boolean };
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = await searchParams;
   const session = await requireUser();
+  const today = currentMonthStart();
+  // Mês escolhido nas pílulas (?mes=2026-10). Sem ele, o Resumo segue como sempre: mês em andamento (ou o anterior, se o atual está vazio).
+  const requestedMonth = monthStart(typeof sp.mes === "string" ? sp.mes : undefined);
+  const viewingPast = requestedMonth !== null && requestedMonth < today;
   const member = await getActiveOrg();
   // Em "ver como", quem aparece no cumprimento é a marmitaria, não o admin.
   const firstName = member?.viewingAs ? null : session.fullName?.split(" ")[0];
@@ -26,7 +32,7 @@ export default async function HomePage() {
   const productionLocked = devLockApplies(session.isPlatformAdmin);
   const [data, advancedLock, connected, need] = member
     ? await Promise.all([
-        loadDashboard(member.orgId, canWrite),
+        loadDashboard(member.orgId, canWrite, { month: requestedMonth ?? undefined }),
         loadAdvancedLock(member.orgId),
         hasMenuConnection(member.orgId).catch(() => false),
         productionLocked ? Promise.resolve(null) : loadProductionNeed(member.orgId, canWrite).catch(() => null),
@@ -121,6 +127,19 @@ export default async function HomePage() {
         units: new Map(data.dishes.map((d) => [d.id, d.weight])),
       })
     : [];
+
+  const months = lastMonths(today, 6);
+  if (data && !months.includes(data.month.start)) months.push(data.month.start);
+  months.sort().reverse();
+
+  const monthPicker =
+    data && showDashboard ? (
+      <div>
+        <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Mês</p>
+        <MonthChips months={months} current={data.month.start} basePath="/" />
+        <h2 className="pt-3 text-lg font-bold first-letter:uppercase">{monthLabel(data.month.start)}</h2>
+      </div>
+    ) : null;
 
   const remainingMinutes = steps.filter((s) => !s.done).reduce((sum, s) => sum + s.minutes, 0);
 
@@ -252,13 +271,29 @@ export default async function HomePage() {
         <p className="card p-4 text-sm">Sua conta ainda não está ligada a nenhuma marmitaria. Fale com o suporte do Precificaí.</p>
       ) : null}
 
-      {checklist}
-      {actions.length > 0 && data ? <PriceActionsCard actions={actions} targetPct={data.ctx.settings.minMarginPct} canWrite={canWrite} /> : null}
-      {health && data ? <MonthHealthCard health={health} month={data.month.start} canWrite={canWrite} /> : null}
-      {emptyMonth}
-      {numbers}
-      {data && showDashboard ? <BreakEvenCard breakEven={data.breakEven} monthlyRevenue={data.ctx.monthlyRevenue} /> : null}
-      {showDashboard && data ? <DashboardView data={data} variant="alerts" hideBelowTarget={actions.length > 0} collapseAlerts={Boolean(checklist) || actions.length > 0} /> : null}
+      {monthPicker}
+      {viewingPast && data && showDashboard ? (
+        <>
+          {health ? <MonthHealthCard health={health} month={data.month.start} canWrite={canWrite} /> : emptyMonth}
+          <section aria-label="Em números" className="flex flex-col gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Em números</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <Kpi label="Faturamento" value={formatBRL(data.month.revenue)} hint="no mês" />
+              <Kpi label="Vendidas no mês" value={formatNumber(data.month.soldUnits, 0)} hint="marmitas" />
+            </div>
+          </section>
+          <Link href="/" className="tap-area text-center text-sm font-semibold text-primary">
+            Voltar para o mês atual
+          </Link>
+        </>
+      ) : null}
+      {!viewingPast ? checklist : null}
+      {!viewingPast && actions.length > 0 && data ? <PriceActionsCard actions={actions} targetPct={data.ctx.settings.minMarginPct} canWrite={canWrite} /> : null}
+      {!viewingPast && health && data ? <MonthHealthCard health={health} month={data.month.start} canWrite={canWrite} /> : null}
+      {!viewingPast ? emptyMonth : null}
+      {!viewingPast ? numbers : null}
+      {!viewingPast && data && showDashboard ? <BreakEvenCard breakEven={data.breakEven} monthlyRevenue={data.ctx.monthlyRevenue} /> : null}
+      {!viewingPast && showDashboard && data ? <DashboardView data={data} variant="alerts" hideBelowTarget={actions.length > 0} collapseAlerts={Boolean(checklist) || actions.length > 0} /> : null}
 
       {session.isStaff && !member?.viewingAs ? (
         <Link href="/admin" className="rounded-xl bg-primary px-4 py-3 text-center font-semibold text-primary-foreground">

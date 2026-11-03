@@ -73,13 +73,15 @@ export type Dashboard = {
 };
 
 /** Tudo que o painel do Início precisa, numa carga só (cada consulta já filtrada pela organização). */
-export async function loadDashboard(orgId: string, canWrite: boolean, opts: { awaitSnapshot?: boolean } = {}): Promise<Dashboard | null> {
+export async function loadDashboard(orgId: string, canWrite: boolean, opts: { awaitSnapshot?: boolean; /** Mês escolhido ("AAAA-MM-01"); sem ele vale o mês em andamento (ou o anterior, se o atual ainda está vazio). */ month?: string } = {}): Promise<Dashboard | null> {
   const ctx = await loadPricingContext(orgId, canWrite);
   if (!ctx) return null;
 
   const supabase = await createClient();
   const now = currentMonthStart();
   const previous = lastMonths(now, 2)[1];
+  // Mês escolhido pela pessoa: só o passado ou o atual (nada de mês futuro).
+  const requested = opts.month && opts.month <= now ? opts.month : undefined;
 
   const [ingredients, { recipes, items }, prices, staff, { data: ingPrices }, { data: monthPeriods }, { data: recentPeriods }, { data: history }] = await Promise.all([
     loadIngredients(),
@@ -87,7 +89,7 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
     loadCurrentPrices(ctx.unit.id),
     loadStaff(ctx.unit.id),
     supabase.from("ingredients").select("purchase_price, price_updated_at").eq("org_id", orgId).is("archived_at", null),
-    supabase.from("periods").select("id, month, revenue, purchases").eq("unit_id", ctx.unit.id).in("month", [now, previous]),
+    supabase.from("periods").select("id, month, revenue, purchases").eq("unit_id", ctx.unit.id).in("month", [...new Set([now, previous, ...(requested ? [requested] : [])])]),
     supabase.from("periods").select("id").eq("unit_id", ctx.unit.id).gt("revenue", 0).order("month", { ascending: false }).limit(3),
     // Sem limite inferior de data: o alerta precisa do último preço ANTES da janela como base. Os mais recentes primeiro,
     // para que um eventual corte do limite descarte o histórico antigo, nunca o preço atual.
@@ -98,8 +100,9 @@ export async function loadDashboard(orgId: string, canWrite: boolean, opts: { aw
   const hasNumbers = (p?: { revenue: unknown; purchases: unknown }) => Number(p?.revenue ?? 0) > 0 || Number(p?.purchases ?? 0) > 0;
   const currentPeriod = (monthPeriods ?? []).find((p) => String(p.month) === now);
   const previousPeriod = (monthPeriods ?? []).find((p) => String(p.month) === previous);
-  const period = hasNumbers(currentPeriod) ? currentPeriod : hasNumbers(previousPeriod) ? previousPeriod : currentPeriod;
-  const monthStart = period ? String(period.month) : now;
+  const requestedPeriod = requested ? (monthPeriods ?? []).find((p) => String(p.month) === requested) : undefined;
+  const period = requested ? requestedPeriod : hasNumbers(currentPeriod) ? currentPeriod : hasNumbers(previousPeriod) ? previousPeriod : currentPeriod;
+  const monthStart = requested ?? (period ? String(period.month) : now);
 
   // Custo de cada marmita como valeu durante o mês (média pelo tempo), igual ao Histórico. Sem registro, o de hoje.
   const { data: snapRow } = await supabase.from("month_snapshots").select("data").eq("unit_id", ctx.unit.id).eq("month", monthStart).maybeSingle();
