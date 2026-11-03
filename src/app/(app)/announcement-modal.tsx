@@ -81,6 +81,18 @@ export function AnnouncementModal({ announcement, preview }: { announcement: Ann
   const bodyRef = useRef<HTMLDivElement>(null);
   const [, startTransition] = useTransition();
   const [moreBelow, setMoreBelow] = useState(true);
+  const tabs = announcement.tabs;
+  // Com abas, abre na primeira (a atualização mais nova).
+  const [tabId, setTabId] = useState(tabs?.[0]?.id);
+  const activeTab = tabs?.find((t) => t.id === tabId) ?? tabs?.[0];
+  const sections = activeTab ? activeTab.sections : announcement.sections;
+
+  const pickTab = (id: string) => {
+    setTabId(id);
+    // a nova aba começa do topo
+    if (bodyRef.current) bodyRef.current.scrollTop = 0;
+    setMoreBelow(true);
+  };
 
   useEffect(() => {
     const dialog = ref.current;
@@ -132,9 +144,31 @@ export function AnnouncementModal({ announcement, preview }: { announcement: Ann
           <p className="mt-1.5 pr-4 text-sm leading-snug text-white/85">{announcement.intro}</p>
         </header>
 
+        {tabs && tabs.length > 1 ? (
+          <div role="tablist" aria-label="Atualizações" className="grid shrink-0 grid-cols-2 gap-2 border-b border-border bg-surface px-4 py-3">
+            {tabs.map((t) => {
+              const on = t.id === activeTab?.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => pickTab(t.id)}
+                  className={`flex min-h-12 flex-col items-center justify-center rounded-xl border px-2 py-1.5 text-center leading-tight ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground"}`}
+                >
+                  <span className="text-sm font-extrabold">{t.label}</span>
+                  <span className={`text-[11px] ${on ? "text-primary-foreground/85" : "text-muted"}`}>{t.short}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
         <div className="relative flex min-h-0 flex-1 flex-col">
-          <div ref={bodyRef} onScroll={checkScroll} className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
-            {announcement.sections.map((s) => (
+          <div ref={bodyRef} onScroll={checkScroll} role={tabs ? "tabpanel" : undefined} className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
+            {activeTab ? <p className="text-xs font-bold uppercase tracking-wider text-muted">{activeTab.heading}</p> : null}
+            {sections.map((s) => (
               <SectionBlock key={s.title} s={s} />
             ))}
           </div>

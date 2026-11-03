@@ -9,6 +9,15 @@ describe("avisos de novidade", () => {
     expect(text).not.toContain("fechar o mês");
   });
 
+  it("o aviso no ar tem as duas atualizações em abas, a mais nova primeiro", () => {
+    const live = findAnnouncement(ACTIVE_ANNOUNCEMENT_ID)!;
+    expect(live.tabs?.map((t) => t.label)).toEqual(["03/11", "27/10"]);
+    const text = JSON.stringify(live.tabs![0]);
+    for (const word of ["Fichas técnicas", "Tabela nutricional", "Margem de segurança", "Meses anteriores", "fator de correção", "fator de cocção"]) expect(text).toContain(word);
+    expect(text).not.toContain("fechar o mês");
+    expect(JSON.stringify(live.tabs![1])).toContain("Agora você pode cadastrar receitas"); // o conteúdo de 27/10
+  });
+
   it("ids são únicos", () => {
     expect(new Set(ANNOUNCEMENTS.map((a) => a.id)).size).toBe(ANNOUNCEMENTS.length);
   });
