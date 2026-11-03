@@ -254,8 +254,9 @@ export async function loadProduction(orgId: string, unitId: string, id: string):
 /** O que as OUTRAS produções da mesma semana já têm planejado por marmita (para a sugestão não pedir em dobro). */
 export async function loadWeekPlanned(orgId: string, unitId: string, weekStart: string, excludeId?: string): Promise<Record<string, number>> {
   const supabase = await createClient();
-  const { data: plans } = await supabase.from("production_plans").select("id").eq("org_id", orgId).eq("unit_id", unitId).eq("week_start", weekStart);
-  const ids = (plans ?? []).map((p) => p.id as string).filter((id) => id !== excludeId);
+  // Produção já feita não conta: as marmitas dela já estão no estoque de prontas (contar de novo tiraria duas vezes da sugestão).
+  const { data: plans } = await supabase.from("production_plans").select("id, status").eq("org_id", orgId).eq("unit_id", unitId).eq("week_start", weekStart);
+  const ids = (plans ?? []).filter((p) => p.status !== "produced").map((p) => p.id as string).filter((id) => id !== excludeId);
   if (ids.length === 0) return {};
   const { data: items } = await supabase.from("production_plan_items").select("recipe_id, planned_qty").eq("org_id", orgId).in("plan_id", ids);
   const out: Record<string, number> = {};
