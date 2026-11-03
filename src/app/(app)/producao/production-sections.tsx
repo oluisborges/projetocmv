@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "@/lib/copy-text";
 import { useState } from "react";
 import { Hint } from "@/components/hint";
 import { formatBRL, formatBaseQty, formatNumber } from "@/lib/format";
@@ -92,6 +93,7 @@ export function BuyChecklist({
 }) {
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState(false);
+  const [manual, setManual] = useState(false);
   const rows = calc.rows.toBuy;
   const groups = groupBySupplier(rows);
   const done = rows.filter((r) => bought.has(r.id)).length;
@@ -108,12 +110,13 @@ export function BuyChecklist({
   }
 
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyText(text)) {
+      setManual(false);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.prompt("Copie a lista:", text);
+    } else {
+      // Nenhum jeito de copiar sozinho funcionou: mostra a lista para tocar e copiar na mão.
+      setManual(true);
     }
   }
 
@@ -156,6 +159,12 @@ export function BuyChecklist({
       <p className="tabular text-sm text-muted">
         Compra estimada: <strong className="text-foreground">{formatBRL(calc.buyCost)}</strong> (embalagens inteiras, pelo preço cadastrado)
       </p>
+      {manual ? (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm text-muted">Não consegui copiar sozinho neste aparelho. Toque na lista, selecione tudo e copie:</p>
+          <textarea readOnly value={text} rows={8} onFocus={(e) => e.currentTarget.select()} className="w-full rounded-xl border border-border bg-surface p-3 text-base" />
+        </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={copy} className="h-12 rounded-xl border border-border bg-surface text-sm font-semibold">
           {copied ? "Copiado ✓" : "Copiar lista"}

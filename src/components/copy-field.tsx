@@ -1,17 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { copyText } from "@/lib/copy-text";
 
 /** Texto longo (endereço do aviso, token) com botão de copiar. */
 export function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   async function copy() {
-    try {
-      await navigator.clipboard.writeText(value);
+    // Sem permissão de área de transferência o texto continua selecionável na tela.
+    if (await copyText(value)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // sem permissão de área de transferência: o texto continua selecionável
     }
   }
   return (
