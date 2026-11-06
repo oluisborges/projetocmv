@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { fichaDocNome } from "@/lib/ficha-nome";
 import { CAMPO_GRUPOS, CAMPO_LABEL, MODELOS, camposToParam, modeloDe, type FichaCampo, type FichaCampos } from "@/lib/ficha-campos";
 
 const T = { teal: "#0F766E", deep: "#0B4D4B", lime: "#9ACB39", tint: "#E6F4F1", zebra: "#F3F8F7", muted: "#475569" };
@@ -14,7 +15,7 @@ const ING = [
 const EMB = [{ name: "Embalagem", receita: false, net: "1 un", fc: "1", gross: "1 un", cost: "R$ 1,05" }];
 
 /** Miniatura da ficha com dados de exemplo: muda na hora conforme os campos marcados. */
-function Preview({ c }: { c: FichaCampos }) {
+function Preview({ c, doc }: { c: FichaCampos; doc: string }) {
   const cards = [
     c.custoPorMarmita && { l: "Custo por marmita", v: "R$ 10,20" },
     c.pesoPorcao && { l: "Peso da porção", v: "571 g" },
@@ -53,7 +54,7 @@ function Preview({ c }: { c: FichaCampos }) {
         <span className="grid size-7 place-items-center rounded-lg text-sm font-black text-white" style={{ background: T.teal }}>P</span>
         <div className="leading-tight">
           <p className="text-[12px] font-bold" style={{ color: T.deep }}>Nome da sua empresa</p>
-          <p className="text-[7px] uppercase tracking-widest" style={{ color: T.muted }}>Ficha técnica</p>
+          <p className="text-[7px] uppercase tracking-widest" style={{ color: T.muted }}>{doc}</p>
         </div>
       </div>
       <div className="mt-2 h-[3px] rounded" style={{ background: T.lime }} />
@@ -108,7 +109,7 @@ function Preview({ c }: { c: FichaCampos }) {
 }
 
 /** A ficha inteira, encolhida para caber na área (sem rolar), com a largura de papel de 340 px. */
-function FitPreview({ c, height }: { c: FichaCampos; height: number }) {
+function FitPreview({ c, height, doc }: { c: FichaCampos; height: number; doc: string }) {
   const box = useRef<HTMLDivElement>(null);
   const page = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState({ scale: 0.8, left: 0 });
@@ -131,7 +132,7 @@ function FitPreview({ c, height }: { c: FichaCampos; height: number }) {
   return (
     <div ref={box} className="relative w-full overflow-hidden" style={{ height }}>
       <div ref={page} className="absolute top-0 origin-top-left" style={{ left: fit.left, transform: `scale(${fit.scale})` }}>
-        <Preview c={c} />
+        <Preview c={c} doc={doc} />
       </div>
     </div>
   );
@@ -141,7 +142,8 @@ const chip = (on: boolean) =>
   `flex h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground"}`;
 
 /** Janela para montar a ficha: prévia ao vivo no alto (a ficha inteira), modelos e campos embaixo, botão fixo. */
-export function PersonalizarModal({ campos, itemId, itemName, onSave, onClose }: { campos: FichaCampos; itemId: string; itemName: string; onSave: (c: FichaCampos) => void; onClose: () => void }) {
+export function PersonalizarModal({ campos, itemId, itemName, kind, onSave, onClose }: { campos: FichaCampos; itemId: string; itemName: string; kind: "marmita" | "receita"; onSave: (c: FichaCampos) => void; onClose: () => void }) {
+  const doc = fichaDocNome(kind);
   const [draft, setDraft] = useState<FichaCampos>({ ...campos });
   const [grande, setGrande] = useState(false);
   const modelo = modeloDe(draft);
@@ -154,11 +156,11 @@ export function PersonalizarModal({ campos, itemId, itemName, onSave, onClose }:
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 lg:items-center lg:p-4" role="dialog" aria-modal="true" aria-label="Baixar ficha técnica" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 lg:items-center lg:p-4" role="dialog" aria-modal="true" aria-label={`Baixar ${doc.toLowerCase()}`} onClick={onClose}>
       <div className="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-surface lg:h-[85dvh] lg:rounded-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-2 border-b border-border py-1 pl-4 pr-1">
           <div className="min-w-0">
-            <p className="font-extrabold leading-tight">Baixar ficha técnica</p>
+            <p className="font-extrabold leading-tight">Baixar {doc.toLowerCase()}</p>
             <p className="truncate text-xs text-muted">{itemName}</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Fechar" className="grid size-11 place-items-center rounded-full text-xl text-muted">
@@ -170,10 +172,10 @@ export function PersonalizarModal({ campos, itemId, itemName, onSave, onClose }:
           {/* Prévia */}
           <div className="shrink-0 border-b border-border bg-black/5 px-3 pb-2 pt-3 lg:flex lg:flex-1 lg:flex-col lg:border-b-0 lg:border-r">
             <div className="lg:hidden">
-              <FitPreview c={draft} height={grande ? 460 : 250} />
+              <FitPreview c={draft} height={grande ? 460 : 250} doc={doc} />
             </div>
             <div className="hidden lg:block">
-              <FitPreview c={draft} height={520} />
+              <FitPreview c={draft} height={520} doc={doc} />
             </div>
             <div className="mt-1 flex items-center justify-between gap-2">
               <p className="text-[11px] text-muted">Exemplo com dados fictícios</p>

@@ -3,6 +3,7 @@ import { requireMember } from "@/lib/auth";
 import { camposFromParam } from "@/lib/ficha-campos";
 import { loadFichaTecnica } from "@/lib/ficha-tecnica-data";
 import { fichaToPdf, fichaToXlsx } from "@/lib/ficha-tecnica-export";
+import { fichaDocNome } from "@/lib/ficha-nome";
 import { slugify } from "@/lib/slug";
 
 export const maxDuration = 60;
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
   return new Response(new Uint8Array(body), {
     headers: {
       "Content-Type": format === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf",
-      "Content-Disposition": `attachment; filename="ficha-tecnica-${slugify(ficha.name)}.${format}"`,
+      "Content-Disposition": `attachment; filename="${slugify(fichaDocNome(ficha.kind))}-${slugify(ficha.name)}.${format}"`,
       "Cache-Control": "private, no-store",
     },
   });

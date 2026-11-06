@@ -4,6 +4,7 @@ import ExcelJS from "exceljs";
 import { Document, Image, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import type { FichaLine, FichaTecnica } from "@/lib/ficha-tecnica";
 import { CAMPOS_PADRAO, type FichaCampos } from "@/lib/ficha-campos";
+import { fichaDocNome } from "@/lib/ficha-nome";
 import { formatBRL, formatNumber, formatPct } from "@/lib/format";
 
 export const C = { teal: "#0F766E", deep: "#0B4D4B", lime: "#9ACB39", tint: "#E6F4F1", zebra: "#F3F8F7", muted: "#475569", line: "#CBD5E1", ink: "#0F172A", amber: "#92400E", amberBg: "#FEF3C7" };
@@ -127,14 +128,14 @@ export async function fichaToPdf(f: FichaTecnica, orgName: string, generatedAt: 
   const cards = summaryCards(f, campos);
   const showTotals = campos.custo || campos.custoPorMarmita;
   return renderToBuffer(
-    <Document title={`Ficha técnica · ${f.name}`} author="Precificaí · Grupo Shogun" subject={orgName}>
+    <Document title={`${fichaDocNome(f.kind)} · ${f.name}`} author="Precificaí · Grupo Shogun" subject={orgName}>
       <Page size="A4" style={s.page}>
         <View style={s.head}>
           <View style={s.headLeft}>
             <Mark />
             <View>
               <Text style={s.org}>{orgName}</Text>
-              <Text style={s.kicker}>Ficha técnica</Text>
+              <Text style={s.kicker}>{fichaDocNome(f.kind)}</Text>
             </View>
           </View>
           <Text style={s.date}>{dateBR(generatedAt)}</Text>
@@ -253,7 +254,7 @@ export async function fichaToXlsx(f: FichaTecnica, orgName: string, generatedAt:
   const wb = new ExcelJS.Workbook();
   wb.creator = "Precificaí · Grupo Shogun";
   wb.created = generatedAt;
-  const ws = wb.addWorksheet("Ficha técnica", { views: [{ showGridLines: false }], pageSetup: { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+  const ws = wb.addWorksheet(fichaDocNome(f.kind), { views: [{ showGridLines: false }], pageSetup: { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
   const cols = xlColumns(campos);
   const n = cols.length;
   ws.columns = cols.map((c) => ({ width: c.width }));

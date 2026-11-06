@@ -7,7 +7,7 @@ import { ProductTabs } from "@/components/product-tabs";
 import { requireMember } from "@/lib/auth";
 import { fichaItems, loadFichaTecnica } from "@/lib/ficha-tecnica-data";
 
-export const metadata = { title: "Ficha técnica" };
+export const metadata = { title: "Ficha de montagem" };
 
 export default async function ProductFichaPage(props: PageProps<"/cardapio/[id]/ficha">) {
   const { orgId, canWrite } = await requireMember();
@@ -26,10 +26,10 @@ export default async function ProductFichaPage(props: PageProps<"/cardapio/[id]/
 
       <section className="flex flex-col gap-3 card p-4">
         <div>
-          <h2 className="font-semibold">Ficha técnica para imprimir</h2>
+          <h2 className="font-semibold">Ficha de montagem para imprimir</h2>
           <p className="text-sm text-muted">Escolha o modelo (Cozinha ou Financeiro), veja como fica e baixe em PDF ou Excel, com a sua marca.</p>
         </div>
-        <BaixarFichaButton id={ficha.id} name={ficha.name} />
+        <BaixarFichaButton id={ficha.id} name={ficha.name} kind={ficha.kind} />
       </section>
 
       <section className="flex flex-col gap-2">
