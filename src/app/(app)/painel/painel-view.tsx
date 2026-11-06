@@ -7,7 +7,7 @@ import type { Dashboard } from "@/lib/dashboard-data";
 
 const card = "flex flex-col gap-1 card p-4";
 
-type Part = { key: string; label: string; pct: number; swatch: string; hint: string };
+type Part = { key: string; label: string; /** Sigla que o mercado usa (CMV, CMO), mostrada ao lado do nome. */ abbr?: string; pct: number; swatch: string; hint: string };
 
 function Tile({ label, value, hint, help, tone = "default" }: { label: string; value: string; hint?: string; help: React.ReactNode; tone?: "default" | "bad" | "good" }) {
   return (
@@ -39,8 +39,8 @@ export function PainelView({ data }: { data: Dashboard }) {
   const highest = panel.cmvRanking[0];
   const lowest = panel.cmvRanking[panel.cmvRanking.length - 1];
   const parts: Part[] = [
-    { key: "cmv", label: "Gasto com insumos", pct: c.cmv, swatch: "bg-primary", hint: "O que você gasta em insumos e embalagem para fazer o produto." },
-    { key: "cmo", label: "Equipe", pct: c.cmo, swatch: "bg-[#4d7c6f]", hint: "Salários e encargos da equipe." },
+    { key: "cmv", label: "Gasto com insumos", abbr: "CMV", pct: c.cmv, swatch: "bg-primary", hint: "Custo da mercadoria vendida: o que você gasta em insumos e embalagem para fazer o produto." },
+    { key: "cmo", label: "Equipe", abbr: "CMO", pct: c.cmo, swatch: "bg-[#4d7c6f]", hint: "Custo de mão de obra: salários e encargos da equipe." },
     { key: "fixed", label: "Despesas fixas", pct: c.fixed, swatch: "bg-[#a3a8a6]", hint: "Aluguel, energia, gás e outras contas que não mudam com a venda." },
     { key: "commercial", label: "Impostos e taxas de venda", pct: c.commercial, swatch: "bg-warning", hint: "Imposto sobre a venda e taxa do canal (cartão, aplicativo)." },
     { key: "profit", label: "Lucro líquido", pct: c.profit, swatch: c.profit >= 0 ? "bg-success" : "bg-danger", hint: "O que sobra no seu bolso depois de pagar tudo." },
@@ -82,7 +82,7 @@ export function PainelView({ data }: { data: Dashboard }) {
 
       <section aria-label="Para onde vai cada real" className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Para onde vai cada R$ 100 que você vende</h2>
-        <div className="flex h-5 overflow-hidden rounded-full bg-border" role="img" aria-label={parts.map((p) => `${p.label}: ${formatPct(p.pct)}`).join(", ")}>
+        <div className="flex h-5 overflow-hidden rounded-full bg-border" role="img" aria-label={parts.map((p) => `${p.label}${p.abbr ? ` (${p.abbr})` : ""}: ${formatPct(p.pct)}`).join(", ")}>
           {barParts.map((p) => (
             <span key={p.key} className={`${p.swatch} h-full`} style={{ width: `${(Math.max(p.pct, 0) / barTotal) * 100}%` }} />
           ))}
@@ -92,7 +92,10 @@ export function PainelView({ data }: { data: Dashboard }) {
             <li key={p.key} className="flex items-center gap-3 py-3">
               <span aria-hidden className={`size-3.5 shrink-0 rounded-full ${p.swatch}`} />
               <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                <span className="text-sm font-medium">{p.label}</span>
+                <span className="flex items-center gap-1.5 text-sm font-medium">
+                  {p.label}
+                  {p.abbr ? <abbr title={p.hint} className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-bold leading-none text-primary no-underline">{p.abbr}</abbr> : null}
+                </span>
                 <span className="text-xs text-muted">{p.hint}</span>
               </span>
               <span className="flex shrink-0 flex-col items-end leading-tight">
