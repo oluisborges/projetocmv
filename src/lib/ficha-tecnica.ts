@@ -23,11 +23,17 @@ export type FichaRecipeInput = {
   portion_weight: number | null;
   portion_weight_unit: "g" | "kg" | "ml" | "l" | "un";
   cooking_loss_pct: number;
+  /** Modo de preparo (receita) ou passo a passo da montagem (produto). */
+  instructions?: string | null;
 };
 
-export type FichaItemInput = { ingredient_id: string; net_qty: number; qty_unit: string | null; scope: "batch" | "portion" };
+export type FichaItemInput = { id?: string; ingredient_id: string; net_qty: number; qty_unit: string | null; scope: "batch" | "portion"; /** Posição escolhida na montagem; `null` = sem ordem. */ sort_order?: number | null };
 
 export type FichaLine = {
+  /** Id do item na ficha (para reordenar). */
+  id: string | null;
+  /** Posição escolhida na montagem; `null` = sem ordem. */
+  order: number | null;
   name: string;
   tag: "insumo" | "receita" | "embalagem";
   /** Peso líquido, na unidade em que foi digitado ("115 g", "0,5 kg"). */
@@ -67,6 +73,10 @@ export type FichaTecnica = {
   /** Insumos sem preço ou ficha sem itens: o custo está incompleto. */
   incomplete: boolean;
   warnings: string[];
+  /** Modo de preparo (receita) ou passo a passo da montagem (produto). */
+  instructions: string | null;
+  /** Foto de referência do produto (JPEG em base64); só preenchida por quem carrega para imprimir. */
+  photo: string | null;
 };
 
 const FACTOR_OF: Record<string, number> = { kg: 1000, g: 1, l: 1000, ml: 1, un: 1 };
@@ -103,6 +113,8 @@ export function buildFichaTecnica(input: { recipe: FichaRecipeInput; items: Fich
     const hasPrice = ing.unit_cost > 0;
     if (!hasPrice) missing++;
     const line: FichaLine = {
+      id: it.id ?? null,
+      order: it.sort_order ?? null,
       name: ing.name,
       tag: ing.kind,
       net: netLabel(it.net_qty, it.qty_unit, ing.purchase_unit),
@@ -116,7 +128,9 @@ export function buildFichaTecnica(input: { recipe: FichaRecipeInput; items: Fich
       weighed++;
     }
   }
-  lines.sort((a, b) => (b.cost ?? 0) - (a.cost ?? 0));
+  // Com a ordem de montagem escolhida, vale ela (o que ficou sem número vai para o fim, do mais caro ao mais barato); sem ela, do mais caro ao mais barato.
+  const byCost = (a: FichaLine, b: FichaLine) => (b.cost ?? 0) - (a.cost ?? 0);
+  lines.sort(recipe.kind === "marmita" ? (a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || byCost(a, b) : byCost);
 
   const sum = (ls: FichaLine[]) => ls.reduce((s, l) => s + (l.cost ?? 0), 0);
   const ingredientsCost = sum(lines);
@@ -152,6 +166,8 @@ export function buildFichaTecnica(input: { recipe: FichaRecipeInput; items: Fich
       },
       incomplete: warnings.length > 0,
       warnings,
+      instructions: recipe.instructions?.trim() || null,
+      photo: null,
     };
   }
 
@@ -180,5 +196,7 @@ export function buildFichaTecnica(input: { recipe: FichaRecipeInput; items: Fich
     receita: null,
     incomplete: warnings.length > 0,
     warnings,
+    instructions: recipe.instructions?.trim() || null,
+    photo: null,
   };
 }

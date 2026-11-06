@@ -41,13 +41,15 @@ export type RecipeRecord = {
   /** Só vêm na ficha aberta (loadRecipe). */
   code?: string | null;
   portion_note?: string | null;
+  /** Modo de preparo (receita) ou passo a passo da montagem (produto). */
+  instructions?: string | null;
   updated_at?: string;
 };
 
 /** `ingredient_id` é o insumo OU a receita usada (os dois nunca se repetem, então a marmita trata igual); `is_receita` diz qual dos dois. */
-export type RecipeItemRecord = { id: string; recipe_id: string; ingredient_id: string; is_receita: boolean; net_qty: number; qty_unit: string | null; scope: "batch" | "portion" };
+export type RecipeItemRecord = { id: string; recipe_id: string; ingredient_id: string; is_receita: boolean; net_qty: number; qty_unit: string | null; scope: "batch" | "portion"; /** Posição na montagem; `null` = sem ordem escolhida. */ sort_order: number | null };
 
-type ItemRow = { id: string; recipe_id: string; ingredient_id: string | null; receita_id: string | null; net_qty: unknown; qty_unit: string | null; scope: string };
+type ItemRow = { id: string; recipe_id: string; ingredient_id: string | null; receita_id: string | null; net_qty: unknown; qty_unit: string | null; scope: string; sort_order: number | null };
 const toItem = (i: ItemRow): RecipeItemRecord => ({
   id: i.id,
   recipe_id: i.recipe_id,
@@ -56,8 +58,9 @@ const toItem = (i: ItemRow): RecipeItemRecord => ({
   net_qty: Number(i.net_qty),
   qty_unit: i.qty_unit,
   scope: i.scope === "portion" ? "portion" : "batch",
+  sort_order: i.sort_order ?? null,
 });
-const ITEM_COLUMNS = "id, recipe_id, ingredient_id, receita_id, net_qty, qty_unit, scope";
+const ITEM_COLUMNS = "id, recipe_id, ingredient_id, receita_id, net_qty, qty_unit, scope, sort_order";
 
 /** O PostgREST devolve no máximo 1000 linhas por consulta, sem erro. Busca em páginas até acabar. */
 async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> {
@@ -130,8 +133,8 @@ export async function loadRecipe(id: string): Promise<{ recipe: RecipeRecord; it
   if (!orgId) return null;
   const supabase = await createClient();
   const [{ data: recipe }, { data: items }] = await Promise.all([
-    supabase.from("recipes").select("id, kind, name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode, code, portion_note, updated_at").eq("id", id).eq("org_id", orgId).eq("active", true).maybeSingle(),
-    supabase.from("recipe_items").select(ITEM_COLUMNS).eq("recipe_id", id).eq("org_id", orgId).order("id"),
+    supabase.from("recipes").select("id, kind, name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode, code, portion_note, instructions, updated_at").eq("id", id).eq("org_id", orgId).eq("active", true).maybeSingle(),
+    supabase.from("recipe_items").select(ITEM_COLUMNS).eq("recipe_id", id).eq("org_id", orgId).order("sort_order", { ascending: true, nullsFirst: false }).order("id"),
   ]);
   if (!recipe) return null;
   return { recipe: toRecipe(recipe), items: (items ?? []).map((i) => toItem(i as ItemRow)) };

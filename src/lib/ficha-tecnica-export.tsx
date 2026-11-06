@@ -67,6 +67,11 @@ export function Mark({ size = 34 }: { size?: number }) {
   );
 }
 
+/** A foto guardada (JPEG em base64) como bytes, para o PDF e o Excel. */
+const photoBytes = (f: FichaTecnica, campos: FichaCampos): Buffer | null => (campos.foto && f.photo ? Buffer.from(f.photo.slice(f.photo.indexOf(",") + 1), "base64") : null);
+/** Título do espaço de texto: a receita tem "modo de preparo"; o produto, "passo a passo da montagem". */
+const instructionsTitle = (f: FichaTecnica) => (f.kind === "marmita" ? "Passo a passo da montagem e observações" : "Modo de preparo e observações");
+
 const money = (v: number | null) => (v === null ? "—" : formatBRL(v));
 export const dateBR = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "long", year: "numeric" });
 
@@ -127,6 +132,7 @@ export async function fichaToPdf(f: FichaTecnica, orgName: string, generatedAt: 
   const logo = brand("logo-powered-by-shogun.png");
   const cards = summaryCards(f, campos);
   const showTotals = campos.custo || campos.custoPorMarmita;
+  const photo = photoBytes(f, campos);
   return renderToBuffer(
     <Document title={`${fichaDocNome(f.kind)} · ${f.name}`} author="Precificaí · Grupo Shogun" subject={orgName}>
       <Page size="A4" style={s.page}>
@@ -147,6 +153,11 @@ export async function fichaToPdf(f: FichaTecnica, orgName: string, generatedAt: 
           {f.category ? <Text style={s.chip}>{f.category}</Text> : null}
           <Text style={s.chip}>{f.typeLabel}</Text>
         </View>
+
+        {photo ? (
+          // eslint-disable-next-line jsx-a11y/alt-text -- Image do react-pdf não é <img>
+          <Image src={{ data: photo, format: "jpg" }} style={{ width: 210, height: 150, objectFit: "cover", borderRadius: 8, marginTop: 14 }} />
+        ) : null}
 
         {cards.length > 0 ? (
           <View style={s.cards}>
@@ -207,13 +218,27 @@ export async function fichaToPdf(f: FichaTecnica, orgName: string, generatedAt: 
           <View wrap={false}>
             <View style={s.section}>
               <View style={s.sectionDot} />
-              <Text style={s.sectionTitle}>Modo de preparo e observações</Text>
+              <Text style={s.sectionTitle}>{instructionsTitle(f)}</Text>
             </View>
-            <View style={{ marginTop: 6 }}>
-              {Array.from({ length: Math.max(5, Math.min(10, 12 - f.lines.length - f.packaging.length)) }, (_, i) => (
-                <View key={i} style={s.noteLine} />
-              ))}
-            </View>
+            {f.instructions ? (
+              <Text style={{ marginTop: 6, lineHeight: 1.5 }}>{f.instructions}</Text>
+            ) : (
+              <View style={{ marginTop: 6 }}>
+                {Array.from({ length: Math.max(5, Math.min(10, 12 - f.lines.length - f.packaging.length)) }, (_, i) => (
+                  <View key={i} style={s.noteLine} />
+                ))}
+              </View>
+            )}
+            {f.kind === "marmita" ? (
+              <View style={{ flexDirection: "row", gap: 14, marginTop: 12 }}>
+                {["Peso final", "Lote", "Validade"].map((label) => (
+                  <View key={label} style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 7.5, color: C.muted, textTransform: "uppercase", letterSpacing: 0.7 }}>{label}</Text>
+                    <View style={{ borderBottomWidth: 0.8, borderBottomColor: C.muted, height: 16 }} />
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -275,7 +300,7 @@ export async function fichaToXlsx(f: FichaTecnica, orgName: string, generatedAt:
   ws.getCell("B1").font = { name: "Calibri", size: 18, bold: true, color: { argb: XL.deep } };
   ws.getCell("B1").alignment = { vertical: "middle", indent: 1 };
   merge(2, 2, n);
-  ws.getCell("B2").value = `FICHA TÉCNICA  ·  ${generatedAt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`;
+  ws.getCell("B2").value = `${fichaDocNome(f.kind).toUpperCase()}  ·  ${generatedAt.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`;
   ws.getCell("B2").font = { name: "Calibri", size: 9, color: { argb: XL.muted } };
   ws.getCell("B2").alignment = { vertical: "middle", indent: 1 };
   ws.getRow(3).height = 4;
@@ -317,6 +342,14 @@ export async function fichaToXlsx(f: FichaTecnica, orgName: string, generatedAt:
     r += 3;
   }
   if (cards.length === 0) r = 8;
+
+  const photo = photoBytes(f, campos);
+  if (photo) {
+    const imageId = wb.addImage({ buffer: photo as unknown as ExcelJS.Buffer, extension: "jpeg" });
+    ws.addImage(imageId, { tl: { col: 0.1, row: r - 1 }, ext: { width: 210, height: 150 } });
+    for (let k = 0; k < 8; k++) ws.getRow(r + k).height = 20;
+    r += 9;
+  }
 
   const writeTable = (title: string, lines: FichaLine[]) => {
     merge(r, 1, n);
@@ -396,15 +429,24 @@ export async function fichaToXlsx(f: FichaTecnica, orgName: string, generatedAt:
 
   if (campos.modoPreparo) {
     merge(r, 1, n);
-    ws.getCell(r, 1).value = "Modo de preparo e observações";
+    ws.getCell(r, 1).value = instructionsTitle(f);
     ws.getCell(r, 1).font = { name: "Calibri", size: 12, bold: true, color: { argb: XL.teal } };
     r++;
-    for (let i = 0; i < 6; i++) {
-      for (let c = 1; c <= n; c++) ws.getCell(r, c).border = { bottom: { style: "dotted", color: { argb: "FFCBD5E1" } } };
-      ws.getRow(r).height = 22;
-      r++;
+    if (f.instructions) {
+      merge(r, 1, n);
+      ws.getCell(r, 1).value = f.instructions;
+      ws.getCell(r, 1).font = { name: "Calibri", size: 10 };
+      ws.getCell(r, 1).alignment = { wrapText: true, vertical: "top", indent: 1 };
+      ws.getRow(r).height = Math.min(400, 16 * (f.instructions.split("\n").length + Math.ceil(f.instructions.length / 90)));
+      r += 2;
+    } else {
+      for (let i = 0; i < 6; i++) {
+        for (let c = 1; c <= n; c++) ws.getCell(r, c).border = { bottom: { style: "dotted", color: { argb: "FFCBD5E1" } } };
+        ws.getRow(r).height = 22;
+        r++;
+      }
+      r += 1;
     }
-    r += 1;
   }
 
   const logo = brand("logo-powered-by-shogun.png");

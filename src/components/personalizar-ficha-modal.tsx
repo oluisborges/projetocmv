@@ -60,6 +60,12 @@ function Preview({ c, doc }: { c: FichaCampos; doc: string }) {
       <div className="mt-2 h-[3px] rounded" style={{ background: T.lime }} />
       <p className="mt-2 text-[15px] font-bold" style={{ color: T.deep }}>Penne a bolonhesa</p>
 
+      {c.foto ? (
+        <div className="mt-2 grid h-[84px] w-[118px] place-items-center rounded-md text-[8px] font-semibold" style={{ background: T.tint, color: T.muted }}>
+          Foto do produto
+        </div>
+      ) : null}
+
       {cards.length > 0 ? (
         <div className="mt-2 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${cards.length}, minmax(0, 1fr))` }}>
           {cards.map((k) => (
@@ -99,7 +105,7 @@ function Preview({ c, doc }: { c: FichaCampos; doc: string }) {
         </div>
       ) : null}
 
-      {!c.ingredientes && !c.embalagens && !cards.length && !c.custo && !c.custoPorMarmita && !c.modoPreparo ? (
+      {!c.ingredientes && !c.embalagens && !c.foto && !cards.length && !c.custo && !c.custoPorMarmita && !c.modoPreparo ? (
         <p className="mt-4 text-center text-[10px]" style={{ color: T.muted }}>Marque algum campo para ele aparecer aqui.</p>
       ) : null}
 

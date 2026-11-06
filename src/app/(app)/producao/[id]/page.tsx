@@ -37,6 +37,13 @@ export default async function ProductionPage(props: PageProps<"/producao/[id]">)
       <BackLink href="/producao">Produções</BackLink>
       <h1 className="text-2xl font-extrabold tracking-tight">{productionName(production)}</h1>
 
+      {production.items.some((i) => i.planned > 0) ? (
+        // Link comum (não <Link>): é um arquivo para baixar, não uma página para pré-carregar.
+        <a href={`/producao/${production.id}/ficha`} className="flex min-h-11 items-center justify-center rounded-xl border border-primary px-3 py-1 text-center text-sm font-semibold leading-tight text-primary">
+          Baixar ficha de produção (PDF)
+        </a>
+      ) : null}
+
       <ProductionWizard
         key={production.id}
         id={production.id}

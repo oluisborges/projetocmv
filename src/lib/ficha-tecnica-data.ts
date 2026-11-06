@@ -2,6 +2,7 @@ import "server-only";
 import { buildFichaTecnica, netLabel, type FichaIngredient, type FichaTecnica } from "@/lib/ficha-tecnica";
 import { loadCurrentPrices, loadPricingContext } from "@/lib/pricing-data";
 import { computeRecipe, recipeCostSettings } from "@/lib/recipe-cost";
+import { createClient } from "@/lib/supabase/server";
 import { loadIngredients, loadReceitaRows, loadReceitas, loadRecipe, loadRecipes } from "@/lib/recipes-data";
 
 export type FichaOptionItem = { name: string; tag: "insumo" | "receita" | "embalagem"; /** Quanto entra, como foi digitado ("120 g", "1 un"). */ net: string };
@@ -38,7 +39,8 @@ export async function loadFichaOptions(orgId: string, canWrite: boolean): Promis
 }
 
 /** A ficha técnica pronta para imprimir de um produto ou receita da marmitaria atual. `null` se não existir. */
-export async function loadFichaTecnica(orgId: string, canWrite: boolean, id: string): Promise<FichaTecnica | null> {
+/** `withPhoto`: busca também a foto do produto (pesada: só para quem vai mostrar ou imprimir). */
+export async function loadFichaTecnica(orgId: string, canWrite: boolean, id: string, withPhoto = false): Promise<FichaTecnica | null> {
   const ctx = await loadPricingContext(orgId, canWrite);
   if (!ctx) return null;
   const [found, ingredients, prices] = await Promise.all([loadRecipe(id), loadIngredients(), loadCurrentPrices(ctx.unit.id)]);
@@ -47,7 +49,7 @@ export async function loadFichaTecnica(orgId: string, canWrite: boolean, id: str
     ingredients.map((i) => [i.id, { id: i.id, name: i.name, kind: i.kind, purchase_unit: i.purchase_unit, unit_cost: i.unit_cost, correction_factor: i.correction_factor, cooking_yield: i.cooking_yield }]),
   );
   const { recipe, items } = found;
-  return buildFichaTecnica({
+  const ficha = buildFichaTecnica({
     recipe: {
       id: recipe.id,
       kind: recipe.kind,
@@ -58,10 +60,19 @@ export async function loadFichaTecnica(orgId: string, canWrite: boolean, id: str
       portion_weight: recipe.portion_weight,
       portion_weight_unit: recipe.portion_weight_unit,
       cooking_loss_pct: recipe.cooking_loss_pct,
+      instructions: recipe.instructions ?? null,
     },
-    items: items.map((i) => ({ ingredient_id: i.ingredient_id, net_qty: i.net_qty, qty_unit: i.qty_unit, scope: i.scope })),
+    items: items.map((i) => ({ id: i.id, ingredient_id: i.ingredient_id, net_qty: i.net_qty, qty_unit: i.qty_unit, scope: i.scope, sort_order: i.sort_order })),
     ingredients: map,
     safetyMarginPct: ctx.settings.safetyMarginPct ?? 0,
     price: prices.get(id) ?? null,
   });
+  return withPhoto && ficha.kind === "marmita" ? { ...ficha, photo: await loadRecipePhoto(orgId, id) } : ficha;
+}
+
+/** A foto de referência do produto (JPEG em base64) ou `null`. */
+export async function loadRecipePhoto(orgId: string, recipeId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("recipe_photos").select("data_url").eq("org_id", orgId).eq("recipe_id", recipeId).maybeSingle();
+  return (data?.data_url as string | undefined) ?? null;
 }

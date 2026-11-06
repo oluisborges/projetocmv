@@ -16,10 +16,10 @@ export async function GET(request: Request) {
   if (!id.success) return new Response("Escolha um produto ou receita.", { status: 400 });
   const format = params.get("formato") === "xlsx" ? "xlsx" : "pdf";
 
-  const ficha = await loadFichaTecnica(orgId, canWrite, id.data);
+  const campos = camposFromParam(params.get("campos"));
+  const ficha = await loadFichaTecnica(orgId, canWrite, id.data, campos.foto);
   if (!ficha) return new Response("Ficha não encontrada.", { status: 404 });
 
-  const campos = camposFromParam(params.get("campos"));
   const now = new Date();
   const body = format === "xlsx" ? await fichaToXlsx(ficha, orgName, now, campos) : await fichaToPdf(ficha, orgName, now, campos);
   return new Response(new Uint8Array(body), {

@@ -3,6 +3,9 @@ import { z } from "zod";
 import { BackLink } from "@/components/back-link";
 import { BaixarFichaButton } from "@/components/baixar-ficha";
 import { FichaItems } from "@/components/ficha-items";
+import { InstructionsCard } from "@/components/instructions-card";
+import { MontagemOrder } from "@/components/montagem-order";
+import { PhotoCard } from "@/components/photo-card";
 import { ProductTabs } from "@/components/product-tabs";
 import { requireMember } from "@/lib/auth";
 import { fichaItems, loadFichaTecnica } from "@/lib/ficha-tecnica-data";
@@ -14,8 +17,10 @@ export default async function ProductFichaPage(props: PageProps<"/cardapio/[id]/
   const { id } = await props.params;
   if (!z.uuid().safeParse(id).success) notFound();
 
-  const ficha = await loadFichaTecnica(orgId, canWrite, id);
+  const ficha = await loadFichaTecnica(orgId, canWrite, id, true);
   if (!ficha || ficha.kind !== "marmita") notFound();
+
+  const ordered = ficha.lines.flatMap((l) => (l.id ? [{ id: l.id, name: l.name, net: l.net, tag: l.tag === "receita" ? ("receita" as const) : ("insumo" as const) }] : []));
 
   return (
     <>
@@ -33,9 +38,18 @@ export default async function ProductFichaPage(props: PageProps<"/cardapio/[id]/
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">O que vai neste produto</h2>
-        <FichaItems items={fichaItems(ficha)} />
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Ordem de montagem</h2>
+        <MontagemOrder recipeId={ficha.id} items={ordered} ordered={ficha.lines.some((l) => l.order !== null)} canWrite={canWrite} />
+        {ficha.packaging.length > 0 ? (
+          <>
+            <h3 className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted">Embalagem</h3>
+            <FichaItems items={fichaItems({ ...ficha, lines: [] })} />
+          </>
+        ) : null}
       </section>
+
+      <PhotoCard recipeId={ficha.id} initial={ficha.photo} canWrite={canWrite} />
+      <InstructionsCard recipeId={ficha.id} initial={ficha.instructions} kind="marmita" canWrite={canWrite} />
     </>
   );
 }
