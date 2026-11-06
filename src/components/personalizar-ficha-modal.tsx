@@ -162,11 +162,11 @@ export function PersonalizarModal({ campos, itemId, itemName, kind, onSave, onCl
   }, [onClose]);
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 lg:items-center lg:p-4" role="dialog" aria-modal="true" aria-label={`Baixar ${doc.toLowerCase()}`} onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 lg:items-center lg:p-4" role="dialog" aria-modal="true" aria-label="Baixar ficha" onClick={onClose}>
       <div className="flex h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-surface lg:h-[85dvh] lg:rounded-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between gap-2 border-b border-border py-1 pl-4 pr-1">
           <div className="min-w-0">
-            <p className="font-extrabold leading-tight">Baixar {doc.toLowerCase()}</p>
+            <p className="font-extrabold leading-tight">Baixar ficha</p>
             <p className="truncate text-xs text-muted">{itemName}</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Fechar" className="grid size-11 place-items-center rounded-full text-xl text-muted">
