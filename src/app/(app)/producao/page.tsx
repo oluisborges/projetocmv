@@ -95,14 +95,14 @@ export default async function ProducaoPage() {
       {inProgress.length > 0 ? (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Em montagem</h2>
-          <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2">{inProgress.map(row)}</ul>
+          <ul className="flex flex-col gap-2">{inProgress.map(row)}</ul>
         </section>
       ) : null}
 
       {made.length > 0 ? (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Feitas</h2>
-          <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2">{made.map(row)}</ul>
+          <ul className="flex flex-col gap-2">{made.map(row)}</ul>
         </section>
       ) : null}
 

@@ -261,7 +261,7 @@ export function OrgDirectory({ items, createForm, canManage = true }: { items: O
           {visible.length === 0 ? (
             <p className="card p-4 text-sm text-muted">Nenhuma marmitaria com esse filtro. Limpe a busca ou troque o filtro.</p>
           ) : (
-            <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start">
+            <ul className="flex flex-col gap-3">
               {visible.map((i) => (
                 <li key={i.id}>
                   <article className={`flex flex-col gap-3 card border-l-4 p-4 ${ACCENT[i.severity]}`}>

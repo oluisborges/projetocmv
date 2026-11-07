@@ -273,7 +273,7 @@ function QuickCount({ rows: all, focusIds, onClose, onDone }: { rows: StockRowDa
           {error}
         </p>
       ) : null}
-      <button type="button" onClick={save} disabled={busy || filled === 0} className="sticky bottom-20 h-12 lg:bottom-4 rounded-xl bg-primary font-semibold text-primary-foreground shadow-lg disabled:opacity-60">
+      <button type="button" onClick={save} disabled={busy || filled === 0} className="sticky bottom-20 h-12 rounded-xl bg-primary font-semibold text-primary-foreground shadow-lg disabled:opacity-60">
         {busy ? <PendingLabel>Salvando…</PendingLabel> : filled === 0 ? "Digite o que contou" : `Salvar contagem (${filled})`}
       </button>
     </section>
