@@ -180,7 +180,7 @@ function Preview({ c }: { c: SheetConfig }) {
 }
 
 /** A folha inteira, encolhida para caber na área (sem rolar), com a largura de papel de 340 px. */
-function FitPreview({ c, height }: { c: SheetConfig; height: number }) {
+function FitPreview({ c, height }: { c: SheetConfig; /** Sem altura fixa, a prévia ocupa o que sobrar da coluna (desktop, em qualquer altura de janela). */ height?: number }) {
   const box = useRef<HTMLDivElement>(null);
   const page = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState({ scale: 0.8, left: 0 });
@@ -201,7 +201,7 @@ function FitPreview({ c, height }: { c: SheetConfig; height: number }) {
   }, []);
 
   return (
-    <div ref={box} className="relative w-full overflow-hidden" style={{ height }}>
+    <div ref={box} className={`relative w-full overflow-hidden ${height === undefined ? "min-h-0 flex-1" : ""}`} style={height === undefined ? undefined : { height }}>
       <div ref={page} className="absolute top-0 origin-top-left" style={{ left: fit.left, transform: `scale(${fit.scale})` }}>
         <Preview c={c} />
       </div>
@@ -260,12 +260,12 @@ export function ProducaoFichaModal({ planId, planName, onClose }: { planId: stri
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           {/* Prévia */}
-          <div className="shrink-0 border-b border-border bg-black/5 px-3 pb-2 pt-3 lg:flex lg:flex-1 lg:flex-col lg:border-b-0 lg:border-r">
+          <div className="shrink-0 border-b border-border bg-black/5 px-3 pb-2 pt-3 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:border-b-0 lg:border-r">
             <div className="lg:hidden">
               <FitPreview c={config} height={grande ? 460 : 250} />
             </div>
-            <div className="hidden lg:block">
-              <FitPreview c={config} height={520} />
+            <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+              <FitPreview c={config} />
             </div>
             <div className="mt-1 flex items-center justify-between gap-2">
               <p className="text-[11px] text-muted">Exemplo com dados fictícios</p>
