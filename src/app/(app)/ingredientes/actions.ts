@@ -257,6 +257,17 @@ export async function archiveIngredient(formData: FormData): Promise<void> {
   redirect("/ingredientes");
 }
 
+export async function restoreIngredient(formData: FormData): Promise<void> {
+  const { orgId, canWrite } = await requireMember();
+  const id = z.uuid().safeParse(formData.get("id"));
+  if (!canWrite || !id.success) return;
+
+  const supabase = await createClient();
+  await supabase.from("ingredients").update({ archived_at: null }).eq("id", id.data).eq("org_id", orgId);
+  recordSnapshot();
+  revalidatePath("/ingredientes");
+}
+
 export async function adjustPrices(_prev: FormState, formData: FormData): Promise<FormState> {
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return fail(NO_PERMISSION);

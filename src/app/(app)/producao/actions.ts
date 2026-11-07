@@ -12,7 +12,9 @@ import { createClient } from "@/lib/supabase/server";
 import { brtDate, weekStartOf } from "@/lib/week";
 import type { Result } from "../cardapio/actions";
 import { requireProductionAccess } from "@/lib/production-access";
+import { lotCode } from "@/lib/lots";
 import { syncMonthFromLedger } from "@/lib/stock-sync";
+import { parsePaid, parsePurchaseQty } from "@/lib/purchase-qty";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 
@@ -28,12 +30,13 @@ async function context(): Promise<Context> {
 
 const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(new Date(`${v}T00:00:00Z`).getTime());
 
-/** Começa uma produção nova. Com `suggestion`, já vem com as marmitas e quantidades que o sistema sugere; sem, vazia. */
+/** Começa uma produção nova: com a sugestão do sistema, repetindo a última produção ou vazia. */
 export async function createProduction(formData: FormData): Promise<void> {
   await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return;
-  const withSuggestion = formData.get("mode") !== "blank";
+  const mode = formData.get("mode");
+  const withSuggestion = mode !== "blank" && mode !== "repeat";
   const today = brtDate(new Date());
   const weekStart = weekStartOf(new Date());
 
@@ -49,6 +52,24 @@ export async function createProduction(formData: FormData): Promise<void> {
         .filter((r) => r.suggested > 0)
         .map((r) => ({ org_id: ctx.orgId, plan_id: plan.id as string, recipe_id: r.id, planned_qty: r.suggested, suggested_qty: r.suggested }));
       if (items.length > 0) await supabase.from("production_plan_items").insert(items);
+    }
+  }
+  if (mode === "repeat") {
+    // As quantidades da última produção (o que saiu de verdade, se já foi feita); só marmitas que ainda têm a ficha completa.
+    const { data: lastPlans } = await supabase.from("production_plans").select("id").eq("org_id", ctx.orgId).eq("unit_id", ctx.unitId).neq("id", plan.id as string).order("planned_for", { ascending: false }).order("created_at", { ascending: false }).limit(10);
+    const ids = (lastPlans ?? []).map((p) => p.id as string);
+    if (ids.length > 0) {
+      const { data: past } = await supabase.from("production_plan_items").select("plan_id, recipe_id, planned_qty, produced_qty").eq("org_id", ctx.orgId).in("plan_id", ids);
+      const source = ids.find((id) => (past ?? []).some((i) => i.plan_id === id && Number(i.planned_qty) > 0));
+      const base = await loadProductionBase(ctx.orgId, true);
+      if (source && base) {
+        const ready = new Set(base.recipes.map((r) => r.id));
+        const items = (past ?? [])
+          .filter((i) => i.plan_id === source && ready.has(i.recipe_id as string))
+          .map((i) => ({ org_id: ctx.orgId, plan_id: plan.id as string, recipe_id: i.recipe_id as string, planned_qty: Number(i.produced_qty ?? i.planned_qty), suggested_qty: null }))
+          .filter((i) => i.planned_qty > 0);
+        if (items.length > 0) await supabase.from("production_plan_items").insert(items);
+      }
     }
   }
   revalidatePath("/producao");
@@ -113,6 +134,43 @@ export async function deleteProduction(formData: FormData): Promise<void> {
   redirect("/producao");
 }
 
+const purchaseInput = z.object({ planId: z.uuid(), ingredientId: z.uuid(), qty: z.string().max(20), unit: z.string().max(4), paid: z.string().max(20) });
+
+/** A compra de verdade de um item da lista: quanto comprou (muitas vezes é mais que o da lista) e quanto pagou. Ajusta a entrada no estoque. */
+export async function savePurchase(input: z.input<typeof purchaseInput>): Promise<Result<{ qtyBase: number }>> {
+  await requireProductionAccess();
+  const ctx = await context();
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+  const parsed = purchaseInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Compra inválida." };
+  const v = parsed.data;
+
+  const supabase = await createClient();
+  const { data: ing } = await supabase.from("ingredients").select("purchase_unit").eq("id", v.ingredientId).eq("org_id", ctx.orgId).maybeSingle();
+  if (!ing) return { ok: false, error: "Insumo não encontrado." };
+  const qty = parsePurchaseQty(v.qty, v.unit, ing.purchase_unit as string);
+  if ("error" in qty) return { ok: false, error: qty.error };
+  const paid = parsePaid(v.paid);
+  if (paid === undefined) return { ok: false, error: "Digite o valor pago, como 48,90." };
+
+  const { data, error } = await supabase
+    .from("stock_movements")
+    .update({ qty_base: qty.qty, paid_amount: paid })
+    .eq("org_id", ctx.orgId)
+    .eq("unit_id", ctx.unitId)
+    .eq("plan_id", v.planId)
+    .eq("ingredient_id", v.ingredientId)
+    .eq("kind", "purchase")
+    .select("id");
+  if (error || !data?.length) return { ok: false, error: "Marque o item como comprado primeiro e tente de novo." };
+
+  await syncMonthFromLedger(ctx.orgId, ctx.unitId, { ingredientIds: [v.ingredientId] });
+  revalidatePath("/producao/estoque");
+  revalidatePath("/producao/estoque/movimentos");
+  revalidatePath("/producao/estoque/historico");
+  return { ok: true, qtyBase: qty.qty };
+}
+
 const boughtInput = z.object({ planId: z.uuid(), ingredientId: z.uuid(), bought: z.boolean(), qtyBase: z.number().positive().max(100_000_000) });
 
 /** Marcar um item da lista de compras como comprado dá entrada no estoque; desmarcar desfaz. */
@@ -144,7 +202,7 @@ export async function setBought(input: z.input<typeof boughtInput>): Promise<Res
   return { ok: true };
 }
 
-const productionInput = z.object({ planId: z.uuid(), produced: z.array(z.object({ recipeId: z.uuid(), qty: z.number().int().min(0).max(100_000) })).max(300) });
+const productionInput = z.object({ planId: z.uuid(), produced: z.array(z.object({ recipeId: z.uuid(), qty: z.number().int().min(0).max(100_000) })).max(300), /** Validade das marmitas deste lote ("2027-02-05"); vazio = sem controle de validade. */ expiresOn: z.string().refine(isDate, "Validade inválida.").nullable().optional() });
 
 /**
  * "Já fiz": as marmitas entram no estoque de prontas e os insumos (e o que as receitas gastaram) saem do estoque, pelas fichas.
@@ -156,7 +214,7 @@ export async function registerProduction(input: z.input<typeof productionInput>)
   if (!ctx.ok) return { ok: false, error: ctx.error };
   const parsed = productionInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Produção inválida." };
-  const { planId, produced } = parsed.data;
+  const { planId, produced, expiresOn } = parsed.data;
   const done = produced.filter((p) => p.qty > 0);
   if (done.length === 0) return { ok: false, error: "Informe quantas marmitas saíram." };
 
@@ -189,6 +247,12 @@ export async function registerProduction(input: z.input<typeof productionInput>)
     return { ok: false, error: "Não foi possível dar baixa no estoque." };
   }
   for (const p of produced) await supabase.from("production_plan_items").update({ produced_qty: p.qty }).eq("org_id", ctx.orgId).eq("plan_id", planId).eq("recipe_id", p.recipeId);
+
+  // Um lote por produto, com o dia e a validade. Auxiliar: se não salvar, a produção continua valendo (o saldo vem do livro de estoque).
+  const producedOn = brtDate(new Date(now));
+  await supabase.from("finished_lots").insert(
+    done.map((p) => ({ org_id: ctx.orgId, unit_id: ctx.unitId, recipe_id: p.recipeId, plan_id: planId, code: lotCode(producedOn), qty: p.qty, produced_on: producedOn, expires_on: expiresOn && expiresOn >= producedOn ? expiresOn : null })),
+  );
 
   await syncMonthFromLedger(ctx.orgId, ctx.unitId, { ingredientIds: [...needs.ingredients.keys()], finished: true });
   revalidatePath("/producao");

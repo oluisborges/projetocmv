@@ -31,7 +31,8 @@ export default async function MonthPage(props: PageProps<"/producao/fechar-mes">
   const sp = await props.searchParams;
   const requested = monthStart(typeof sp.mes === "string" ? sp.mes : undefined);
   const now = currentMonthStart();
-  const month = requested ?? now;
+  // Mês que ainda não começou não tem o que fechar: volta para o atual.
+  const month = requested && requested <= now ? requested : now;
 
   const ctx = await loadPricingContext(orgId, canWrite);
   if (!ctx) {
@@ -222,6 +223,7 @@ export default async function MonthPage(props: PageProps<"/producao/fechar-mes">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
           {canWrite ? "2" : "1"}. {menuOn ? "Marmitas vendidas por fora do cardápio" : "Marmitas vendidas avulsas"} ({formatNumber(looseUnits, 0)})
         </h2>
+        {canWrite ? <p className="text-xs text-muted">Digite as unidades de cada uma. Cada linha salva sozinha ao sair do campo (aparece “Salvo ✓”).</p> : null}
         {dishes.length === 0 ? (
           <p className="text-sm text-muted">
             Ainda não há fichas. Monte em <Link href="/cardapio" className="tap-area font-semibold text-primary">Marmitas</Link>.

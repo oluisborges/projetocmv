@@ -56,7 +56,7 @@ export default async function CouponsPage(props: PageProps<"/painel/cupons">) {
 
       <div>
         <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Mês</p>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <div className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
           {months.map((m) => {
             const on = m === month;
             const [y, mm] = m.split("-").map(Number);

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { BackLink } from "@/components/back-link";
 import { ConfirmButton } from "@/components/confirm-button";
+import { InstructionsCard } from "@/components/instructions-card";
 import { isPurchaseUnit, baseUnitOf } from "@/lib/calc";
 import { requireMember } from "@/lib/auth";
 import { loadIngredients, loadRecipe, loadRecipes } from "@/lib/recipes-data";
@@ -61,6 +62,8 @@ export default async function ReceitaPage(props: PageProps<"/ingredientes/receit
           }))}
         canWrite={canWrite}
       />
+
+      <InstructionsCard recipeId={recipe.id} initial={recipe.instructions ?? null} kind="receita" canWrite={canWrite} />
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Onde é usada</h2>

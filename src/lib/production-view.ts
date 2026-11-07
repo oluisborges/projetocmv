@@ -15,12 +15,18 @@ export type BuyRow = {
   cost: number;
   /** O que se compra, na unidade-base (g, ml, un): é o que entra no estoque ao marcar "comprei". */
   buyQty: number;
+  /** Quanto vem em uma embalagem de compra (unidade-base), para calcular o preço pago por embalagem. */
+  packSize: number | null;
+  /** Unidade em que o insumo é comprado e digitado (kg, g, l, ml, un). */
+  unit: string;
+  /** Estoque mínimo que entra na conta ("2 kg"), se houver. */
+  minimum: string | null;
 };
 
 const pluralPack = (n: number) => (n === 1 ? "pacote" : "pacotes");
 
 /** O que a lista de compras mostra: só o que falta comprar, já com texto pronto e agrupável por fornecedor. */
-export function buyRows(list: PurchaseItem[], ingredients: Record<string, ProdIngredient>, stockKnown: (id: string) => boolean): { toBuy: BuyRow[]; enough: BuyRow[] } {
+export function buyRows(list: PurchaseItem[], ingredients: Record<string, ProdIngredient>, stockKnown: (id: string) => boolean, minimums: Record<string, number> = {}): { toBuy: BuyRow[]; enough: BuyRow[] } {
   const toBuy: BuyRow[] = [];
   const enough: BuyRow[] = [];
   for (const item of list) {
@@ -36,6 +42,9 @@ export function buyRows(list: PurchaseItem[], ingredients: Record<string, ProdIn
       stock: stockKnown(item.id) ? formatBaseQty(item.stock, ing.baseUnit) : null,
       cost: item.buyQty * ing.unitCost,
       buyQty: item.buyQty,
+      packSize: ing.packSize,
+      unit: ing.purchaseUnit,
+      minimum: minimums[item.id] ? formatBaseQty(minimums[item.id], ing.baseUnit) : null,
     };
     (item.missing > 0 ? toBuy : enough).push(row);
   }
@@ -74,7 +83,7 @@ export function batchesLabel(batches: number): string {
   return `${formatNumber(Math.round(batches * 100) / 100, 2)} ${Math.abs(batches - 1) < 0.005 ? "lote" : "lotes"}`;
 }
 
-export type ProductionInput = Pick<ProductionBase, "recipes" | "ingredients" | "receitas" | "stock">;
+export type ProductionInput = Pick<ProductionBase, "recipes" | "ingredients" | "receitas" | "stock"> & { /** Estoque mínimo por insumo (unidade-base): entra na lista de compras mesmo sem a produção pedir. */ minimums?: Record<string, number> };
 export type PlanLine = { recipeId: string; units: number };
 
 export type ProductionCalc = {
@@ -102,7 +111,11 @@ export function computeProduction(lines: PlanLine[], base: ProductionInput, alre
   );
   const stock = new Map(Object.entries(base.stock).map(([id, b]) => [id, b.balance - (alreadyBought[id] ?? 0)]));
   const pack = new Map(Object.entries(base.ingredients).flatMap(([id, i]) => (i.packSize ? [[id, i.packSize] as const] : [])));
-  const rows = buyRows(shoppingList(needs.ingredients, stock, pack), base.ingredients, (id) => base.stock[id]?.known === true);
+  // O estoque mínimo soma ao que a produção pede: quem está abaixo do mínimo entra na lista de compras, mesmo sem produção usar.
+  const minimums = base.minimums ?? {};
+  const wanted = new Map(needs.ingredients);
+  for (const [id, min] of Object.entries(minimums)) if (min > 0 && base.ingredients[id]) wanted.set(id, (wanted.get(id) ?? 0) + min);
+  const rows = buyRows(shoppingList(wanted, stock, pack), base.ingredients, (id) => base.stock[id]?.known === true && base.stock[id]?.lastCountAt !== null, minimums);
   return {
     needs,
     rows,
@@ -153,6 +166,20 @@ export function suggestionRows(base: Pick<ProductionBase, "recipes" | "finished"
       topSeller: top.has(r.id),
     }))
     .sort((a, b) => Number(b.topSeller) - Number(a.topSeller) || b.forecast - a.forecast || a.name.localeCompare(b.name, "pt-BR"));
+}
+
+export type YieldRow = { id: string; name: string; planned: number; produced: number; diff: number; lossPct: number | null };
+export type YieldSummary = { planned: number; produced: number; diff: number; lossPct: number | null; rows: YieldRow[]; /** Perda acima do limite (10%): vale um aviso. */ high: boolean };
+
+/** Rendimento real de uma produção: quanto saiu comparado ao planejado, no total e por produto (perda = o que faltou, em % do planejado). */
+export function yieldSummary(rows: { id: string; name: string; planned: number; produced: number }[], limit = 0.1): YieldSummary {
+  const list: YieldRow[] = rows
+    .filter((r) => r.planned > 0 || r.produced > 0)
+    .map((r) => ({ ...r, diff: r.produced - r.planned, lossPct: r.planned > 0 ? Math.max(0, (r.planned - r.produced) / r.planned) : null }));
+  const planned = list.reduce((n, r) => n + r.planned, 0);
+  const produced = list.reduce((n, r) => n + r.produced, 0);
+  const lossPct = planned > 0 ? Math.max(0, (planned - produced) / planned) : null;
+  return { planned, produced, diff: produced - planned, lossPct, rows: list, high: lossPct !== null && lossPct > limit };
 }
 
 /** "2026-10-28" -> "28/10". */

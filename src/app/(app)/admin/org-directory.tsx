@@ -228,7 +228,7 @@ export function OrgDirectory({ items, createForm, canManage = true }: { items: O
               ) : null}
             </div>
 
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Filtro">
+            <div className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4" role="group" aria-label="Filtro">
               {(
                 [
                   ["all", "Todas"],

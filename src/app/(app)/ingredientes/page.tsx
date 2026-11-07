@@ -4,6 +4,7 @@ import { requireMember } from "@/lib/auth";
 import { loadArchivedRecipes, loadReceitas } from "@/lib/recipes-data";
 import { createClient } from "@/lib/supabase/server";
 import { restoreRecipe } from "../cardapio/actions";
+import { restoreIngredient } from "./actions";
 import { InsumosLists, type TypeFilter } from "./insumos-lists";
 import { NewSheet } from "./new-sheet";
 import type { IngredientRow } from "./price-list";
@@ -25,7 +26,11 @@ export default async function IngredientsPage(props: PageProps<"/ingredientes">)
     .eq("org_id", orgId)
     .is("archived_at", null)
     .order("name");
-  const [receitas, archivedReceitas] = await Promise.all([loadReceitas(), loadArchivedRecipes("receita")]);
+  const [receitas, archivedReceitas, { data: archivedItems }] = await Promise.all([
+    loadReceitas(),
+    loadArchivedRecipes("receita"),
+    supabase.from("ingredients").select("id, name, kind").eq("org_id", orgId).not("archived_at", "is", null).order("name"),
+  ]);
   const all = (data ?? []) as IngredientRow[];
 
   // A barra de preços é do conjunto todo (insumos e embalagens), não importa o filtro escolhido.
@@ -80,6 +85,30 @@ export default async function IngredientsPage(props: PageProps<"/ingredientes">)
       ) : (
         <InsumosLists initialType={initialType} receitas={receitas} items={all} canWrite={canWrite} />
       )}
+
+      {(archivedItems ?? []).length > 0 ? (
+        <details className="card px-4">
+          <summary className="flex h-12 cursor-pointer items-center text-sm font-semibold text-muted">Insumos e embalagens arquivados ({(archivedItems ?? []).length})</summary>
+          <ul className="divide-y divide-border">
+            {(archivedItems ?? []).map((a) => (
+              <li key={a.id as string} className="flex items-center justify-between gap-3 py-3">
+                <span className="min-w-0 truncate text-sm">
+                  {a.name as string}
+                  <span className="ml-2 text-xs text-muted">{a.kind === "embalagem" ? "embalagem" : "insumo"}</span>
+                </span>
+                {canWrite ? (
+                  <form action={restoreIngredient}>
+                    <input type="hidden" name="id" value={a.id as string} />
+                    <SubmitButton pendingLabel="Restaurando…" className="h-11 shrink-0 px-2 text-sm font-semibold text-primary">
+                      Restaurar
+                    </SubmitButton>
+                  </form>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
 
       {archivedReceitas.length > 0 ? (
         <details className="card px-4">

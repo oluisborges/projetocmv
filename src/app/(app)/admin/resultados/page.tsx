@@ -39,7 +39,7 @@ export default async function NetworkPage(props: PageProps<"/admin/resultados">)
 
       <div>
         <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Mês</p>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <div className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
           {months.slice(0, 6).map((m) => {
             const on = m === chosen;
             return (

@@ -73,7 +73,7 @@ export function LinksBrowser({ items, recipes, combos, canWrite }: { items: Link
         ) : null}
       </div>
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4" role="group" aria-label="Tipo">
+      <div className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4" role="group" aria-label="Tipo">
         {(
           [
             ["all", "Todos"],

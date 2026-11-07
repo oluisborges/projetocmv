@@ -13,6 +13,7 @@ export const FICHA_CAMPOS = [
   "precoVenda",
   "cmv",
   "modoPreparo",
+  "foto",
 ] as const;
 
 export type FichaCampo = (typeof FICHA_CAMPOS)[number];
@@ -29,14 +30,16 @@ export const CAMPO_LABEL: Record<FichaCampo, string> = {
   pesoPorcao: "Peso da porção",
   precoVenda: "Preço de venda",
   cmv: "CMV",
-  modoPreparo: "Modo de preparo e observações",
+  modoPreparo: "Modo de preparo ou montagem e observações",
+  foto: "Foto do produto",
 };
 
 /** Como os campos aparecem agrupados na tela. */
 export const CAMPO_GRUPOS: { titulo: string; dica?: string; campos: FichaCampo[] }[] = [
   { titulo: "Tabela de itens", dica: "Quais itens e quais colunas.", campos: ["ingredientes", "embalagens", "pesoLiquido", "fc", "pesoBruto", "custo"] },
   { titulo: "Resumo no topo", dica: "Nas receitas: rendimento (peso da porção) e custo do lote, por kg e por 100 g (custo por marmita).", campos: ["custoPorMarmita", "pesoPorcao", "precoVenda", "cmv"] },
-  { titulo: "Espaço para escrever", campos: ["modoPreparo"] },
+  { titulo: "Foto de referência", dica: "Só sai nos produtos que têm foto cadastrada.", campos: ["foto"] },
+  { titulo: "Texto e espaço para escrever", dica: "Sai o passo a passo que você cadastrou; sem texto, ficam linhas em branco.", campos: ["modoPreparo"] },
 ];
 
 const only = (on: FichaCampo[]): FichaCampos => Object.fromEntries(FICHA_CAMPOS.map((c) => [c, on.includes(c)])) as FichaCampos;
@@ -48,8 +51,8 @@ export const MODELOS: { id: ModeloId; nome: string; descricao: string; campos: F
   {
     id: "cozinha",
     nome: "Cozinha",
-    descricao: "Ingredientes, embalagens, pesos e o espaço do modo de preparo. Sem custo nem preço.",
-    campos: only(["ingredientes", "embalagens", "pesoLiquido", "pesoBruto", "pesoPorcao", "modoPreparo"]),
+    descricao: "Ingredientes, embalagens, pesos, foto e o passo a passo. Sem custo nem preço.",
+    campos: only(["ingredientes", "embalagens", "pesoLiquido", "pesoBruto", "pesoPorcao", "modoPreparo", "foto"]),
   },
   {
     id: "financeiro",

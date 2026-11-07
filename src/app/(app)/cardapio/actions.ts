@@ -44,9 +44,9 @@ function readSettings(raw: {
   portionWeight: unknown;
   portionWeightUnit?: unknown;
   cookingLoss: unknown;
-}): Parsed<RecipeSettingsInput> {
+}, labels: { name: string; weight: string } = { name: "Dê um nome à ficha (até 80 letras).", weight: "Peso da porção" }): Parsed<RecipeSettingsInput> {
   const name = String(raw.name ?? "").trim();
-  if (!name || name.length > 80) return { ok: false, error: "Dê um nome à ficha (até 80 letras)." };
+  if (!name || name.length > 80) return { ok: false, error: labels.name };
 
   const category = String(raw.category ?? "").trim() || null;
   if (category && category.length > 40) return { ok: false, error: "Categoria muito longa." };
@@ -54,7 +54,7 @@ function readSettings(raw: {
   const portions = optionalNumber(raw.portions, "Porções", { max: 100_000 });
   if (!portions.ok) return portions;
   const weightUnit = raw.portionWeightUnit === "kg" || raw.portionWeightUnit === "ml" || raw.portionWeightUnit === "l" || raw.portionWeightUnit === "un" ? raw.portionWeightUnit : "g";
-  const weightTyped = optionalNumber(raw.portionWeight, "Peso da porção", { max: 100_000 });
+  const weightTyped = optionalNumber(raw.portionWeight, labels.weight, { max: 100_000 });
   if (!weightTyped.ok) return weightTyped;
   // O que o dono digitou (em g ou kg) vira gramas, que é o que o cálculo usa.
   const weight: { value: number | null } = {
@@ -96,7 +96,8 @@ export async function createRecipe(_prev: FormState, formData: FormData): Promis
   if (formData.get("mode") !== "batch") {
     const name = String(formData.get("name") ?? "").trim();
     const category = String(formData.get("category") ?? "").trim() || null;
-    if (!name || name.length > 80) return { error: "Dê um nome à ficha (até 80 letras)." };
+    if (!name) return { error: "Dê um nome ao produto." };
+    if (name.length > 80) return { error: `O nome pode ter até 80 letras (este tem ${name.length}).` };
     if (category && category.length > 40) return { error: "Categoria muito longa." };
 
     const supabase = await createClient();
@@ -140,7 +141,7 @@ export async function createReceita(_prev: FormState, formData: FormData): Promi
     portionWeight: formData.get("ready_weight"),
     portionWeightUnit: formData.get("ready_unit"),
     cookingLoss: "0",
-  });
+  }, { name: "Dê um nome à receita (até 80 letras).", weight: "Quanto rende pronta" });
   if (!read.ok) return { error: read.error };
   if (read.value.portionWeight === null) return { error: "Informe quanto a receita rende pronta (o peso total depois de cozida)." };
 
@@ -330,8 +331,8 @@ export async function duplicateRecipe(formData: FormData): Promise<void> {
 
   const supabase = await createClient();
   const [{ data: recipe }, { data: items }] = await Promise.all([
-    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode, kind").eq("id", id.data).eq("org_id", orgId).maybeSingle(),
-    supabase.from("recipe_items").select("ingredient_id, receita_id, net_qty, qty_unit, scope, counts_for_yield").eq("recipe_id", id.data).eq("org_id", orgId),
+    supabase.from("recipes").select("name, category, portions, portion_weight, portion_weight_unit, cooking_loss_pct, mode, kind, instructions").eq("id", id.data).eq("org_id", orgId).maybeSingle(),
+    supabase.from("recipe_items").select("ingredient_id, receita_id, net_qty, qty_unit, scope, counts_for_yield, sort_order").eq("recipe_id", id.data).eq("org_id", orgId),
   ]);
   if (!recipe) return;
 
@@ -374,4 +375,75 @@ export async function restoreRecipe(formData: FormData): Promise<void> {
   const { data: restored } = await supabase.from("recipes").update({ active: true }).eq("id", id.data).eq("org_id", orgId).select("kind").maybeSingle();
   revalidatePath("/cardapio");
   redirect(restored?.kind === "receita" ? `/ingredientes/receitas/${id.data}` : `/cardapio/${id.data}`);
+}
+
+/** Modo de preparo (receita) ou passo a passo da montagem (produto). Vazio apaga o texto. */
+export async function saveRecipeInstructions(recipeId: string, text: string): Promise<Result> {
+  const { orgId, canWrite } = await requireMember();
+  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+  const id = z.uuid().safeParse(recipeId);
+  if (!id.success) return { ok: false, error: "Ficha inválida." };
+  const value = text.replace(/\r\n/g, "\n").trim();
+  if (value.length > 4000) return { ok: false, error: "O texto passou de 4.000 letras. Resuma um pouco." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("recipes").update({ instructions: value === "" ? null : value }).eq("id", id.data).eq("org_id", orgId).select("id").maybeSingle();
+  if (error || !data) return { ok: false, error: "Não foi possível salvar o texto." };
+
+  revalidatePath("/cardapio");
+  revalidatePath("/ingredientes");
+  return { ok: true };
+}
+
+/** A foto de referência do produto: o navegador já manda reduzida (JPEG em base64, até uns 300 KB). */
+export async function saveRecipePhoto(recipeId: string, dataUrl: string): Promise<Result> {
+  const { orgId, canWrite } = await requireMember();
+  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+  const id = z.uuid().safeParse(recipeId);
+  if (!id.success) return { ok: false, error: "Produto inválido." };
+  if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(dataUrl)) return { ok: false, error: "Use uma foto em JPEG ou PNG." };
+  if (dataUrl.length > 400_000) return { ok: false, error: "A foto ficou grande demais. Tente outra, de menor resolução." };
+
+  const supabase = await createClient();
+  const { data: product } = await supabase.from("recipes").select("id").eq("id", id.data).eq("org_id", orgId).eq("kind", "marmita").maybeSingle();
+  if (!product) return { ok: false, error: "Produto não encontrado." };
+  const { error } = await supabase.from("recipe_photos").upsert({ recipe_id: id.data, org_id: orgId, data_url: dataUrl, updated_at: new Date().toISOString() }, { onConflict: "recipe_id" });
+  if (error) return { ok: false, error: "Não foi possível salvar a foto." };
+
+  revalidatePath(`/cardapio/${id.data}/ficha`);
+  return { ok: true };
+}
+
+export async function removeRecipePhoto(recipeId: string): Promise<Result> {
+  const { orgId, canWrite } = await requireMember();
+  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+  const id = z.uuid().safeParse(recipeId);
+  if (!id.success) return { ok: false, error: "Produto inválido." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("recipe_photos").delete().eq("recipe_id", id.data).eq("org_id", orgId);
+  if (error) return { ok: false, error: "Não foi possível remover a foto." };
+
+  revalidatePath(`/cardapio/${id.data}/ficha`);
+  return { ok: true };
+}
+
+/** A ordem de montagem do produto: os ids dos itens na ordem escolhida (1, 2, 3…). Embalagens ficam fora. */
+export async function saveItemOrder(recipeId: string, itemIds: string[]): Promise<Result> {
+  const { orgId, canWrite } = await requireMember();
+  if (!canWrite) return { ok: false, error: NO_PERMISSION };
+  const parsed = z.object({ recipeId: z.uuid(), itemIds: z.array(z.uuid()).min(1).max(200) }).safeParse({ recipeId, itemIds });
+  if (!parsed.success || new Set(parsed.data.itemIds).size !== parsed.data.itemIds.length) return { ok: false, error: "Ordem inválida." };
+
+  const supabase = await createClient();
+  // Só mexe em itens deste produto (e desta marmitaria): o resto do pedido é ignorado.
+  const { data: own } = await supabase.from("recipe_items").select("id").eq("recipe_id", parsed.data.recipeId).eq("org_id", orgId).in("id", parsed.data.itemIds);
+  const valid = new Set((own ?? []).map((r) => r.id as string));
+  if (valid.size !== parsed.data.itemIds.length) return { ok: false, error: "Ordem inválida." };
+
+  const results = await Promise.all(parsed.data.itemIds.map((itemId, index) => supabase.from("recipe_items").update({ sort_order: index + 1 }).eq("id", itemId).eq("org_id", orgId)));
+  if (results.some((r) => r.error)) return { ok: false, error: "Não foi possível salvar a ordem." };
+
+  revalidatePath(`/cardapio/${parsed.data.recipeId}/ficha`);
+  return { ok: true };
 }

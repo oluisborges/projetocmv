@@ -25,16 +25,16 @@ function useFichaCampos(): [FichaCampos, (c: FichaCampos) => void] {
   return [campos, save];
 }
 
-/** Botão "Baixar ficha técnica": abre a janela para escolher o modelo e os campos e baixar em PDF ou Excel. */
-export function BaixarFichaButton({ id, name }: { id: string; name: string }) {
+/** Botão "Baixar ficha": abre a janela para escolher o modelo e os campos e baixar em PDF ou Excel. */
+export function BaixarFichaButton({ id, name, kind }: { id: string; name: string; kind: "marmita" | "receita" }) {
   const [campos, save] = useFichaCampos();
   const [open, setOpen] = useState(false);
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className="flex min-h-11 w-full items-center justify-center rounded-xl border border-primary bg-primary px-3 py-1 text-center text-sm font-semibold leading-tight text-primary-foreground">
-        Baixar ficha técnica
+        Baixar ficha
       </button>
-      {open ? <PersonalizarModal campos={campos} itemId={id} itemName={name} onSave={save} onClose={() => setOpen(false)} /> : null}
+      {open ? <PersonalizarModal campos={campos} itemId={id} itemName={name} kind={kind} onSave={save} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }

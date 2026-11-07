@@ -53,7 +53,7 @@ export default async function IngredientPage(props: PageProps<"/ingredientes/[id
               <li key={h.id} className="flex items-baseline justify-between py-3 text-sm">
                 <span className="text-muted">{date.format(new Date(h.changed_at))}</span>
                 <span className="tabular font-medium">
-                  {formatBRL(h.purchase_price)} <span className="font-normal text-muted">/ {formatPurchaseSize(h.purchase_qty, ing.purchase_unit)}</span>
+                  {formatBRL(h.purchase_price)}{Number(h.purchase_qty) === Number(ing.purchase_qty) ? <span className="font-normal text-muted"> / {formatPurchaseSize(h.purchase_qty, ing.purchase_unit)}</span> : null}
                 </span>
               </li>
             ))}

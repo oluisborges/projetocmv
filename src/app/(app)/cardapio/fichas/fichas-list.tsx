@@ -74,7 +74,7 @@ export function FichasList({ options }: { options: FichaOption[] }) {
               </div>
               {open.has(o.id) ? <FichaItems items={o.items} /> : null}
               <div className={`grid gap-2 ${o.kind === "marmita" ? "grid-cols-2" : ""}`}>
-                <BaixarFichaButton id={o.id} name={o.name} />
+                <BaixarFichaButton id={o.id} name={o.name} kind={o.kind} />
                 {o.kind === "marmita" ? (
                   <Link href={`/cardapio/${o.id}/nutricional`} className="flex min-h-11 items-center justify-center rounded-xl border border-border bg-surface px-3 py-1 text-center text-sm font-semibold leading-tight">
                     Baixar tabela nutricional

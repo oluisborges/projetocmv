@@ -85,7 +85,7 @@ export default async function UsagePage(props: PageProps<"/admin/uso/[orgId]">) 
         </p>
       </section>
 
-      <nav aria-label="Filtro" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <nav aria-label="Filtro" className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
         {FILTERS.map((f) => (
           <Link
             key={f.key}

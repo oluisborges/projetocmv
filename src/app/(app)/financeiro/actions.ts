@@ -44,7 +44,7 @@ export async function saveMonthlyNumbers(_prev: FormState, formData: FormData): 
   const { orgId, canWrite } = await requireMember();
   if (!canWrite) return { error: NO_PERMISSION };
 
-  const revenue = money(formData.get("revenue"), "Faturamento do mês", { optional: true });
+  const revenue = money(formData.get("revenue"), "Quanto você fatura por mês", { optional: true });
   const units = money(formData.get("units"), "Unidades por mês", { optional: true, max: 1_000_000 });
   if (!revenue.ok) return { error: revenue.error };
   if (!units.ok) return { error: units.error };

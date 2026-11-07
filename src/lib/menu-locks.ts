@@ -14,11 +14,13 @@ export function menuLocksFrom(recipes: CountResult): { producao: MenuLock | null
 }
 
 /**
- * Produção ainda em desenvolvimento: travada para todos até o lançamento.
- * `DEV_LOCK_INCLUDES_ADMIN`: enquanto for true, a equipe Shogun também vê o cadeado (para conferir o visual); depois de conferir, vira false.
+ * Produção liberada para todos desde 07/11 (a trava de "em desenvolvimento" está desligada).
+ * Para travar de novo (por exemplo, numa manutenção): `PRODUCAO_IN_DEVELOPMENT = true`.
+ * `DEV_LOCK_INCLUDES_ADMIN`: com a trava ligada, true faz a equipe Shogun também ver o cadeado (para conferir o visual).
+ * Continua valendo a trava "primeira marmita" (`menuLocksFrom`): a Produção só abre depois que existe um produto.
  */
-export const PRODUCAO_IN_DEVELOPMENT = true;
-export const DEV_LOCK_INCLUDES_ADMIN = true;
+export const PRODUCAO_IN_DEVELOPMENT = false;
+export const DEV_LOCK_INCLUDES_ADMIN = false;
 
 export const PRODUCAO_DEV_LOCK: MenuLock = {
   message:

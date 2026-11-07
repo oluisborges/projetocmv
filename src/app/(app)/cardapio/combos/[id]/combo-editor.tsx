@@ -348,42 +348,46 @@ export function ComboEditor({ combo, initialGroups, recipes, weights, settings, 
 
   return (
     <div className="flex flex-col gap-5">
-      <section aria-live="polite" className="sticky top-[var(--sticky-top)] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <section aria-live="polite" className="sticky top-[var(--sticky-top)] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
         {summary.empty ? (
           <p className="text-sm text-muted">Adicione as marmitas do combo para ver o preço e o lucro.</p>
         ) : (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted">Preço do combo</p>
-              {status.kind === "saved" ? <span className="text-xs text-success">Salvo ✓</span> : null}
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(summary.price)}</p>
-              {at ? <MarginBadge status={at.status} pct={at.netPct} estimate={estimateReason !== null} /> : null}
-            </div>
-            <p className="tabular text-xs text-muted">
-              {formatNumber(summary.units, 0)} {summary.units === 1 ? "marmita" : "marmitas"} · {summary.pricePerUnit !== null ? `${formatBRL(summary.pricePerUnit)} cada, em média` : ""} · custa {formatBRL(summary.cost)}
-              {summary.hasChoice ? (
-                <Hint label="Como o custo é calculado?">
-                  Nos grupos em que o cliente escolhe, o custo é a média das marmitas, dando mais peso às que mais vendem (sem vendas, todas valem igual). O pior caso supõe que o cliente leve sempre as mais caras.
-                </Hint>
-              ) : null}
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex min-w-0 items-baseline gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted">Preço do combo</span>
+              <span className="tabular text-2xl font-extrabold tracking-tight">{formatBRL(summary.price)}</span>
             </p>
-            {summary.priceMax - summary.priceMin > 0.005 ? (
-              <p className="tabular text-xs text-muted">
-                Varia de {formatBRL(summary.priceMin)} a {formatBRL(summary.priceMax)}, conforme o que o cliente escolhe. O valor grande é a média, dando mais peso ao que mais vende.
-              </p>
-            ) : null}
-            {at ? (
-              <p className="tabular text-xs text-muted">
-                Depois de tudo, {at.net >= 0 ? "sobra" : "falta"} <strong className="text-foreground">{formatBRL(Math.abs(at.net))}</strong> por combo
-                {worst ? ` · no pior caso, ${formatPct(worst.netPct)}` : ""}
-              </p>
-            ) : null}
-            {summary.incomplete ? <p className="text-xs text-warning">Alguma marmita está sem custo (ficha incompleta ou arquivada): o custo está subestimado.</p> : null}
+            <span className="flex shrink-0 items-center gap-2">
+              {status.kind === "saved" ? <span className="text-xs text-success">Salvo ✓</span> : null}
+              {at ? <MarginBadge status={at.status} pct={at.netPct} estimate={estimateReason !== null} /> : null}
+            </span>
           </div>
         )}
       </section>
+      {summary.empty ? null : (
+        <div className="-mt-3 flex flex-col gap-1">
+          <p className="tabular text-xs text-muted">
+            {formatNumber(summary.units, 0)} {summary.units === 1 ? "marmita" : "marmitas"} · {summary.pricePerUnit !== null ? `${formatBRL(summary.pricePerUnit)} cada, em média` : ""} · custa {formatBRL(summary.cost)}
+            {summary.hasChoice ? (
+              <Hint label="Como o custo é calculado?">
+                Nos grupos em que o cliente escolhe, o custo é a média das marmitas, dando mais peso às que mais vendem (sem vendas, todas valem igual). O pior caso supõe que o cliente leve sempre as mais caras.
+              </Hint>
+            ) : null}
+          </p>
+          {summary.priceMax - summary.priceMin > 0.005 ? (
+            <p className="tabular text-xs text-muted">
+              Varia de {formatBRL(summary.priceMin)} a {formatBRL(summary.priceMax)}, conforme o que o cliente escolhe. O valor grande é a média, dando mais peso ao que mais vende.
+            </p>
+          ) : null}
+          {at ? (
+            <p className="tabular text-xs text-muted">
+              Depois de tudo, {at.net >= 0 ? "sobra" : "falta"} <strong className="text-foreground">{formatBRL(Math.abs(at.net))}</strong> por combo
+              {worst ? ` · no pior caso, ${formatPct(worst.netPct)}` : ""}
+            </p>
+          ) : null}
+          {summary.incomplete ? <p className="text-xs text-warning">Alguma marmita está sem custo (ficha incompleta ou arquivada): o custo está subestimado.</p> : null}
+        </div>
+      )}
 
       <EstimateNotice reason={estimateReason} />
 

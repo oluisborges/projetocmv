@@ -20,7 +20,7 @@ export default async function ProducaoPage() {
   const header = (
     <section className="flex flex-col gap-1">
       <h1 className="text-2xl font-extrabold tracking-tight">Produção</h1>
-      <p className="text-muted">Decida o que fazer, veja o que preparar e o que comprar. Você pode montar quantas produções quiser.</p>
+      <p className="text-muted">Decida o que fazer, o que preparar e o que comprar.</p>
     </section>
   );
 
@@ -62,21 +62,33 @@ export default async function ProducaoPage() {
       <ProducaoTabs active="producoes" />
 
       {canWrite ? (
-        <section className="flex flex-col gap-2 card p-4">
-          <p className="font-semibold">{inProgress.length > 0 ? "Quer começar outra produção?" : "Vamos montar uma produção?"}</p>
-          <p className="text-sm text-muted">O sistema sugere as marmitas e as quantidades pelas suas vendas; você ajusta. Depois mostra o que preparar e o que comprar.</p>
-          <form action={createProduction} className="flex flex-col gap-2">
-            <input type="hidden" name="mode" value="suggestion" />
-            <SubmitButton pendingLabel="Montando…" className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground">
-              Nova produção com sugestão
-            </SubmitButton>
-          </form>
+        <section className="flex flex-col gap-3 card p-4">
+          <div>
+            <p className="font-bold">{inProgress.length > 0 ? "Outra produção?" : "Vamos montar uma produção?"}</p>
+            <p className="text-sm text-muted">O sistema sugere as quantidades pelas suas vendas; você ajusta.</p>
+          </div>
           <form action={createProduction}>
-            <input type="hidden" name="mode" value="blank" />
-            <SubmitButton pendingLabel="Criando…" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold">
-              Começar do zero
+            <input type="hidden" name="mode" value="suggestion" />
+            <SubmitButton pendingLabel="Montando…" className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground">
+              Nova produção
             </SubmitButton>
           </form>
+          <div className={`grid gap-2 ${productions.length > 0 ? "grid-cols-2" : "grid-cols-1"}`}>
+            {productions.length > 0 ? (
+              <form action={createProduction}>
+                <input type="hidden" name="mode" value="repeat" />
+                <SubmitButton pendingLabel="Repetindo…" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-primary">
+                  Repetir a última
+                </SubmitButton>
+              </form>
+            ) : null}
+            <form action={createProduction}>
+              <input type="hidden" name="mode" value="blank" />
+              <SubmitButton pendingLabel="Criando…" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold">
+                Começar do zero
+              </SubmitButton>
+            </form>
+          </div>
         </section>
       ) : null}
 
@@ -97,7 +109,7 @@ export default async function ProducaoPage() {
       {trackable > 0 && counted < trackable ? (
         <p className="rounded-xl bg-background px-4 py-3 text-sm text-muted">
           Estoque contado: <strong className="text-foreground">{counted} de {trackable}</strong> itens. Quanto mais certo o estoque, mais certa a lista de compras.{" "}
-          <Link href="/producao/estoque" className="font-semibold text-primary underline">
+          <Link href="/producao/estoque" className="tap-area font-semibold text-primary underline">
             Conferir o estoque
           </Link>
         </p>

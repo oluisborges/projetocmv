@@ -57,6 +57,14 @@
   }
 }
 
+/* Fileiras de pílulas que rolam na horizontal: rolam com o dedo, sem a barra de rolagem cinza. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility card {
   border-radius: 1rem;
   border: 1px solid var(--border);
@@ -142,4 +150,11 @@ dialog.announcement[open]::backdrop { animation: fade-in 0.28s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   dialog.announcement[open],
   dialog.announcement[open]::backdrop { animation: none; }
+}
+
+/* No computador o app continua no formato do celular, centralizado; o fundo fora da coluna fica um pouco mais escuro para a moldura se destacar. */
+@media (min-width: 1024px) {
+  body {
+    background: color-mix(in srgb, var(--background) 91%, #000);
+  }
 }

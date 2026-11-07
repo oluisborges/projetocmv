@@ -5,7 +5,7 @@ import { loadFichaOptions } from "@/lib/ficha-tecnica-data";
 import { hasMenuConnection } from "@/lib/menu-data";
 import { FichasList } from "./fichas-list";
 
-export const metadata = { title: "Fichas técnicas" };
+export const metadata = { title: "Baixar fichas" };
 
 export default async function FichasTecnicasPage() {
   const { orgId, canWrite } = await requireMember();
@@ -15,7 +15,7 @@ export default async function FichasTecnicasPage() {
     <>
       <section className="flex flex-col gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Cardápio</h1>
-        <p className="text-muted">Fichas técnicas para imprimir: escolha um produto ou receita, toque em Baixar ficha técnica, monte o modelo e baixe em PDF ou Excel, com a sua marca.</p>
+        <p className="text-muted">Escolha um produto ou receita, toque em Baixar ficha, monte o modelo e baixe em PDF ou Excel, com a sua marca.</p>
       </section>
 
       <MarmitasTabs active="fichas" showCombos connected={connected} />

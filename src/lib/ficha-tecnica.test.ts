@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { buildFichaTecnica, type FichaIngredient, type FichaRecipeInput } from "./ficha-tecnica";
 import { MODELOS, camposFromParam, camposToParam, modeloDe } from "./ficha-campos";
 import { fichaToPdf, fichaToXlsx } from "./ficha-tecnica-export";
+import { fichaDocNome } from "./ficha-nome";
+
+/** JPEG de 16×12 px, só para provar que a foto entra no arquivo. */
+const JPEG_16X12 =
+  "/9j/2wBDAA0JCgsKCA0LCgsODg0PEyAVExISEyccHhcgLikxMC4pLSwzOko+MzZGNywtQFdBRkxOUlNSMj5aYVpQYEpRUk//2wBDAQ4ODhMREyYVFSZPNS01T09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0//wAARCAAMABADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAwb/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwC2AmgP/9k=";
 
 const ing = (id: string, name: string, kind: FichaIngredient["kind"], purchase_unit: string, unit_cost: number, correction_factor = 1, cooking_yield = 1): FichaIngredient => ({
   id, name, kind, purchase_unit, unit_cost, correction_factor, cooking_yield,
@@ -110,4 +115,56 @@ describe("ficha técnica", () => {
     const xlsx = await fichaToXlsx(f, "Hibiscus Gastronomia", new Date("2026-10-31T15:00:00Z"));
     expect(xlsx.subarray(0, 2).toString()).toBe("PK");
   }, 30_000);
+
+  describe("ordem de montagem, passo a passo e foto", () => {
+    const ordered = [
+      { id: "i-penne", ingredient_id: "penne", net_qty: 115, qty_unit: "g", scope: "batch" as const, sort_order: 1 },
+      { id: "i-molho", ingredient_id: "molho", net_qty: 100, qty_unit: "g", scope: "batch" as const, sort_order: 2 },
+      { id: "i-carne", ingredient_id: "carne", net_qty: 120, qty_unit: "g", scope: "batch" as const, sort_order: null },
+    ];
+
+    it("o produto segue a ordem escolhida; o que ficou sem número vai para o fim", () => {
+      const f = buildFichaTecnica({ recipe: penne, items: ordered, ingredients, safetyMarginPct: 0, price: null });
+      expect(f.lines.map((l) => l.name)).toEqual(["Penne cozido", "Molho de tomate", "Carne moída refogada"]);
+      expect(f.lines.map((l) => l.id)).toEqual(["i-penne", "i-molho", "i-carne"]);
+      expect(f.lines.map((l) => l.order)).toEqual([1, 2, null]);
+    });
+
+    it("sem nenhuma ordem escolhida continua do mais caro ao mais barato", () => {
+      const f = buildFichaTecnica({ recipe: penne, items: ordered.map((i) => ({ ...i, sort_order: null })), ingredients, safetyMarginPct: 0, price: null });
+      expect(f.lines.map((l) => l.name)).toEqual(["Carne moída refogada", "Molho de tomate", "Penne cozido"]);
+    });
+
+    it("receita não usa a ordem de montagem", () => {
+      const molho: FichaRecipeInput = { id: "r2", kind: "receita", name: "Molho", category: null, mode: "batch", portions: 1, portion_weight: 26000, portion_weight_unit: "g", cooking_loss_pct: 0 };
+      const f = buildFichaTecnica({ recipe: molho, items: ordered, ingredients, safetyMarginPct: 0, price: null });
+      expect(f.lines.map((l) => l.name)).toEqual(["Carne moída refogada", "Molho de tomate", "Penne cozido"]);
+    });
+
+    it("o texto vem sem espaços nas pontas e vazio vira nulo", () => {
+      expect(buildFichaTecnica({ recipe: { ...penne, instructions: "  1. Arroz no fundo.\n2. Fechar.  " }, items, ingredients, safetyMarginPct: 0, price: null }).instructions).toBe("1. Arroz no fundo.\n2. Fechar.");
+      expect(buildFichaTecnica({ recipe: { ...penne, instructions: "   " }, items, ingredients, safetyMarginPct: 0, price: null }).instructions).toBeNull();
+      expect(buildFichaTecnica({ recipe: penne, items, ingredients, safetyMarginPct: 0, price: null }).photo).toBeNull();
+    });
+
+    it("PDF e Excel saem com foto e texto, e o título muda conforme o tipo", async () => {
+      const photo = "data:image/jpeg;base64," + JPEG_16X12;
+      const f = { ...buildFichaTecnica({ recipe: { ...penne, instructions: "1. Arroz no fundo.\n2. Fechar com filme." }, items: ordered, ingredients, safetyMarginPct: 0.1, price: 24 }), photo };
+      const campos = camposFromParam("ingredientes,embalagens,modoPreparo,foto");
+      const pdf = await fichaToPdf(f, "Hibiscus", new Date("2026-11-06T15:00:00Z"), campos);
+      expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+      const withoutPhoto = await fichaToPdf({ ...f, photo: null }, "Hibiscus", new Date("2026-11-06T15:00:00Z"), campos);
+      expect(pdf.length).toBeGreaterThan(withoutPhoto.length); // a foto entrou no arquivo
+      const xlsx = await fichaToXlsx(f, "Hibiscus", new Date("2026-11-06T15:00:00Z"), campos);
+      expect(xlsx.subarray(0, 2).toString()).toBe("PK");
+      expect(fichaDocNome("marmita")).toBe("Ficha de montagem");
+      expect(fichaDocNome("receita")).toBe("Ficha técnica");
+    }, 60_000);
+
+    it("o campo foto faz parte do modelo Cozinha e fica fora do Financeiro", () => {
+      expect(MODELOS[0].campos.foto).toBe(true);
+      expect(MODELOS[1].campos.foto).toBe(false);
+      expect(camposFromParam("foto").foto).toBe(true);
+    });
+  });
 });

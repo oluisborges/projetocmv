@@ -11,8 +11,12 @@ export const maxDuration = 60;
 export async function GET(request: Request) {
   const { orgId, canWrite, orgName } = await requireMember();
   const url = new URL(request.url);
-  const month = monthStart(url.searchParams.get("mes") ?? undefined) ?? currentMonthStart();
-  const format = url.searchParams.get("formato") === "xlsx" ? "xlsx" : "pdf";
+  const mesParam = url.searchParams.get("mes");
+  const formatoParam = url.searchParams.get("formato");
+  if (mesParam !== null && monthStart(mesParam) === null) return new Response("Mês inválido. Use o formato 2026-09.", { status: 400 });
+  if (formatoParam !== null && formatoParam !== "pdf" && formatoParam !== "xlsx") return new Response("Formato inválido. Use pdf ou xlsx.", { status: 400 });
+  const month = monthStart(mesParam ?? undefined) ?? currentMonthStart();
+  const format = formatoParam === "xlsx" ? "xlsx" : "pdf";
 
   const report = await loadReport(orgId, canWrite, month);
   if (!report) return new Response("Este mês ainda não tem números para o relatório.", { status: 404 });

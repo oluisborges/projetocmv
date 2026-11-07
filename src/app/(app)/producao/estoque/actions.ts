@@ -80,6 +80,8 @@ const moveInput = z.object({
   text: z.string().max(30),
   unit: z.string().max(4),
   note: z.string().max(200).optional(),
+  /** Quanto pagou (só na compra); vazio = não informou. */
+  paid: z.string().max(20).optional(),
 });
 
 /** Um movimento de um insumo: contei (valor real), comprei (+) ou perdi (−). */
@@ -98,7 +100,12 @@ export async function addIngredientMovement(input: z.input<typeof moveInput>): P
   if ("error" in base) return { ok: false, error: base.error };
 
   const qty = v.kind === "waste" ? -base.qty : base.qty;
-  const { error } = await supabase.from("stock_movements").insert({ org_id: ctx.orgId, unit_id: ctx.unitId, ingredient_id: v.ingredientId, kind: v.kind, qty_base: qty, note: v.note?.trim() || null });
+  let paid: number | null = null;
+  if (v.kind === "purchase" && v.paid && v.paid.trim() !== "") {
+    paid = toNumber(v.paid);
+    if (paid === null || paid < 0 || paid > 10_000_000) return { ok: false, error: "Digite o valor pago, como 48,90." };
+  }
+  const { error } = await supabase.from("stock_movements").insert({ org_id: ctx.orgId, unit_id: ctx.unitId, ingredient_id: v.ingredientId, kind: v.kind, qty_base: qty, note: v.note?.trim() || null, ...(paid !== null ? { paid_amount: paid } : {}) });
   if (error) return { ok: false, error: "Não foi possível salvar." };
   await syncMonthFromLedger(ctx.orgId, ctx.unitId, { ingredientIds: [v.ingredientId] });
 
@@ -108,7 +115,7 @@ export async function addIngredientMovement(input: z.input<typeof moveInput>): P
   return { ok: true };
 }
 
-const finishedInput = z.object({ recipeId: z.uuid(), kind: z.enum(["count", "produced", "waste"]), text: z.string().max(12) });
+const finishedInput = z.object({ recipeId: z.uuid(), kind: z.enum(["count", "produced", "waste"]), text: z.string().max(12), note: z.string().max(200).optional() });
 
 /** Marmitas prontas (congelador): contei (valor real), produzi (+) ou perdi (−). Sempre em unidades inteiras. */
 export async function addFinishedMovement(input: z.input<typeof finishedInput>): Promise<Result> {
@@ -129,12 +136,43 @@ export async function addFinishedMovement(input: z.input<typeof finishedInput>):
 
   const { error } = await supabase
     .from("stock_movements")
-    .insert({ org_id: ctx.orgId, unit_id: ctx.unitId, recipe_id: v.recipeId, kind: v.kind, qty_base: v.kind === "waste" ? -units : units });
+    .insert({ org_id: ctx.orgId, unit_id: ctx.unitId, recipe_id: v.recipeId, kind: v.kind, qty_base: v.kind === "waste" ? -units : units, note: v.note?.trim() || null });
   if (error) return { ok: false, error: "Não foi possível salvar." };
   await syncMonthFromLedger(ctx.orgId, ctx.unitId, { finished: true });
 
   revalidatePath("/producao/estoque");
   revalidatePath("/producao/estoque/historico");
+  revalidatePath("/producao");
+  return { ok: true };
+}
+
+const minimumInput = z.object({ ingredientId: z.uuid(), text: z.string().max(30), unit: z.string().max(4) });
+
+/** Estoque mínimo de um insumo: quanto a pessoa quer manter. Vazio ou zero tira o mínimo. */
+export async function saveStockMinimum(input: z.input<typeof minimumInput>): Promise<Result> {
+  await requireProductionAccess();
+  const ctx = await context();
+  if (!ctx.ok) return { ok: false, error: ctx.error };
+  const parsed = minimumInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Valor inválido." };
+  const v = parsed.data;
+
+  const supabase = await createClient();
+  const { data: ing } = await supabase.from("ingredients").select("purchase_unit").eq("id", v.ingredientId).eq("org_id", ctx.orgId).maybeSingle();
+  if (!ing) return { ok: false, error: "Insumo não encontrado." };
+
+  const n = v.text.trim() === "" ? 0 : toNumber(v.text);
+  if (n === null || n < 0) return { ok: false, error: "Digite o mínimo, como 2 (ou deixe vazio para tirar)." };
+  if (n === 0) {
+    const { error } = await supabase.from("stock_minimums").delete().eq("org_id", ctx.orgId).eq("unit_id", ctx.unitId).eq("ingredient_id", v.ingredientId);
+    if (error) return { ok: false, error: "Não foi possível tirar o mínimo." };
+  } else {
+    const base = toBaseFor(ing.purchase_unit as string, v.text, v.unit, { allowZero: false });
+    if ("error" in base) return { ok: false, error: base.error };
+    const { error } = await supabase.from("stock_minimums").upsert({ org_id: ctx.orgId, unit_id: ctx.unitId, ingredient_id: v.ingredientId, min_qty: base.qty }, { onConflict: "unit_id,ingredient_id" });
+    if (error) return { ok: false, error: "Não foi possível salvar o mínimo." };
+  }
+  revalidatePath("/producao/estoque");
   revalidatePath("/producao");
   return { ok: true };
 }

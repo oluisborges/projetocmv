@@ -258,7 +258,7 @@ function LineInfo({ l, canWrite, onPick, onUse, compact = false }: { l: Nutritio
 
 /** Janela de busca para escolher o alimento da TACO de um ingrediente. */
 function TacoPicker({ line, pending, error, onClose, onPick }: { line: NutritionLine; pending: boolean; error: string | null; onClose: () => void; onPick: (id: number) => void }) {
-  const [q, setQ] = useState(line.name);
+  const [q, setQ] = useState(() => line.name.split(/[\s,(]+/)[0] || line.name);
   const results = useMemo(() => searchTaco(q), [q]);
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 lg:items-center lg:p-4" role="dialog" aria-modal="true" aria-label="Escolher alimento da TACO" onClick={onClose}>
