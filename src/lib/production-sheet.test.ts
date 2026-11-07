@@ -21,6 +21,7 @@ const base: ProductionBase = {
   stock: { patinho: { balance: 8000, known: true, lastCountAt: "2026-10-20T12:00:00Z" } },
   finished: {},
   hasMenu: false,
+  minimums: {},
 };
 
 const production = (items: Production["items"], over: Partial<Production> = {}): Production => ({

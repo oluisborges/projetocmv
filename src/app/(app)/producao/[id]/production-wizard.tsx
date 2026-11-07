@@ -1,20 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Hint } from "@/components/hint";
 import { PendingLabel } from "@/components/spinner";
 import { formatNumber, parseDecimal } from "@/lib/format";
-import { computeProduction, type ProductionInput, type SuggestionRow } from "@/lib/production-view";
+import { addDays } from "@/lib/lots";
+import { computeProduction, yieldSummary, type ProductionInput, type SuggestionRow } from "@/lib/production-view";
 import { registerProduction, updateProduction } from "../actions";
 import { BuyChecklist, PrepareList, ProductionSummary } from "../production-sections";
 
 const STEPS = [
-  { key: 1, label: "O que fazer" },
-  { key: 2, label: "Preparar" },
-  { key: 3, label: "Comprar" },
-  { key: 4, label: "Já fiz" },
+  { key: 1, label: "Quanto fazer", full: "Quanto fazer" },
+  { key: 2, label: "Preparar", full: "Preparar (receitas)" },
+  { key: 3, label: "Comprar", full: "Comprar" },
+  { key: 4, label: "Já fiz", full: "Já fiz" },
 ] as const;
+
+const downloadClass = "flex min-h-11 items-center justify-center rounded-xl border border-primary px-3 py-1 text-center text-sm font-semibold leading-tight text-primary";
 
 const input = "tabular h-11 w-20 rounded-xl border border-border bg-background px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
 const noteClass = "text-xs leading-relaxed text-muted";
@@ -29,6 +33,22 @@ function trendText(t: number | null): string | null {
   const pct = Math.round(t * 100);
   if (Math.abs(pct) < 5) return "estável";
   return pct > 0 ? `subindo ${pct}%` : `caindo ${Math.abs(pct)}%`;
+}
+
+/** Rendimento: quanto saiu comparado ao planejado, com aviso quando a perda passa de 10%. */
+function YieldCard({ summary }: { summary: ReturnType<typeof yieldSummary> }) {
+  if (summary.planned === 0 && summary.produced === 0) return null;
+  const worst = summary.rows.filter((r) => r.lossPct !== null && r.lossPct > 0.1).sort((a, b) => (b.lossPct ?? 0) - (a.lossPct ?? 0)).slice(0, 3);
+  return (
+    <div className={`flex flex-col gap-1 rounded-xl px-4 py-3 text-sm ${summary.high ? "bg-warning/10" : "bg-success/10"}`}>
+      <p className="tabular">
+        Planejou <strong>{formatNumber(summary.planned, 0)}</strong> · saíram <strong>{formatNumber(summary.produced, 0)}</strong>
+        {summary.diff < 0 ? ` · faltaram ${formatNumber(-summary.diff, 0)} (${formatNumber((summary.lossPct ?? 0) * 100, 1)}% de perda)` : summary.diff > 0 ? ` · ${formatNumber(summary.diff, 0)} a mais` : " · bateu certinho"}
+      </p>
+      {summary.high ? <p className={noteClass}>A perda passou de 10%. Vale conferir porção, quebra no preparo ou erro na ficha.</p> : null}
+      {worst.length > 0 ? <p className={noteClass}>Mais perda: {worst.map((r) => `${r.name} (${formatNumber((r.lossPct ?? 0) * 100, 0)}%)`).join(", ")}.</p> : null}
+    </div>
+  );
 }
 
 export function ProductionWizard({
@@ -74,6 +94,9 @@ export function ProductionWizard({
   const [save, setSave] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const [correct, setCorrect] = useState(false);
+  // Validade das marmitas deste lote: 90 dias depois do dia da produção, ajustável (vazio = sem controle).
+  const [expires, setExpires] = useState(() => addDays(plannedFor, 90));
   const locked = done || !canWrite;
 
   const lines = useMemo(() => rows.map((r) => ({ recipeId: r.id, units: toQty(qty[r.id]) })), [rows, qty]);
@@ -111,7 +134,7 @@ export function ProductionWizard({
   async function finish() {
     setBusy(true);
     setError(undefined);
-    const result = await registerProduction({ planId: id, produced: rows.map((r) => ({ recipeId: r.id, qty: toQty(produced[r.id] ?? qty[r.id]) })).filter((p) => p.qty > 0) });
+    const result = await registerProduction({ planId: id, produced: rows.map((r) => ({ recipeId: r.id, qty: toQty(produced[r.id] ?? qty[r.id]) })).filter((p) => p.qty > 0), expiresOn: expires || null });
     setBusy(false);
     if (!result.ok) return setError(result.error);
     router.refresh();
@@ -137,7 +160,7 @@ export function ProductionWizard({
           </div>
           <input value={qty[r.id] ?? ""} onChange={(e) => setQty((p) => ({ ...p, [r.id]: e.target.value }))} disabled={locked} inputMode="numeric" placeholder="0" aria-label={`Quantas ${r.name} produzir`} className={input} />
         </div>
-        {r.confidence !== "none" ? (
+        {r.confidence !== "none" && source === "menu" ? (
           <p className={noteClass}>
             Últimas semanas: {r.weekly.map((n) => formatNumber(n, 0)).join(", ")}
             {r.confidence === "low" ? " · pouco histórico, confira" : ""}
@@ -168,7 +191,7 @@ export function ProductionWizard({
       <nav aria-label="Passos da produção" className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between text-xs text-muted">
           <span>
-            Passo {step} de 4 · <strong className="text-foreground">{STEPS[step - 1].label}</strong>
+            Passo {step} de 4 · <strong className="text-foreground">{STEPS[step - 1].full}</strong>
           </span>
           <span aria-live="polite">{saveChip}</span>
         </div>
@@ -230,6 +253,7 @@ export function ProductionWizard({
         <section className="flex flex-col gap-4">
           {total > 0 ? <ProductionSummary calc={calc} /> : <p className="card p-4 text-sm text-muted">Escolha as marmitas no passo 1 para ver o que preparar.</p>}
           {total > 0 ? <PrepareList calc={calc} receitas={base.receitas} /> : null}
+          {total > 0 ? <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha</a> : null}
         </section>
       ) : null}
 
@@ -255,6 +279,7 @@ export function ProductionWizard({
               }
             />
           ) : null}
+          {total > 0 ? <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha</a> : null}
         </section>
       ) : null}
 
@@ -262,36 +287,64 @@ export function ProductionWizard({
       {step === 4 ? (
         <section className="flex flex-col gap-3">
           {done ? (
-            <ul className="divide-y divide-border card px-4">
-              {rows
-                .filter((r) => (producedQty[r.id] ?? 0) > 0)
-                .map((r) => (
-                  <li key={r.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                    <span className="min-w-0 truncate font-medium">{r.name}</span>
-                    <span className="tabular shrink-0 font-extrabold">{formatNumber(producedQty[r.id] ?? 0, 0)} un</span>
-                  </li>
-                ))}
-            </ul>
+            <>
+              <YieldCard summary={yieldSummary(rows.map((r) => ({ id: r.id, name: r.name, planned: initial[r.id] ?? 0, produced: producedQty[r.id] ?? 0 })))} />
+              <ul className="divide-y divide-border card px-4">
+                {rows
+                  .filter((r) => (producedQty[r.id] ?? 0) > 0)
+                  .map((r) => (
+                    <li key={r.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                      <span className="min-w-0 truncate font-medium">{r.name}</span>
+                      <span className="tabular shrink-0 font-extrabold">{formatNumber(producedQty[r.id] ?? 0, 0)} un</span>
+                    </li>
+                  ))}
+              </ul>
+            </>
           ) : total === 0 ? (
             <p className="card p-4 text-sm text-muted">Escolha as marmitas no passo 1.</p>
           ) : (
             <>
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Quanto saiu de verdade?</h2>
-              <p className={noteClass}>Confira as quantidades. Ao tocar em &quot;Já fiz&quot;, as marmitas entram no estoque de prontas e os insumos (e o que as receitas gastaram) saem do estoque.</p>
-              <ul className="divide-y divide-border card px-4">
-                {rows
-                  .filter((r) => toQty(qty[r.id]) > 0)
-                  .map((r) => (
-                    <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
-                      <span className="min-w-0 truncate text-sm font-medium">{r.name}</span>
-                      <input value={produced[r.id] ?? qty[r.id] ?? ""} onChange={(e) => setProduced((p) => ({ ...p, [r.id]: e.target.value }))} disabled={!canWrite} inputMode="numeric" aria-label={`Quantas ${r.name} saíram`} className={input} />
-                    </li>
-                  ))}
-              </ul>
+              <p className={noteClass}>Ao confirmar, as marmitas entram no estoque de prontas e os insumos (e o que as receitas gastaram) saem do estoque.</p>
               {canWrite ? (
-                <button type="button" onClick={finish} disabled={busy} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
-                  {busy ? <PendingLabel>Dando baixa…</PendingLabel> : "Já fiz"}
-                </button>
+                <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+                  Validade das marmitas deste lote
+                  <input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} className="h-11 card px-3 text-base text-foreground outline-none focus:border-primary" />
+                  <span className="font-normal">Vale para todas desta produção e avisa quando estiver perto de vencer. Deixe vazio se não controla validade.</span>
+                </label>
+              ) : null}
+              {canWrite && !correct ? (
+                <>
+                  <button type="button" onClick={finish} disabled={busy} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
+                    {busy ? <PendingLabel>Dando baixa…</PendingLabel> : `Saiu tudo como planejado (${formatNumber(total, 0)})`}
+                  </button>
+                  <button type="button" onClick={() => setCorrect(true)} disabled={busy} className="h-11 rounded-xl border border-border bg-surface text-sm font-semibold">
+                    Corrigir quantidades
+                  </button>
+                </>
+              ) : null}
+              {correct || !canWrite ? (
+                <>
+                  <ul className="divide-y divide-border card px-4">
+                    {rows
+                      .filter((r) => toQty(qty[r.id]) > 0)
+                      .map((r) => (
+                        <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-medium">{r.name}</span>
+                            <span className={noteClass}>planejado {formatNumber(toQty(qty[r.id]), 0)}</span>
+                          </span>
+                          <input value={produced[r.id] ?? qty[r.id] ?? ""} onChange={(e) => setProduced((p) => ({ ...p, [r.id]: e.target.value }))} disabled={!canWrite} inputMode="numeric" aria-label={`Quantas ${r.name} saíram`} className={input} />
+                        </li>
+                      ))}
+                  </ul>
+                  <YieldCard summary={yieldSummary(rows.map((r) => ({ id: r.id, name: r.name, planned: toQty(qty[r.id]), produced: toQty(produced[r.id] ?? qty[r.id]) })))} />
+                  {canWrite ? (
+                    <button type="button" onClick={finish} disabled={busy} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-60">
+                      {busy ? <PendingLabel>Dando baixa…</PendingLabel> : "Já fiz"}
+                    </button>
+                  ) : null}
+                </>
               ) : null}
             </>
           )}
@@ -309,9 +362,15 @@ export function ProductionWizard({
         <button type="button" onClick={() => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))} disabled={step === 1} className="h-12 rounded-xl border border-border bg-surface font-semibold disabled:opacity-40">
           Voltar
         </button>
-        <button type="button" onClick={() => setStep((s) => (s < 4 ? ((s + 1) as 2 | 3 | 4) : s))} disabled={step === 4} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground disabled:opacity-40">
-          {step === 1 && total > 0 ? `Próximo (${formatNumber(total, 0)} marmitas)` : "Próximo"}
-        </button>
+        {step === 4 ? (
+          <Link href="/producao" className="flex h-12 items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground">
+            Ver produções
+          </Link>
+        ) : (
+          <button type="button" onClick={() => setStep((s) => (s < 4 ? ((s + 1) as 2 | 3 | 4) : s))} className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground">
+            {step === 1 && total > 0 ? `Próximo (${formatNumber(total, 0)} marmitas)` : "Próximo"}
+          </button>
+        )}
       </div>
     </div>
   );

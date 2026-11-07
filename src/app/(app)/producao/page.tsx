@@ -71,6 +71,14 @@ export default async function ProducaoPage() {
               Nova produção com sugestão
             </SubmitButton>
           </form>
+          {productions.length > 0 ? (
+            <form action={createProduction}>
+              <input type="hidden" name="mode" value="repeat" />
+              <SubmitButton pendingLabel="Repetindo…" className="h-11 w-full rounded-xl border border-primary bg-surface text-sm font-semibold text-primary">
+                Repetir a última produção
+              </SubmitButton>
+            </form>
+          ) : null}
           <form action={createProduction}>
             <input type="hidden" name="mode" value="blank" />
             <SubmitButton pendingLabel="Criando…" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold">

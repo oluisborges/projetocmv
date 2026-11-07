@@ -2,6 +2,7 @@ import "server-only";
 import { baseUnitOf, finishedBalance, isPurchaseUnit, stockBalance, type BaseUnit, type Movement } from "@/lib/calc";
 import { hasMenuConnection, loadMenuRecipeUnits } from "@/lib/menu-data";
 import { loadPricingContext } from "@/lib/pricing-data";
+import type { Lot } from "@/lib/lots";
 import { lastFullWeeks, weekBounds } from "@/lib/week";
 import { computeRecipe, recipeCostSettings, recipeUsage } from "@/lib/recipe-cost";
 import { loadIngredients, loadReceitaBlueprints, loadRecipes } from "@/lib/recipes-data";
@@ -45,6 +46,8 @@ export type ProductionBase = {
   /** Saldo das marmitas prontas (congeladas): contado + produzido − vendido no cardápio digital. */
   finished: Record<string, ProdBalance>;
   hasMenu: boolean;
+  /** Estoque mínimo de cada insumo (unidade-base). Sem mínimo = não aparece. */
+  minimums: Record<string, number>;
 };
 
 type MovementRow = { ingredient_id: string | null; recipe_id: string | null; kind: string; qty_base: unknown; occurred_at: string };
@@ -112,7 +115,7 @@ export async function loadProductionBase(orgId: string, canWrite: boolean): Prom
     supabase.from("suppliers").select("id, name").eq("org_id", orgId),
     hasMenuConnection(orgId),
   ]);
-  const [blueprints, balances] = await Promise.all([loadReceitaBlueprints(ingredientRecords), loadStockBalances(orgId, ctx.unit.id)]);
+  const [blueprints, balances, minimums] = await Promise.all([loadReceitaBlueprints(ingredientRecords), loadStockBalances(orgId, ctx.unit.id), loadMinimums(orgId, ctx.unit.id)]);
   const supplierName = new Map((suppliers.data ?? []).map((s) => [s.id as string, s.name as string]));
   const byId = new Map(ingredientRecords.map((i) => [i.id, i]));
 
@@ -161,7 +164,22 @@ export async function loadProductionBase(orgId: string, canWrite: boolean): Prom
     stock: balances.stock,
     finished: balances.finished,
     hasMenu,
+    minimums,
   };
+}
+
+/** O estoque mínimo que o dono definiu para cada insumo (unidade-base). */
+export async function loadMinimums(orgId: string, unitId: string): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("stock_minimums").select("ingredient_id, min_qty").eq("org_id", orgId).eq("unit_id", unitId);
+  return Object.fromEntries((data ?? []).map((r) => [r.ingredient_id as string, Number(r.min_qty)]));
+}
+
+/** Lotes de marmitas prontas da unidade, por produto (do mais antigo para o mais novo). */
+export async function loadLots(orgId: string, unitId: string): Promise<Lot[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("finished_lots").select("id, recipe_id, code, qty, produced_on, expires_on").eq("org_id", orgId).eq("unit_id", unitId).order("produced_on").limit(2000);
+  return (data ?? []).map((r) => ({ id: r.id as string, recipeId: r.recipe_id as string, code: (r.code as string | null) ?? null, qty: Number(r.qty), producedOn: r.produced_on as string, expiresOn: (r.expires_on as string | null) ?? null }));
 }
 
 export type WeeklySales = {

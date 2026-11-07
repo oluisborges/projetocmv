@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { shoppingList } from "@/lib/calc";
 import type { ProdIngredient } from "@/lib/production-data";
-import { batchesLabel, buyRows, computeProduction, groupBySupplier, shoppingText, type ProductionInput } from "./production-view";
+import { batchesLabel, buyRows, computeProduction, groupBySupplier, shoppingText, yieldSummary, type ProductionInput } from "./production-view";
 
 const ing = (name: string, over: Partial<ProdIngredient> = {}): ProdIngredient => ({ name, kind: "insumo", baseUnit: "g", purchaseUnit: "kg", unitCost: 0.02, packSize: 1000, packLabel: "1 kg", supplier: null, ...over });
 
@@ -97,5 +97,60 @@ describe("conta da produção", () => {
 
   it("sem quantidades, nada a calcular", () => {
     expect(computeProduction([{ recipeId: "esc", units: 0 }], base).marmitas).toBe(0);
+  });
+});
+
+describe("rendimento real", () => {
+  it("planejou 100, saíram 92: perda de 8%, abaixo do limite", () => {
+    const y = yieldSummary([{ id: "a", name: "Escondidinho", planned: 60, produced: 55 }, { id: "b", name: "Filé", planned: 40, produced: 37 }]);
+    expect(y.planned).toBe(100);
+    expect(y.produced).toBe(92);
+    expect(y.diff).toBe(-8);
+    expect(y.lossPct).toBeCloseTo(0.08, 6);
+    expect(y.high).toBe(false);
+    expect(y.rows[0].lossPct).toBeCloseTo(5 / 60, 6);
+  });
+
+  it("perda acima de 10% pede atenção e sobra não vira perda", () => {
+    expect(yieldSummary([{ id: "a", name: "A", planned: 100, produced: 85 }]).high).toBe(true);
+    const more = yieldSummary([{ id: "a", name: "A", planned: 50, produced: 55 }]);
+    expect(more.lossPct).toBe(0);
+    expect(more.diff).toBe(5);
+    expect(more.high).toBe(false);
+  });
+
+  it("sem nada planejado não há percentual", () => {
+    expect(yieldSummary([{ id: "a", name: "A", planned: 0, produced: 0 }]).lossPct).toBeNull();
+    expect(yieldSummary([]).rows).toEqual([]);
+  });
+});
+
+describe("estoque mínimo na lista de compras", () => {
+  const base: ProductionInput = {
+    recipes: [{ id: "esc", name: "Escondidinho", costPerPortion: 9.5, usage: { patinho: 150 } }],
+    ingredients: {
+      patinho: ing("Patinho moído", { unitCost: 0.04 }),
+      sal: ing("Sal", { unitCost: 0.002, packSize: 1000, packLabel: "1 kg" }),
+    },
+    receitas: {},
+    stock: { patinho: { balance: 20_000, known: true, lastCountAt: "2026-11-01T12:00:00Z" }, sal: { balance: 300, known: true, lastCountAt: "2026-11-01T12:00:00Z" } },
+  };
+
+  it("insumo abaixo do mínimo entra na lista mesmo sem a produção usar", () => {
+    const sem = computeProduction([{ recipeId: "esc", units: 10 }], base);
+    expect(sem.rows.toBuy.map((r) => r.name)).toEqual([]);
+    const com = computeProduction([{ recipeId: "esc", units: 10 }], { ...base, minimums: { sal: 1000 } });
+    expect(com.rows.toBuy.map((r) => [r.name, r.buy, r.minimum])).toEqual([["Sal", "1 kg", "1 kg"]]);
+  });
+
+  it("estoque acima do mínimo não pede compra", () => {
+    const c = computeProduction([{ recipeId: "esc", units: 10 }], { ...base, minimums: { sal: 200 } });
+    expect(c.rows.toBuy).toEqual([]);
+    expect(c.rows.enough.map((r) => r.name)).toContain("Sal");
+  });
+
+  it("o mínimo soma ao que a produção pede (150 g × 100 = 15 kg + 8 kg de mínimo, tem 20 kg: compra 3 kg)", () => {
+    const c = computeProduction([{ recipeId: "esc", units: 100 }], { ...base, minimums: { patinho: 8000 } });
+    expect(c.rows.toBuy.map((r) => [r.name, r.buy])).toEqual([["Patinho moído", "3 kg"]]);
   });
 });
