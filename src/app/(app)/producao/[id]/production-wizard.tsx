@@ -18,7 +18,7 @@ const STEPS = [
   { key: 4, label: "Já fiz", full: "Já fiz" },
 ] as const;
 
-const downloadClass = "flex min-h-11 items-center justify-center rounded-xl border border-primary px-3 py-1 text-center text-sm font-semibold leading-tight text-primary";
+const downloadClass = "flex min-h-11 items-center justify-center rounded-xl border border-primary bg-surface px-3 py-1 text-center text-sm font-semibold leading-tight text-primary";
 
 const input = "tabular h-11 w-20 rounded-xl border border-border bg-background px-3 text-right text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60";
 const noteClass = "text-xs leading-relaxed text-muted";
@@ -95,6 +95,7 @@ export function ProductionWizard({
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [correct, setCorrect] = useState(false);
+  const [history, setHistory] = useState(false);
   // Validade das marmitas deste lote: 90 dias depois do dia da produção, ajustável (vazio = sem controle).
   const [expires, setExpires] = useState(() => addDays(plannedFor, 90));
   const locked = done || !canWrite;
@@ -152,17 +153,15 @@ export function ProductionWizard({
               {r.topSeller ? <span className="ml-2 rounded-full bg-tint px-2 py-0.5 text-xs font-semibold text-primary">mais vendida</span> : null}
             </p>
             <p className={noteClass}>
-              {r.confidence === "none"
-                ? "sem vendas recentes"
-                : `sugestão ${formatNumber(r.suggested, 0)} · vende ~${formatNumber(r.average, 0)} por semana${trendText(r.trendPct) ? `, ${trendText(r.trendPct)}` : ""}`}
-              {r.finished !== null ? ` · prontas: ${formatNumber(r.finished, 0)}` : ""}
+              {r.confidence === "none" ? "sem vendas recentes" : `sugestão ${formatNumber(r.suggested, 0)}`}
+              {r.finished !== null ? ` · prontas ${formatNumber(r.finished, 0)}` : ""}
             </p>
           </div>
           <input value={qty[r.id] ?? ""} onChange={(e) => setQty((p) => ({ ...p, [r.id]: e.target.value }))} disabled={locked} inputMode="numeric" placeholder="0" aria-label={`Quantas ${r.name} produzir`} className={input} />
         </div>
-        {r.confidence !== "none" && source === "menu" ? (
+        {history && r.confidence !== "none" && source === "menu" ? (
           <p className={noteClass}>
-            Últimas semanas: {r.weekly.map((n) => formatNumber(n, 0)).join(", ")}
+            Vende ~{formatNumber(r.average, 0)} por semana{trendText(r.trendPct) ? `, ${trendText(r.trendPct)}` : ""} · últimas semanas: {r.weekly.map((n) => formatNumber(n, 0)).join(", ")}
             {r.confidence === "low" ? " · pouco histórico, confira" : ""}
             {diff !== null && diff !== 0 && !locked ? ` · ${diff > 0 ? `${diff} a mais` : `${Math.abs(diff)} a menos`} que a sugestão` : ""}
           </p>
@@ -175,26 +174,32 @@ export function ProductionWizard({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* nome e dia */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-        <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-muted">
-          Nome da produção
-          <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} maxLength={80} className="h-11 card px-3 text-base text-foreground outline-none focus:border-primary disabled:opacity-60" />
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-          Dia
-          <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} disabled={locked} className="h-11 card px-2 text-base text-foreground outline-none focus:border-primary disabled:opacity-60" />
-        </label>
-      </div>
+      {/* nome e dia: uma linha; toque para editar */}
+      <details className="card px-4">
+        <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 text-sm">
+          <span className="min-w-0 truncate">
+            <span className="font-semibold">{date.slice(8, 10)}/{date.slice(5, 7)}</span>
+            <span className="text-muted"> · {name.trim() || defaultName}</span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2 text-xs">
+            <span aria-live="polite" className={save === "error" ? "font-semibold text-danger" : "text-muted"}>{saveChip}</span>
+            {!locked ? <span className="font-semibold text-primary">Editar</span> : null}
+          </span>
+        </summary>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pb-3">
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-muted">
+            Nome da produção
+            <input value={name} onChange={(e) => setName(e.target.value)} disabled={locked} maxLength={80} className="h-11 rounded-xl border border-border bg-background px-3 text-base text-foreground outline-none focus:border-primary disabled:opacity-60" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+            Dia
+            <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} disabled={locked} className="h-11 rounded-xl border border-border bg-background px-2 text-base text-foreground outline-none focus:border-primary disabled:opacity-60" />
+          </label>
+        </div>
+      </details>
 
       {/* passos */}
-      <nav aria-label="Passos da produção" className="flex flex-col gap-1.5">
-        <div className="flex items-baseline justify-between text-xs text-muted">
-          <span>
-            Passo {step} de 4 · <strong className="text-foreground">{STEPS[step - 1].full}</strong>
-          </span>
-          <span aria-live="polite">{saveChip}</span>
-        </div>
+      <nav aria-label={`Passos da produção: ${STEPS[step - 1].full}`} className="flex flex-col gap-1.5">
         <div className="grid grid-cols-4 gap-1.5">
           {STEPS.map((s) => (
             <button
@@ -220,23 +225,30 @@ export function ProductionWizard({
       {/* passo 1 */}
       {step === 1 ? (
         <section className="flex flex-col gap-3">
-          <p className={noteClass}>
-            {source === "menu"
-              ? `Sugestão pelas vendas do cardápio digital nas últimas ${weeksUsed} semanas, a tendência de cada marmita e o que já está pronto no congelador.`
-              : source === "manual"
-                ? "Sugestão pela média mensal de vendas que você informou em Financeiro (dividida em semanas). Conecte o cardápio digital para uma sugestão por semana."
-                : "Ainda não há vendas para sugerir. Digite as quantidades à mão ou conecte o cardápio digital."}
-            <Hint>A sugestão é a média das últimas semanas (as mais recentes pesam mais), com um ajuste leve pela tendência, menos o que já está pronto. É só um ponto de partida: você decide.</Hint>
-            {plannedElsewhere > 0 ? ` Já há ${formatNumber(plannedElsewhere, 0)} marmitas planejadas em outras produções desta semana; elas já saíram da sugestão.` : ""}
-          </p>
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Quantas de cada?</h2>
+            <h2 className="text-lg font-bold">
+              Quantas de cada?
+              <Hint>
+                {source === "menu"
+                  ? `Sugestão pelas vendas do cardápio digital nas últimas ${weeksUsed} semanas (as mais recentes pesam mais), com um ajuste leve pela tendência, menos o que já está pronto. `
+                  : source === "manual"
+                    ? "Sugestão pela média mensal de vendas que você informou em Financeiro, dividida em semanas. Conecte o cardápio digital para uma sugestão por semana. "
+                    : "Ainda não há vendas para sugerir. Digite as quantidades à mão ou conecte o cardápio digital. "}
+                É só um ponto de partida: você decide.
+                {plannedElsewhere > 0 ? ` Já há ${formatNumber(plannedElsewhere, 0)} marmitas planejadas em outras produções desta semana; elas já saíram da sugestão.` : ""}
+              </Hint>
+            </h2>
             {!locked && source !== "none" ? (
-              <button type="button" onClick={useSuggestion} className="tap-area text-sm font-semibold text-primary underline">
+              <button type="button" onClick={useSuggestion} className="min-h-11 shrink-0 rounded-full bg-tint px-4 text-sm font-semibold text-primary">
                 Usar a sugestão
               </button>
             ) : null}
           </div>
+          {source === "menu" ? (
+            <button type="button" onClick={() => setHistory((v) => !v)} aria-pressed={history} className="tap-area self-start text-xs font-semibold text-primary underline">
+              {history ? "Esconder histórico de vendas" : "Ver histórico de vendas"}
+            </button>
+          ) : null}
           {withSales.length > 0 ? <ul className="divide-y divide-border card px-4">{withSales.map(renderRow)}</ul> : null}
           {others.length > 0 ? (
             <details className="card px-4">
@@ -253,7 +265,7 @@ export function ProductionWizard({
         <section className="flex flex-col gap-4">
           {total > 0 ? <ProductionSummary calc={calc} /> : <p className="card p-4 text-sm text-muted">Escolha as marmitas no passo 1 para ver o que preparar.</p>}
           {total > 0 ? <PrepareList calc={calc} receitas={base.receitas} /> : null}
-          {total > 0 ? <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha</a> : null}
+          {total > 0 ? <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha de produção</a> : null}
         </section>
       ) : null}
 
@@ -279,7 +291,7 @@ export function ProductionWizard({
               }
             />
           ) : null}
-          {total > 0 ? <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha</a> : null}
+          {total > 0 ? <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha de produção</a> : null}
         </section>
       ) : null}
 
@@ -288,6 +300,7 @@ export function ProductionWizard({
         <section className="flex flex-col gap-3">
           {done ? (
             <>
+              <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha de produção</a>
               <YieldCard summary={yieldSummary(rows.map((r) => ({ id: r.id, name: r.name, planned: initial[r.id] ?? 0, produced: producedQty[r.id] ?? 0 })))} />
               <ul className="divide-y divide-border card px-4">
                 {rows
@@ -357,8 +370,8 @@ export function ProductionWizard({
         </p>
       ) : null}
 
-      {/* navegação */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* navegação: fica à vista sobre a barra de baixo */}
+      <div className="sticky bottom-20 z-10 -mx-4 grid grid-cols-2 gap-2 border-t border-border bg-background/95 px-4 py-2 backdrop-blur">
         <button type="button" onClick={() => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))} disabled={step === 1} className="h-12 rounded-xl border border-border bg-surface font-semibold disabled:opacity-40">
           Voltar
         </button>

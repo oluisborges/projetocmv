@@ -20,7 +20,7 @@ export default async function ProducaoPage() {
   const header = (
     <section className="flex flex-col gap-1">
       <h1 className="text-2xl font-extrabold tracking-tight">Produção</h1>
-      <p className="text-muted">Decida o que fazer, veja o que preparar e o que comprar. Você pode montar quantas produções quiser.</p>
+      <p className="text-muted">Decida o que fazer, o que preparar e o que comprar.</p>
     </section>
   );
 
@@ -62,29 +62,33 @@ export default async function ProducaoPage() {
       <ProducaoTabs active="producoes" />
 
       {canWrite ? (
-        <section className="flex flex-col gap-2 card p-4">
-          <p className="font-semibold">{inProgress.length > 0 ? "Quer começar outra produção?" : "Vamos montar uma produção?"}</p>
-          <p className="text-sm text-muted">O sistema sugere as marmitas e as quantidades pelas suas vendas; você ajusta. Depois mostra o que preparar e o que comprar.</p>
-          <form action={createProduction} className="flex flex-col gap-2">
+        <section className="flex flex-col gap-3 card p-4">
+          <div>
+            <p className="font-bold">{inProgress.length > 0 ? "Outra produção?" : "Vamos montar uma produção?"}</p>
+            <p className="text-sm text-muted">O sistema sugere as quantidades pelas suas vendas; você ajusta.</p>
+          </div>
+          <form action={createProduction}>
             <input type="hidden" name="mode" value="suggestion" />
-            <SubmitButton pendingLabel="Montando…" className="h-12 rounded-xl bg-primary font-semibold text-primary-foreground">
-              Nova produção com sugestão
+            <SubmitButton pendingLabel="Montando…" className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground">
+              Nova produção
             </SubmitButton>
           </form>
-          {productions.length > 0 ? (
+          <div className={`grid gap-2 ${productions.length > 0 ? "grid-cols-2" : "grid-cols-1"}`}>
+            {productions.length > 0 ? (
+              <form action={createProduction}>
+                <input type="hidden" name="mode" value="repeat" />
+                <SubmitButton pendingLabel="Repetindo…" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold text-primary">
+                  Repetir a última
+                </SubmitButton>
+              </form>
+            ) : null}
             <form action={createProduction}>
-              <input type="hidden" name="mode" value="repeat" />
-              <SubmitButton pendingLabel="Repetindo…" className="h-11 w-full rounded-xl border border-primary bg-surface text-sm font-semibold text-primary">
-                Repetir a última produção
+              <input type="hidden" name="mode" value="blank" />
+              <SubmitButton pendingLabel="Criando…" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold">
+                Começar do zero
               </SubmitButton>
             </form>
-          ) : null}
-          <form action={createProduction}>
-            <input type="hidden" name="mode" value="blank" />
-            <SubmitButton pendingLabel="Criando…" className="h-11 w-full rounded-xl border border-border bg-surface text-sm font-semibold">
-              Começar do zero
-            </SubmitButton>
-          </form>
+          </div>
         </section>
       ) : null}
 
