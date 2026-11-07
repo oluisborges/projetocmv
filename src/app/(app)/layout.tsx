@@ -39,7 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts().catch(() => []) : [];
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col" style={{ "--sticky-top": active?.viewingAs ? "6.75rem" : "4rem" } as React.CSSProperties}>
+    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col lg:bg-background lg:shadow-[0_0_0_1px_var(--border),0_24px_70px_-34px_rgb(15_23_42/0.4)]" style={{ "--sticky-top": active?.viewingAs ? "6.75rem" : "4rem" } as React.CSSProperties}>
       {active?.viewingAs ? (
         <div role="status" className="sticky top-0 z-30 flex h-11 items-center justify-between gap-3 bg-warning px-4 text-sm text-white">
           <p className="min-w-0 truncate leading-tight">
