@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Hint } from "@/components/hint";
 import { PendingLabel } from "@/components/spinner";
 import { daysSince, formatAge, formatBaseQty, formatNumber } from "@/lib/format";
+import { parsePurchaseQty, qtyToField } from "@/lib/purchase-qty";
 import { addFinishedMovement, addIngredientMovement, saveStockCounts, saveStockMinimum } from "./actions";
 
 export type StockRowData = {
@@ -52,8 +53,17 @@ function IngredientRow({ row, canWrite, onDone }: { row: StockRowData; canWrite:
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
+  const [confirmWaste, setConfirmWaste] = useState(false);
 
   async function save() {
+    // Perda maior que o saldo quase sempre é erro de digitação (kg no lugar de g): pede um segundo toque para confirmar.
+    if (action === "waste" && !confirmWaste && row.known && row.balance >= 0) {
+      const q = parsePurchaseQty(text, row.unit, row.unit);
+      if ("qty" in q && q.qty > row.balance) {
+        setConfirmWaste(true);
+        return setError(`Você está lançando uma perda de ${formatBaseQty(q.qty, row.baseUnit)}, mais do que o saldo (${formatBaseQty(row.balance, row.baseUnit)}). Confira a unidade e toque em Salvar de novo para confirmar.`);
+      }
+    }
     setBusy(true);
     if (action === "min") {
       const r = await saveStockMinimum({ ingredientId: row.id, text, unit: row.unit });
@@ -68,6 +78,7 @@ function IngredientRow({ row, canWrite, onDone }: { row: StockRowData; canWrite:
     const result = await addIngredientMovement({ ingredientId: row.id, kind: action, text, unit: row.unit, ...(action === "waste" ? { note: `Motivo: ${reason}` } : {}), ...(action === "purchase" && paid.trim() !== "" ? { paid } : {}) });
     setPaid("");
     setBusy(false);
+    setConfirmWaste(false);
     if (!result.ok) return setError(result.error);
     setText("");
     setError(undefined);
@@ -96,7 +107,20 @@ function IngredientRow({ row, canWrite, onDone }: { row: StockRowData; canWrite:
         <div className="flex flex-col gap-2 rounded-xl bg-background p-3">
           <div className="flex gap-1 rounded-lg bg-border/60 p-1" role="tablist">
             {(Object.keys(ACTION_LABEL) as Action[]).map((a) => (
-              <button key={a} type="button" role="tab" aria-selected={action === a} onClick={() => setAction(a)} className={chip(action === a)}>
+              <button
+                key={a}
+                type="button"
+                role="tab"
+                aria-selected={action === a}
+                onClick={() => {
+                  setAction(a);
+                  setError(undefined);
+                  setConfirmWaste(false);
+                  // A aba Mínimo abre já com o mínimo atual; as outras abrem vazias.
+                  setText(a === "min" && row.minimum !== null ? qtyToField(row.minimum, row.unit) : "");
+                }}
+                className={chip(action === a)}
+              >
                 {ACTION_LABEL[a]}
               </button>
             ))}
@@ -126,7 +150,7 @@ function IngredientRow({ row, canWrite, onDone }: { row: StockRowData; canWrite:
             </label>
           ) : null}
           <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
-            <input value={text} onChange={(e) => setText(e.target.value)} inputMode="decimal" placeholder={action === "min" ? "sem mínimo" : "0"} aria-label={`${ACTION_LABEL[action]} de ${row.name}`} className={input} />
+            <input value={text} onChange={(e) => { setText(e.target.value); setConfirmWaste(false); }} inputMode="decimal" placeholder={action === "min" ? "sem mínimo" : "0"} aria-label={`${ACTION_LABEL[action]} de ${row.name}`} className={input} />
             <span className="w-8 text-sm text-muted">{row.unit}</span>
             <button type="button" onClick={save} disabled={busy || (text.trim() === "" && action !== "min")} className="h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60">
               {busy ? <PendingLabel>Salvando…</PendingLabel> : "Salvar"}
@@ -291,7 +315,7 @@ export function StockManager({ ingredients, finished, canWrite, expiring, focusI
   const shownIngredients = useMemo(() => ingredients.filter((i) => i.kind === "insumo" && match(i.name)), [ingredients, q]); // eslint-disable-line react-hooks/exhaustive-deps
   const shownPacks = useMemo(() => ingredients.filter((i) => i.kind === "embalagem" && match(i.name)), [ingredients, q]); // eslint-disable-line react-hooks/exhaustive-deps
   const shownFinished = finished.filter((f) => match(f.name));
-  const neverCounted = ingredients.filter((i) => !i.known).length;
+  const neverCounted = ingredients.filter((i) => !i.lastCountAt).length;
   const counted = ingredients.length - neverCounted;
   // Com produção em montagem, o que ela usa vem primeiro e o resto fica recolhido (a busca abre tudo).
   const focusSet = new Set(focusIds);

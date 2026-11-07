@@ -19,6 +19,8 @@ export type IngredientDefaults = {
 };
 
 const decimal = (n: number | undefined) => (n === undefined ? undefined : String(n).replace(".", ","));
+/** Preço em reais com duas casas, como na lista: 12,50. */
+const money2 = (n: number) => n.toFixed(2).replace(".", ",");
 
 const inputClass =
   "h-12 w-full min-w-0 card px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
@@ -113,7 +115,7 @@ export function IngredientForm({
         label="Quanto você paga (R$)"
         name="purchase_price"
         inputMode="decimal"
-        defaultValue={defaults.purchase_price ? decimal(defaults.purchase_price) : ""}
+        defaultValue={defaults.purchase_price ? money2(defaults.purchase_price) : ""}
         placeholder="Ex.: 14,50"
         hint={<Hint>O preço total dessa compra, o mesmo da nota. Se o saco de 5 kg custou R$ 30, digite 30.</Hint>}
       />

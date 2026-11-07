@@ -40,6 +40,7 @@ export function PhotoCard({ recipeId, initial, canWrite }: { recipeId: string; i
   const [photo, setPhoto] = useState<string | null>(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [confirming, setConfirming] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   const pick = (file: File | undefined) => {
@@ -82,10 +83,29 @@ export function PhotoCard({ recipeId, initial, canWrite }: { recipeId: string; i
           <button type="button" disabled={pending} onClick={() => input.current?.click()} className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-primary bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-60">
             {pending ? "Enviando…" : photo ? "Trocar foto" : "Adicionar foto"}
           </button>
-          {photo ? (
-            <button type="button" disabled={pending} onClick={remove} className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold text-danger disabled:opacity-60">
+          {photo && !confirming ? (
+            <button type="button" disabled={pending} onClick={() => setConfirming(true)} className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold text-danger disabled:opacity-60">
               Remover
             </button>
+          ) : null}
+          {photo && confirming ? (
+            <span className="flex w-full items-center gap-2">
+              <span className="min-w-0 flex-1 text-sm font-semibold">Remover a foto?</span>
+              <button type="button" onClick={() => setConfirming(false)} className="min-h-11 rounded-xl border border-border px-4 text-sm font-semibold">
+                Não
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  setConfirming(false);
+                  remove();
+                }}
+                className="min-h-11 rounded-xl bg-danger px-4 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Remover
+              </button>
+            </span>
           ) : null}
         </div>
       ) : null}

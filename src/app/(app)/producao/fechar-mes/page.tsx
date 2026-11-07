@@ -31,7 +31,8 @@ export default async function MonthPage(props: PageProps<"/producao/fechar-mes">
   const sp = await props.searchParams;
   const requested = monthStart(typeof sp.mes === "string" ? sp.mes : undefined);
   const now = currentMonthStart();
-  const month = requested ?? now;
+  // Mês que ainda não começou não tem o que fechar: volta para o atual.
+  const month = requested && requested <= now ? requested : now;
 
   const ctx = await loadPricingContext(orgId, canWrite);
   if (!ctx) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useActionState, useRef, useSyncExternalStore } from "react";
+import { startTransition, useActionState, useRef, useState, useSyncExternalStore } from "react";
 import { PendingLabel } from "@/components/spinner";
 
 const subscribe = () => () => {};
@@ -27,6 +27,8 @@ export function ActionForm({
 }) {
   const ref = useRef<HTMLFormElement>(null);
   const hydrated = useHydrated();
+  // A mensagem "salvo" vale só até a pessoa mexer no formulário de novo (senão fica velha na tela, ex.: depois de remover o item).
+  const [edited, setEdited] = useState(false);
   const [state, formAction, pending] = useActionState(async (prev: State, formData: FormData) => {
     const result = await action(prev, formData);
     if (result.ok && resetOnOk) ref.current?.reset();
@@ -36,8 +38,10 @@ export function ActionForm({
   return (
     <form
       ref={ref}
+      onInput={() => setEdited(true)}
       onSubmit={(e) => {
         e.preventDefault();
+        setEdited(false);
         const data = new FormData(e.currentTarget);
         startTransition(() => formAction(data));
       }}
@@ -49,7 +53,7 @@ export function ActionForm({
           {state.error}
         </p>
       ) : null}
-      {state.ok ? (
+      {state.ok && !edited ? (
         <p role="status" className="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
           {state.ok}
         </p>

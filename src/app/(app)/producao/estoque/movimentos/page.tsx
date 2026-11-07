@@ -50,7 +50,9 @@ export default async function MovimentosPage(props: { searchParams: Promise<Reco
   }
 
   const { rows: all, truncated } = await loadMoves(orgId, unit.id, month);
-  const counts = countByKind(all);
+  // Os números das pílulas seguem a busca; o filtro de tipo só escolhe o que a lista mostra.
+  const searched = filterMoves(all, { query });
+  const counts = countByKind(searched);
   const rows = filterMoves(all, { kind, query });
   const href = (over: { tipo?: string | null; q?: string | null }) => {
     const p = new URLSearchParams();
@@ -72,7 +74,7 @@ export default async function MovimentosPage(props: { searchParams: Promise<Reco
 
       <div role="group" aria-label="Tipo de movimento" className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
         <Link href={href({ tipo: null })} aria-current={!kind ? "page" : undefined} className={chip(!kind)}>
-          Todos ({all.length})
+          Todos ({searched.length})
         </Link>
         {MOVE_KINDS.filter((k) => counts[k.key] > 0 || kind === k.key).map((k) => (
           <Link key={k.key} href={href({ tipo: k.key })} aria-current={kind === k.key ? "page" : undefined} className={chip(kind === k.key)}>

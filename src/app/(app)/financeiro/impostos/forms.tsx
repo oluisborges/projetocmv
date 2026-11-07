@@ -73,7 +73,7 @@ export function SettingsForm({
       {fixedAuto ? (
         <div className="flex flex-col gap-1 card p-4 text-sm">
           <p className="font-medium">Despesas fixas: {pct(settings.fixedExpensePct)}% do que você vende</p>
-          <p className="text-muted">Calculado sozinho a partir das suas contas e da sua equipe.</p>
+          <p className="text-muted">Calculado sozinho: suas contas e sua equipe divididas pelo faturamento mensal que você informou em Financeiro. Por isso pode ser diferente da porcentagem sobre o mês passado, que vem do cardápio digital.</p>
           <Link href="/financeiro" className="inline-flex min-h-11 items-center font-semibold text-primary">
             Ver ou alterar em Financeiro, aba Custos fixos →
           </Link>

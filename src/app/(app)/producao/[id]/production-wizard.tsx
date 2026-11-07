@@ -112,6 +112,21 @@ export function ProductionWizard({
   const qtyOf = (rid: string) => calc.rows.toBuy.find((r) => r.id === rid)?.buyQty ?? 0;
 
   // Salva sozinho, um instante depois de a pessoa parar de digitar.
+  // O passo em que a pessoa está fica no endereço (?passo=3): ao recarregar, volta para ele.
+  useEffect(() => {
+    const n = Number(new URLSearchParams(window.location.search).get("passo"));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- ler o endereço só é possível no navegador, depois da hidratação
+    if (n === 2 || n === 3 || (n === 4 && !done)) setStep(n);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const stepTouched = useRef(false);
+  useEffect(() => {
+    if (!stepTouched.current) {
+      stepTouched.current = true;
+      return;
+    }
+    window.history.replaceState(null, "", step === 1 ? window.location.pathname : `${window.location.pathname}?passo=${step}`);
+  }, [step]);
+
   const first = useRef(true);
   useEffect(() => {
     if (first.current) {
@@ -162,7 +177,7 @@ export function ProductionWizard({
               {r.finished !== null ? ` · prontas ${formatNumber(r.finished, 0)}` : ""}
             </p>
           </div>
-          <input value={qty[r.id] ?? ""} onChange={(e) => setQty((p) => ({ ...p, [r.id]: e.target.value }))} disabled={locked} inputMode="numeric" placeholder="0" aria-label={`Quantas ${r.name} produzir`} className={input} />
+          <input value={qty[r.id] ?? ""} onChange={(e) => setQty((p) => ({ ...p, [r.id]: e.target.value.replace(/\D/g, "") }))} disabled={locked} inputMode="numeric" placeholder="0" aria-label={`Quantas ${r.name} produzir`} className={input} />
         </div>
         {history && r.confidence !== "none" && source === "menu" ? (
           <p className={noteClass}>
@@ -355,7 +370,7 @@ export function ProductionWizard({
                             <span className="block truncate text-sm font-medium">{r.name}</span>
                             <span className={noteClass}>planejado {formatNumber(toQty(qty[r.id]), 0)}</span>
                           </span>
-                          <input value={produced[r.id] ?? qty[r.id] ?? ""} onChange={(e) => setProduced((p) => ({ ...p, [r.id]: e.target.value }))} disabled={!canWrite} inputMode="numeric" aria-label={`Quantas ${r.name} saíram`} className={input} />
+                          <input value={produced[r.id] ?? qty[r.id] ?? ""} onChange={(e) => setProduced((p) => ({ ...p, [r.id]: e.target.value.replace(/\D/g, "") }))} disabled={!canWrite} inputMode="numeric" aria-label={`Quantas ${r.name} saíram`} className={input} />
                         </li>
                       ))}
                   </ul>

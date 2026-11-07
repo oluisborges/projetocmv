@@ -44,9 +44,9 @@ function readSettings(raw: {
   portionWeight: unknown;
   portionWeightUnit?: unknown;
   cookingLoss: unknown;
-}): Parsed<RecipeSettingsInput> {
+}, labels: { name: string; weight: string } = { name: "Dê um nome à ficha (até 80 letras).", weight: "Peso da porção" }): Parsed<RecipeSettingsInput> {
   const name = String(raw.name ?? "").trim();
-  if (!name || name.length > 80) return { ok: false, error: "Dê um nome à ficha (até 80 letras)." };
+  if (!name || name.length > 80) return { ok: false, error: labels.name };
 
   const category = String(raw.category ?? "").trim() || null;
   if (category && category.length > 40) return { ok: false, error: "Categoria muito longa." };
@@ -54,7 +54,7 @@ function readSettings(raw: {
   const portions = optionalNumber(raw.portions, "Porções", { max: 100_000 });
   if (!portions.ok) return portions;
   const weightUnit = raw.portionWeightUnit === "kg" || raw.portionWeightUnit === "ml" || raw.portionWeightUnit === "l" || raw.portionWeightUnit === "un" ? raw.portionWeightUnit : "g";
-  const weightTyped = optionalNumber(raw.portionWeight, "Peso da porção", { max: 100_000 });
+  const weightTyped = optionalNumber(raw.portionWeight, labels.weight, { max: 100_000 });
   if (!weightTyped.ok) return weightTyped;
   // O que o dono digitou (em g ou kg) vira gramas, que é o que o cálculo usa.
   const weight: { value: number | null } = {
@@ -96,7 +96,8 @@ export async function createRecipe(_prev: FormState, formData: FormData): Promis
   if (formData.get("mode") !== "batch") {
     const name = String(formData.get("name") ?? "").trim();
     const category = String(formData.get("category") ?? "").trim() || null;
-    if (!name || name.length > 80) return { error: "Dê um nome à ficha (até 80 letras)." };
+    if (!name) return { error: "Dê um nome ao produto." };
+    if (name.length > 80) return { error: `O nome pode ter até 80 letras (este tem ${name.length}).` };
     if (category && category.length > 40) return { error: "Categoria muito longa." };
 
     const supabase = await createClient();
@@ -140,7 +141,7 @@ export async function createReceita(_prev: FormState, formData: FormData): Promi
     portionWeight: formData.get("ready_weight"),
     portionWeightUnit: formData.get("ready_unit"),
     cookingLoss: "0",
-  });
+  }, { name: "Dê um nome à receita (até 80 letras).", weight: "Quanto rende pronta" });
   if (!read.ok) return { error: read.error };
   if (read.value.portionWeight === null) return { error: "Informe quanto a receita rende pronta (o peso total depois de cozida)." };
 

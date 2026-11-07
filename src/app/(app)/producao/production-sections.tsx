@@ -101,7 +101,7 @@ function PurchaseField({ row, planId, savedQty, savedPaid, onSaved }: { row: Buy
       </div>
       {"qty" in bought && Math.abs(diff) > 0.0001 ? (
         <p className={noteClass}>
-          {diff > 0 ? `${formatBaseQty(diff, base)} a mais` : `${formatBaseQty(-diff, base)} a menos`} que a lista ({row.buy}). A diferença entra no estoque.
+          {diff > 0 ? `${formatBaseQty(diff, base)} a mais que a lista (${row.buy}). A diferença entra no estoque.` : `${formatBaseQty(-diff, base)} a menos que a lista (${row.buy}). O estoque recebe só o que você comprou.`}
         </p>
       ) : null}
       <button type="button" onClick={save} disabled={busy || !("qty" in bought) || paidValue === undefined} className="h-11 rounded-xl bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-60">
@@ -246,7 +246,15 @@ export function BuyChecklist({
       ) : null}
 
       <p className="tabular text-sm text-muted">
-        Compra estimada: <strong className="text-foreground">{formatBRL(calc.buyCost)}</strong> (embalagens inteiras, pelo preço cadastrado)
+        {done > 0 && done < rows.length ? (
+          <>
+            Falta comprar <strong className="text-foreground">{formatBRL(rows.filter((r) => !bought.has(r.id)).reduce((sum, r) => sum + r.cost, 0))}</strong> (lista toda: {formatBRL(calc.buyCost)}, em embalagens inteiras, pelo preço cadastrado)
+          </>
+        ) : (
+          <>
+            Compra estimada: <strong className="text-foreground">{formatBRL(calc.buyCost)}</strong> (embalagens inteiras, pelo preço cadastrado)
+          </>
+        )}
       </p>
       {manual ? (
         <div className="flex flex-col gap-1.5">
