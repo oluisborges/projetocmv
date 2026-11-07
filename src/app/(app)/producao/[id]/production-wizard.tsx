@@ -177,9 +177,9 @@ export function ProductionWizard({
       {/* nome e dia: uma linha; toque para editar */}
       <details className="card px-4">
         <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 text-sm">
-          <span className="min-w-0 truncate">
-            <span className="font-semibold">{date.slice(8, 10)}/{date.slice(5, 7)}</span>
-            <span className="text-muted"> · {name.trim() || defaultName}</span>
+          <span className="min-w-0 truncate text-base font-bold">
+            {name.trim() || defaultName}
+            <span className="ml-2 text-sm font-medium text-muted">{date.slice(8, 10)}/{date.slice(5, 7)}</span>
           </span>
           <span className="flex shrink-0 items-center gap-2 text-xs">
             <span aria-live="polite" className={save === "error" ? "font-semibold text-danger" : "text-muted"}>{saveChip}</span>

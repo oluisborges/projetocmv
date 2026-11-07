@@ -35,7 +35,7 @@ export default async function ProductionPage(props: PageProps<"/producao/[id]">)
   return (
     <>
       <BackLink href="/producao">Produções</BackLink>
-      <h1 className="text-2xl font-extrabold tracking-tight">{productionName(production)}</h1>
+      <h1 className="sr-only">{productionName(production)}</h1>
 
       <ProductionWizard
         key={production.id}
