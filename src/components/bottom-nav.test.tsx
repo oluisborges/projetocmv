@@ -77,11 +77,12 @@ describe("abas travadas", () => {
   });
 });
 
-describe("Produção em desenvolvimento", () => {
-  it("a trava de desenvolvimento vale para todos, e para a equipe Shogun só enquanto a conferência estiver ligada", async () => {
-    const { devLockApplies, DEV_LOCK_INCLUDES_ADMIN } = await import("@/lib/menu-locks");
-    expect(devLockApplies(false)).toBe(true);
-    expect(devLockApplies(true)).toBe(DEV_LOCK_INCLUDES_ADMIN);
+describe("Produção liberada", () => {
+  it("a trava de desenvolvimento está desligada para todos (clientes e equipe Shogun)", async () => {
+    const { devLockApplies, PRODUCAO_IN_DEVELOPMENT } = await import("@/lib/menu-locks");
+    expect(PRODUCAO_IN_DEVELOPMENT).toBe(false);
+    expect(devLockApplies(false)).toBe(false);
+    expect(devLockApplies(true)).toBe(false);
   });
 });
 

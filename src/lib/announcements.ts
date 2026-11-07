@@ -1,13 +1,13 @@
 // Avisos de novidade (o modal que aparece depois de uma atualização).
 // Para lançar um aviso: acrescente-o em ANNOUNCEMENTS e troque ACTIVE_ANNOUNCEMENT_ID pelo id dele.
 // Com ACTIVE_ANNOUNCEMENT_ID = null nenhum cliente vê nada; o admin Shogun pode ver o rascunho abrindo qualquer tela com ?aviso=ver.
-// No ar: novidades-2026-11-03, com duas abas (03/11 abre primeiro; 27/10 é a atualização de menus e receitas).
+// No ar: novidades-2026-11-07, com duas abas (07/11 abre primeiro; 03/11 é a atualização de fichas e tabela nutricional).
 
 /** Textos aceitam **negrito**. `highlight` + `badge`: bloco em destaque (ex.: o que vem aí). */
 export type AnnouncementSection = { icon: string; title: string; body: string; bullets?: string[]; /** frase depois da lista */ after?: string; highlight?: boolean; badge?: string };
 
 /** Uma atualização dentro de um aviso com abas (a mais nova vem primeiro e é a que abre). */
-export type AnnouncementTab = { id: string; /** data da atualização, ex.: "03/11" */ label: string; /** poucas palavras sobre o que mudou */ short: string; heading: string; sections: AnnouncementSection[] };
+export type AnnouncementTab = { id: string; /** data da atualização, ex.: "07/11" */ label: string; /** poucas palavras sobre o que mudou */ short: string; heading: string; sections: AnnouncementSection[] };
 
 export type Announcement = {
   /** Identifica o aviso: quem marcou "não mostrar mais" não volta a ver ESTE aviso (um aviso novo, com outro id, volta a aparecer). */
@@ -20,60 +20,84 @@ export type Announcement = {
 };
 
 /** Aviso que está no ar para todos. `null` = nenhum. Só trocar quando o dono do projeto pedir. */
-export const ACTIVE_ANNOUNCEMENT_ID: string | null = "novidades-2026-11-03";
+export const ACTIVE_ANNOUNCEMENT_ID: string | null = "novidades-2026-11-07";
 
 /** O aviso que está sendo preparado (visível só para o admin, com ?aviso=ver). */
-export const DRAFT_ANNOUNCEMENT_ID = "novidades-2026-11-03";
+export const DRAFT_ANNOUNCEMENT_ID = "novidades-2026-11-07";
 
-const UPDATE_OCT_27: Announcement = {
-    id: "novidades-2026-10",
-    title: "O Precificaí ficou mais fácil de usar",
-    intro: "Mudamos várias coisas para você ver o seu lucro de um jeito mais simples. Leva 1 minuto para ler.",
-    sections: [
-      {
-        icon: "🍚",
-        title: "Agora você pode cadastrar receitas",
-        body: "Arroz, feijão, molho, estrogonofe: aquilo que você faz em panela grande e usa em várias marmitas. **Cadastre a receita uma vez** e diga quanto ela rende pronta: o sistema calcula **quanto custa cada grama**. Na marmita, é só dizer quantos gramas daquela receita vão dentro. Assim o seu **gasto com ingredientes (o CMV)** fica muito mais certo, porque o tempero e o sal do lote também entram na conta.",
-      },
-      {
-        icon: "🧭",
-        title: "Menus em novos lugares, com nomes mais claros",
-        body: "Mudamos os nomes e a organização para ficar fácil de achar tudo:",
-        bullets: [
-          "Início: o Resumo mostra como está o seu mês e o que fazer agora. A Visão Avançada tem as análises mais detalhadas.",
-          "Cardápio (antes “Marmitas”): seus produtos, os combos e a aba Sincronizar Cardápio, que liga os produtos do seu cardápio digital às suas fichas.",
-          "Ingredientes (antes “Insumos”): comida, receitas e embalagens num só lugar, com o botão + Novo.",
-          "Financeiro (antes “Custos”): contas fixas, equipe, impostos, meta de lucro e histórico.",
-        ],
-      },
-      {
-        icon: "✂️",
-        title: "Tiramos o que atrapalhava",
-        body: "Saíram telas e botões que repetiam a mesma informação ou confundiam. Os números mais importantes agora aparecem logo na primeira tela.",
-      },
-      {
-        icon: "🏭",
-        title: "Produção",
-        badge: "Em breve",
-        highlight: true,
-        body: "Um menu novo para o dia a dia da cozinha, em **fase final**. Ele vai:",
-        bullets: [
-          "Quanto produzir: sugere a quantidade de cada marmita, pelo que você vendeu nas últimas semanas.",
-          "Lista de compras: monta o que falta, já descontando o que você tem no estoque.",
-          "Estoque: controla os ingredientes e as marmitas prontas.",
-        ],
-        after: "Ele aparece no menu com um **cadeadinho** porque ainda estamos terminando. Em breve ele é liberado!",
-      },
-    ],
-};
-
-/** Atualização de 03/11 junto com a de 27/10: o aviso abre na mais nova e a pessoa pode voltar para a anterior. */
-const UPDATE_NOV_03: Announcement = {
-  id: "novidades-2026-11-03",
+/** Atualização de 07/11 junto com a de 03/11: o aviso abre na mais nova e a pessoa pode voltar para a anterior. */
+const UPDATE_NOV_07: Announcement = {
+  id: "novidades-2026-11-07",
   title: "Novidades do Precificaí",
   intro: "Toque nas abas para ver o que mudou em cada atualização. A mais nova abre primeiro.",
   sections: [],
   tabs: [
+    {
+      id: "nov-07",
+      label: "07/11",
+      short: "Produção liberada",
+      heading: "Atualização de 07/11",
+      sections: [
+        {
+          icon: "🏭",
+          title: "Produção liberada!",
+          badge: "Novo",
+          highlight: true,
+          body: "O menu **Produção** está aberto para você, sem cadeado. Ele organiza o dia a dia da cozinha:",
+          bullets: [
+            "Plano em 4 passos: **Quanto fazer**, **Preparar** (as receitas em lote), **Comprar** e **Já fiz**.",
+            "O sistema **sugere as quantidades** pelas suas vendas, e você ajusta. Dá para **repetir a última produção** com um toque.",
+            "Ao dar baixa, você vê o **rendimento real**: quanto planejou, quanto saiu e a perda.",
+            "**Estoque** de ingredientes e de marmitas prontas: contar, lançar compra, lançar perda (com o motivo) e definir um **estoque mínimo**.",
+            "**Lote e validade** das marmitas prontas, com aviso de **o que está perto de vencer**.",
+            "**Movimentos**: tudo o que mexeu no estoque, com filtro por tipo e busca.",
+            "**Fechar o mês**: o CMV real, comparando o que você gastou com o que as vendas explicam.",
+          ],
+        },
+        {
+          icon: "🧾",
+          title: "Lista de compras com o que você realmente comprou",
+          body: "Marcou um item como comprado? Informe **quanto comprou de verdade** e **quanto pagou**: quase nunca é igual ao da lista. O estoque recebe a quantidade real, e você pode **atualizar o preço do insumo** com o valor pago. Os botões de copiar, WhatsApp e baixar ficaram juntos no botão **Compartilhar**.",
+        },
+        {
+          icon: "📋",
+          title: "Ficha de produção para baixar",
+          body: "No plano de produção, **Baixar ficha de produção** abre uma janela onde você escolhe **o que entra e em que ordem**: só a **lista de compras com preços estimados** (total e por kg ou unidade), a **ficha completa** ou a versão para a **cozinha**, sem preços. Você vê a prévia na hora.",
+        },
+        {
+          icon: "🧩",
+          title: "Fichas com nomes novos",
+          body: "Passamos a usar os nomes que a cozinha já conhece:",
+          bullets: [
+            "**Ficha de montagem**: a do produto (a marmita montada).",
+            "**Ficha técnica**: a da receita em lote.",
+            "No Cardápio, a aba agora se chama **Baixar Fichas**, e o botão em todo lugar é **Baixar ficha**.",
+          ],
+        },
+        {
+          icon: "📸",
+          title: "Ficha de montagem mais completa",
+          body: "Dentro do produto, na aba **Ficha de Montagem**, você pode:",
+          bullets: [
+            "Colocar a **foto** de como o prato deve ficar.",
+            "Definir a **ordem de montagem** dos itens, com as setas.",
+            "Escrever o **passo a passo da montagem**.",
+            "Imprimir com espaço para **peso final, lote e validade**.",
+          ],
+          after: "Nas **receitas**, agora existe o **Modo de preparo**, que sai na ficha técnica.",
+        },
+        {
+          icon: "📊",
+          title: "CMV e CMO no Painel",
+          body: "Em **Para onde vai cada R$ 100**, o gasto com insumos mostra a sigla **CMV** e a equipe mostra **CMO**, cada uma com a explicação em linguagem simples.",
+        },
+        {
+          icon: "📱",
+          title: "Mais leve de usar",
+          body: "Cabeçalhos e cartões de custo ocupam menos espaço no celular, os menus ficaram mais organizados e a página de erro agora é em português. No computador, o app aparece no mesmo formato do celular, centralizado. Insumos e embalagens **arquivados** agora podem ser restaurados.",
+        },
+      ],
+    },
     {
       id: "nov-03",
       label: "03/11",
@@ -83,7 +107,7 @@ const UPDATE_NOV_03: Announcement = {
         {
           icon: "📄",
           title: "Fichas técnicas para imprimir",
-          body: "Em **Cardápio › Fichas Técnicas** (e dentro de cada produto) você baixa a ficha em **PDF ou Excel**, com a sua marca. Escolha o que vai nela: o modelo **Cozinha** (pesos e modo de preparo, sem valores), o modelo **Financeiro** (custos, preço de venda e CMV) ou marque campo por campo, vendo a prévia na hora.",
+          body: "Em **Cardápio › Baixar Fichas** (e dentro de cada produto) você baixa a ficha em **PDF ou Excel**, com a sua marca. Escolha o que vai nela: o modelo **Cozinha** (pesos e modo de preparo, sem valores), o modelo **Financeiro** (custos, preço de venda e CMV) ou marque campo por campo, vendo a prévia na hora.",
         },
         {
           icon: "🥗",
@@ -96,11 +120,11 @@ const UPDATE_NOV_03: Announcement = {
           body: "Dentro de cada produto agora existem quatro abas:",
           bullets: [
             "Itens: a antiga ficha, com os ingredientes e o custo.",
-            "Ficha Técnica: baixe a ficha do produto ali mesmo.",
+            "Ficha de Montagem: baixe a ficha do produto ali mesmo.",
             "Tabela Nutricional: calculada pelos ingredientes.",
             "Preço de Venda: o preço e o lucro.",
           ],
-          after: "No Cardápio, as abas ficam na ordem: **Produtos, Combos, Fichas Técnicas e Sincronizar Cardápio**.",
+          after: "No Cardápio, as abas ficam na ordem: **Produtos, Combos, Baixar Fichas e Sincronizar Cardápio**.",
         },
         {
           icon: "🛡️",
@@ -117,22 +141,13 @@ const UPDATE_NOV_03: Announcement = {
           title: "Cadastro de ingredientes mais claro",
           body: "O **fator de correção** (quanto comprar para ter 1 kg depois da limpeza) e o **fator de cocção** (quanto o ingrediente rende depois de pronto) agora aparecem como perguntas simples, cada um com um texto de ajuda.",
         },
-        {
-          icon: "🏭",
-          title: "Produção",
-          badge: "Em breve",
-          highlight: true,
-          body: "Continua em **fase final**. Quando for liberada, ela vai sugerir quanto produzir, montar a lista de compras e controlar o estoque.",
-          after: "Segue com o **cadeadinho** no menu por enquanto.",
-        },
       ],
     },
-    { id: "out-27", label: "27/10", short: "Menus e receitas", heading: "Atualização de 27/10", sections: UPDATE_OCT_27.sections },
   ],
 };
 
-/** O aviso de 27/10 fica guardado (quem já o dispensou não o vê de novo); no ar vai o de 03/11, que traz as duas atualizações. */
-export const ANNOUNCEMENTS: Announcement[] = [UPDATE_OCT_27, UPDATE_NOV_03];
+/** Só o aviso de 07/11 fica no ar; ele traz a atualização de 07/11 e a de 03/11. Quem dispensou avisos antigos continua com a dispensa registrada. */
+export const ANNOUNCEMENTS: Announcement[] = [UPDATE_NOV_07];
 
 export const findAnnouncement = (id: string | null): Announcement | null => (id ? (ANNOUNCEMENTS.find((a) => a.id === id) ?? null) : null);
 
