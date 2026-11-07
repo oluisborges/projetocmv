@@ -17,6 +17,8 @@ export type BuyRow = {
   buyQty: number;
   /** Quanto vem em uma embalagem de compra (unidade-base), para calcular o preço pago por embalagem. */
   packSize: number | null;
+  /** Unidade em que o insumo é comprado e digitado (kg, g, l, ml, un). */
+  unit: string;
   /** Estoque mínimo que entra na conta ("2 kg"), se houver. */
   minimum: string | null;
 };
@@ -41,6 +43,7 @@ export function buyRows(list: PurchaseItem[], ingredients: Record<string, ProdIn
       cost: item.buyQty * ing.unitCost,
       buyQty: item.buyQty,
       packSize: ing.packSize,
+      unit: ing.purchaseUnit,
       minimum: minimums[item.id] ? formatBaseQty(minimums[item.id], ing.baseUnit) : null,
     };
     (item.missing > 0 ? toBuy : enough).push(row);

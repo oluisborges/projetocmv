@@ -14,7 +14,7 @@ import type { Result } from "../cardapio/actions";
 import { requireProductionAccess } from "@/lib/production-access";
 import { lotCode } from "@/lib/lots";
 import { syncMonthFromLedger } from "@/lib/stock-sync";
-import { parseDecimal } from "@/lib/format";
+import { parsePaid, parsePurchaseQty } from "@/lib/purchase-qty";
 
 const NO_PERMISSION = "Você só tem acesso de leitura. Peça a um gerente para alterar.";
 
@@ -134,27 +134,41 @@ export async function deleteProduction(formData: FormData): Promise<void> {
   redirect("/producao");
 }
 
-const paidInput = z.object({ planId: z.uuid(), ingredientId: z.uuid(), paid: z.string().max(20) });
+const purchaseInput = z.object({ planId: z.uuid(), ingredientId: z.uuid(), qty: z.string().max(20), unit: z.string().max(4), paid: z.string().max(20) });
 
-/** Quanto a pessoa pagou numa compra marcada na lista (vazio apaga o valor). */
-export async function setPurchasePaid(input: z.input<typeof paidInput>): Promise<Result> {
+/** A compra de verdade de um item da lista: quanto comprou (muitas vezes é mais que o da lista) e quanto pagou. Ajusta a entrada no estoque. */
+export async function savePurchase(input: z.input<typeof purchaseInput>): Promise<Result<{ qtyBase: number }>> {
   await requireProductionAccess();
   const ctx = await context();
   if (!ctx.ok) return { ok: false, error: ctx.error };
-  const parsed = paidInput.safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Valor inválido." };
-  const text = parsed.data.paid.trim();
-  let paid: number | null = null;
-  if (text !== "") {
-    const p = parseDecimal(text);
-    paid = p === null ? NaN : Number(p);
-    if (!Number.isFinite(paid) || paid < 0 || paid > 10_000_000) return { ok: false, error: "Digite um valor, como 48,90." };
-  }
+  const parsed = purchaseInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Compra inválida." };
+  const v = parsed.data;
+
   const supabase = await createClient();
-  const { data, error } = await supabase.from("stock_movements").update({ paid_amount: paid }).eq("org_id", ctx.orgId).eq("plan_id", parsed.data.planId).eq("ingredient_id", parsed.data.ingredientId).eq("kind", "purchase").select("id");
-  if (error || !data?.length) return { ok: false, error: "Marque a compra primeiro e tente de novo." };
+  const { data: ing } = await supabase.from("ingredients").select("purchase_unit").eq("id", v.ingredientId).eq("org_id", ctx.orgId).maybeSingle();
+  if (!ing) return { ok: false, error: "Insumo não encontrado." };
+  const qty = parsePurchaseQty(v.qty, v.unit, ing.purchase_unit as string);
+  if ("error" in qty) return { ok: false, error: qty.error };
+  const paid = parsePaid(v.paid);
+  if (paid === undefined) return { ok: false, error: "Digite o valor pago, como 48,90." };
+
+  const { data, error } = await supabase
+    .from("stock_movements")
+    .update({ qty_base: qty.qty, paid_amount: paid })
+    .eq("org_id", ctx.orgId)
+    .eq("unit_id", ctx.unitId)
+    .eq("plan_id", v.planId)
+    .eq("ingredient_id", v.ingredientId)
+    .eq("kind", "purchase")
+    .select("id");
+  if (error || !data?.length) return { ok: false, error: "Marque o item como comprado primeiro e tente de novo." };
+
+  await syncMonthFromLedger(ctx.orgId, ctx.unitId, { ingredientIds: [v.ingredientId] });
+  revalidatePath("/producao/estoque");
   revalidatePath("/producao/estoque/movimentos");
-  return { ok: true };
+  revalidatePath("/producao/estoque/historico");
+  return { ok: true, qtyBase: qty.qty };
 }
 
 const boughtInput = z.object({ planId: z.uuid(), ingredientId: z.uuid(), bought: z.boolean(), qtyBase: z.number().positive().max(100_000_000) });

@@ -168,6 +168,15 @@ export async function loadProductionBase(orgId: string, canWrite: boolean): Prom
   };
 }
 
+/** Quanto foi pago em cada compra marcada nesta produção (insumo -> R$), para reabrir a lista com os valores. */
+export async function loadPlanPaid(orgId: string, planId: string): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("stock_movements").select("ingredient_id, paid_amount").eq("org_id", orgId).eq("plan_id", planId).eq("kind", "purchase");
+  const out: Record<string, number> = {};
+  for (const r of data ?? []) if (r.ingredient_id && r.paid_amount !== null && r.paid_amount !== undefined) out[r.ingredient_id as string] = Number(r.paid_amount);
+  return out;
+}
+
 /** O estoque mínimo que o dono definiu para cada insumo (unidade-base). */
 export async function loadMinimums(orgId: string, unitId: string): Promise<Record<string, number>> {
   const supabase = await createClient();

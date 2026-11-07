@@ -60,6 +60,7 @@ export function ProductionWizard({
   rows,
   initial,
   boughtQty,
+  paidSaved,
   base,
   canWrite,
   source,
@@ -76,6 +77,8 @@ export function ProductionWizard({
   initial: Record<string, number>;
   /** O que já foi marcado como comprado nesta produção: insumo -> quantidade que entrou no estoque. */
   boughtQty: Record<string, number>;
+  /** Quanto foi pago em cada compra marcada (insumo -> R$). */
+  paidSaved: Record<string, number>;
   base: ProductionInput;
   canWrite: boolean;
   source: "menu" | "manual" | "none";
@@ -279,6 +282,9 @@ export function ProductionWizard({
               planId={id}
               bought={bought}
               qtyOf={qtyOf}
+              savedQty={boughtQty}
+              paidSaved={paidSaved}
+              onSaved={() => router.refresh()}
               canWrite={!locked}
               title={`Compras: ${name.trim() || defaultName}`}
               onBoughtChange={(rid, next) =>
