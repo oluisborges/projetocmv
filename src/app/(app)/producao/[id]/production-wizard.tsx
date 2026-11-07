@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Hint } from "@/components/hint";
 import { PendingLabel } from "@/components/spinner";
+import { ProducaoFichaModal } from "@/components/producao-ficha-modal";
 import { formatNumber, parseDecimal } from "@/lib/format";
 import { addDays } from "@/lib/lots";
 import { computeProduction, yieldSummary, type ProductionInput, type SuggestionRow } from "@/lib/production-view";
@@ -99,6 +100,7 @@ export function ProductionWizard({
   const [busy, setBusy] = useState(false);
   const [correct, setCorrect] = useState(false);
   const [history, setHistory] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   // Validade das marmitas deste lote: 90 dias depois do dia da produção, ajustável (vazio = sem controle).
   const [expires, setExpires] = useState(() => addDays(plannedFor, 90));
   const locked = done || !canWrite;
@@ -268,7 +270,7 @@ export function ProductionWizard({
         <section className="flex flex-col gap-4">
           {total > 0 ? <ProductionSummary calc={calc} /> : <p className="card p-4 text-sm text-muted">Escolha as marmitas no passo 1 para ver o que preparar.</p>}
           {total > 0 ? <PrepareList calc={calc} receitas={base.receitas} /> : null}
-          {total > 0 ? <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha de produção</a> : null}
+          {total > 0 ? <button type="button" onClick={() => setSheetOpen(true)} className={downloadClass}>Baixar ficha de produção</button> : null}
         </section>
       ) : null}
 
@@ -285,6 +287,7 @@ export function ProductionWizard({
               savedQty={boughtQty}
               paidSaved={paidSaved}
               onSaved={() => router.refresh()}
+              onDownloadSheet={() => setSheetOpen(true)}
               canWrite={!locked}
               title={`Compras: ${name.trim() || defaultName}`}
               onBoughtChange={(rid, next) =>
@@ -297,7 +300,6 @@ export function ProductionWizard({
               }
             />
           ) : null}
-          {total > 0 ? <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha de produção</a> : null}
         </section>
       ) : null}
 
@@ -306,7 +308,7 @@ export function ProductionWizard({
         <section className="flex flex-col gap-3">
           {done ? (
             <>
-              <a href={`/producao/${id}/ficha`} className={downloadClass}>Baixar ficha de produção</a>
+              <button type="button" onClick={() => setSheetOpen(true)} className={downloadClass}>Baixar ficha de produção</button>
               <YieldCard summary={yieldSummary(rows.map((r) => ({ id: r.id, name: r.name, planned: initial[r.id] ?? 0, produced: producedQty[r.id] ?? 0 })))} />
               <ul className="divide-y divide-border card px-4">
                 {rows
@@ -369,6 +371,8 @@ export function ProductionWizard({
           )}
         </section>
       ) : null}
+
+      {sheetOpen ? <ProducaoFichaModal planId={id} planName={name.trim() || defaultName} onClose={() => setSheetOpen(false)} /> : null}
 
       {error ? (
         <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">

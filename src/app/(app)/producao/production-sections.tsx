@@ -3,6 +3,7 @@
 import { copyText } from "@/lib/copy-text";
 import { useState } from "react";
 import { Hint } from "@/components/hint";
+import { ShareMenu } from "@/components/share-menu";
 import { baseUnitOf, isPurchaseUnit } from "@/lib/calc";
 import { formatBRL, formatBaseQty, formatNumber } from "@/lib/format";
 import { parsePaid, parsePurchaseQty, qtyToField } from "@/lib/purchase-qty";
@@ -157,6 +158,7 @@ export function BuyChecklist({
   savedQty,
   paidSaved,
   onSaved,
+  onDownloadSheet,
   canWrite,
   title,
   onBoughtChange,
@@ -172,6 +174,8 @@ export function BuyChecklist({
   paidSaved: Record<string, number>;
   /** Depois de salvar a compra: recarrega os números da produção. */
   onSaved: () => void;
+  /** Abre a janela de escolha da ficha de produção. */
+  onDownloadSheet: () => void;
   canWrite: boolean;
   title: string;
   onBoughtChange: (id: string, next: boolean) => void;
@@ -250,14 +254,13 @@ export function BuyChecklist({
           <textarea readOnly value={text} rows={8} onFocus={(e) => e.currentTarget.select()} className="w-full rounded-xl border border-border bg-surface p-3 text-base" />
         </div>
       ) : null}
-      <div className="grid grid-cols-2 gap-2">
-        <button type="button" onClick={copy} className="h-12 rounded-xl border border-border bg-surface text-sm font-semibold">
-          {copied ? "Copiado ✓" : "Copiar lista"}
-        </button>
-        <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer" className="flex h-12 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground">
-          Enviar no WhatsApp
-        </a>
-      </div>
+      <ShareMenu
+        items={[
+          { key: "copiar", label: copied ? "Copiado ✓" : "Copiar lista", onClick: copy },
+          { key: "whatsapp", label: "Enviar no WhatsApp", href: `https://wa.me/?text=${encodeURIComponent(text)}` },
+          { key: "ficha", label: "Baixar ficha de produção", hint: "PDF, você escolhe o que entra", onClick: onDownloadSheet },
+        ]}
+      />
 
       {calc.rows.enough.length > 0 ? (
         <details className="card px-4">

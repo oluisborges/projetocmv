@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Production, ProdIngredient, ProductionBase } from "@/lib/production-data";
+import { formatBRL } from "@/lib/format";
 import { buildProductionSheet } from "./production-sheet";
+import { SHEET_MODELOS, sheetFromParams } from "./production-sheet-config";
+import { productionSheetToPdf } from "./production-sheet-export";
 
 const ing = (name: string, over: Partial<ProdIngredient> = {}): ProdIngredient => ({ name, kind: "insumo", baseUnit: "g", purchaseUnit: "kg", unitCost: 0.02, packSize: 1000, packLabel: "1 kg", supplier: null, ...over });
 
@@ -64,6 +67,19 @@ describe("ficha de produção", () => {
     expect(sheet.toBuy.map((r) => [r.name, r.buy])).toEqual([["Arroz", "10 kg"], ["Patinho moído", "7 kg"], ["Peito de frango", "9 kg"]]);
   });
 
+  it("custo por produto, compra estimada e preço por kg/un de cada item", () => {
+    expect(sheet.products.map((p) => [p.name, p.cost])).toEqual([["Escondidinho", 950], ["Filé de frango", 400]]);
+    expect(sheet.cost).toBeCloseTo(1350, 6);
+    expect(sheet.toBuy.map((r) => [r.name, r.unitPrice])).toEqual([["Arroz", `${formatBRL(5)}/kg`], ["Patinho moído", `${formatBRL(40)}/kg`], ["Peito de frango", `${formatBRL(15)}/kg`]]);
+    // arroz 10 kg × 5,00 + patinho 7 kg × 40,00 + frango 9 kg × 15,00
+    expect(sheet.buyCost).toBeCloseTo(50 + 280 + 135, 6);
+  });
+
+  it("insumo sem preço fica sem valor por kg", () => {
+    const free: ProductionBase = { ...base, ingredients: { ...base.ingredients, patinho: ing("Patinho moído", { unitCost: 0 }) } };
+    expect(buildProductionSheet(production(items), free).toBuy.find((r) => r.name === "Patinho moído")?.unitPrice).toBeNull();
+  });
+
   it("produto com a ficha incompleta fica de fora e é avisado", () => {
     expect(sheet.skipped).toEqual(["Marmita nova"]);
   });
@@ -75,4 +91,17 @@ describe("ficha de produção", () => {
     expect(done.products).toEqual([]);
     expect(done.receitas).toEqual([]);
   });
+
+  it("PDF de cada modelo e de uma ordem personalizada sai sem quebrar", async () => {
+    for (const m of SHEET_MODELOS) {
+      const pdf = await productionSheetToPdf(sheet, "Hibiscus", new Date("2026-11-07T15:00:00Z"), m.config);
+      expect(pdf.subarray(0, 4).toString()).toBe("%PDF");
+    }
+    const custom = sheetFromParams("comprar,produzir", "precos,fornecedor,estoque,marcar,saiu,custoProduto,resumo");
+    expect((await productionSheetToPdf(sheet, "Hibiscus", new Date("2026-11-07T15:00:00Z"), custom)).subarray(0, 4).toString()).toBe("%PDF");
+    // só a lista de compras com preços é menor que a ficha completa
+    const lista = await productionSheetToPdf(sheet, "Hibiscus", new Date("2026-11-07T15:00:00Z"), SHEET_MODELOS[0].config);
+    const completa = await productionSheetToPdf(sheet, "Hibiscus", new Date("2026-11-07T15:00:00Z"), SHEET_MODELOS[1].config);
+    expect(lista.length).toBeLessThanOrEqual(completa.length);
+  }, 60_000);
 });
