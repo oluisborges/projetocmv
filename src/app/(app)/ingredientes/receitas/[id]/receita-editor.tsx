@@ -103,25 +103,17 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-live="polite" className="sticky top-[var(--sticky-top)] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <section aria-live="polite" className="sticky top-[var(--sticky-top)] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
         {cost ? (
-          <div className="flex flex-col gap-0.5">
-            <p className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted">
-              <span>
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex min-w-0 items-baseline gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted">
                 {perLabel}
                 <Hint>O custo do lote inteiro (com sal, tempero e tudo) dividido pelo que sai pronto. A marmita paga só o que usa.</Hint>
               </span>
-              {savedChip}
+              <span className="tabular text-2xl font-extrabold tracking-tight">{formatBRL(cost.costPerGram * (unit === "un" ? 1 : 1000))}</span>
             </p>
-            <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(cost.costPerGram * (unit === "un" ? 1 : 1000))}</p>
-            <p className="tabular text-xs text-muted">
-              Lote {formatBRL(cost.batchCost)} · rende {unit === "un" ? `${formatNumber(cost.readyWeightGrams, 0)} un` : `${formatNumber(cost.readyWeightGrams / 1000, 2)} ${unit === "ml" || unit === "l" ? "L" : "kg"}`}{unit === "un" ? "" : ` · ${formatBRL(cost.costPerGram * 100)} a cada 100 ${unit === "ml" || unit === "l" ? "ml" : "g"}`}
-            </p>
-            {cost.missingPrices > 0 ? (
-              <p className="pt-1 text-xs text-warning">
-                {cost.missingPrices} {cost.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Ingredientes.
-              </p>
-            ) : null}
+            {savedChip}
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3">
@@ -135,6 +127,18 @@ export function ReceitaEditor({ recipe, initialItems, ingredients, canWrite }: P
           </p>
         ) : null}
       </section>
+      {cost ? (
+        <div className="-mt-3 flex flex-col gap-0.5">
+          <p className="tabular text-xs text-muted">
+            Lote {formatBRL(cost.batchCost)} · rende {unit === "un" ? `${formatNumber(cost.readyWeightGrams, 0)} un` : `${formatNumber(cost.readyWeightGrams / 1000, 2)} ${unit === "ml" || unit === "l" ? "L" : "kg"}`}{unit === "un" ? "" : ` · ${formatBRL(cost.costPerGram * 100)} a cada 100 ${unit === "ml" || unit === "l" ? "ml" : "g"}`}
+          </p>
+          {cost.missingPrices > 0 ? (
+            <p className="text-xs text-warning">
+              {cost.missingPrices} {cost.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Ingredientes.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <label className="flex flex-col gap-1.5 text-sm font-medium">
         Nome

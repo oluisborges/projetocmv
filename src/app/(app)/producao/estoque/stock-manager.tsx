@@ -254,7 +254,7 @@ function QuickCount({ rows: all, focusIds, onClose, onDone }: { rows: StockRowDa
           <li key={r.id} className="grid grid-cols-[minmax(0,1fr)_6rem_2rem] items-center gap-2 py-2">
             <span className="min-w-0">
               <span className="block truncate text-sm font-medium">{r.name}</span>
-              <span className="block text-xs text-muted">{r.known ? `sistema: ${formatBaseQty(r.balance, r.baseUnit)}` : "nunca contado"}</span>
+              <span className="block text-xs text-muted">{r.known ? (r.balance < 0 ? "conte para acertar o saldo" : `sistema: ${formatBaseQty(r.balance, r.baseUnit)}`) : "nunca contado"}</span>
             </span>
             <input
               value={values[r.id] ?? ""}

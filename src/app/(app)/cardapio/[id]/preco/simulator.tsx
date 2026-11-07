@@ -73,7 +73,7 @@ export function Simulator({
       {channels.length > 1 ? (
         <div>
           <p className="pb-2 text-xs font-semibold uppercase tracking-wider text-muted">Vendendo por</p>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          <div className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
             {channels.map((c) => (
               <button
                 key={c.id}

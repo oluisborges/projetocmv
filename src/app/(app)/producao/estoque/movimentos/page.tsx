@@ -70,7 +70,7 @@ export default async function MovimentosPage(props: { searchParams: Promise<Reco
       <MonthChips months={months} current={month} basePath="/producao/estoque/movimentos" />
       <h2 className="text-lg font-bold first-letter:uppercase">{monthLabel(month)}</h2>
 
-      <div role="group" aria-label="Tipo de movimento" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div role="group" aria-label="Tipo de movimento" className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
         <Link href={href({ tipo: null })} aria-current={!kind ? "page" : undefined} className={chip(!kind)}>
           Todos ({all.length})
         </Link>

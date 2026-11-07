@@ -26,7 +26,7 @@ export function ShareMenu({ items, label = "Compartilhar" }: { items: ShareItem[
     };
   }, [open]);
 
-  const row = "flex min-h-12 w-full items-center justify-between gap-3 px-4 text-left text-sm font-semibold";
+  const row = "flex min-h-12 w-full flex-col items-start justify-center px-4 py-2 text-left text-sm font-semibold";
   return (
     <div ref={root} className="flex flex-col gap-2">
       <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground">

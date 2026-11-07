@@ -17,7 +17,7 @@ export function MonthChips({ months, current, basePath }: { months: string[]; cu
   }, [current]);
 
   return (
-    <div ref={ref} role="group" aria-label="Escolher o mês" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+    <div ref={ref} role="group" aria-label="Escolher o mês" className="-mx-4 flex gap-2 no-scrollbar overflow-x-auto px-4 pb-1">
       {months.map((m) => {
         const [y, mm] = m.split("-").map(Number);
         const on = m === current;

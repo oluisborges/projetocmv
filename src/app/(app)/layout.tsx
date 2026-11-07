@@ -39,21 +39,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const alerts = session.isPlatformAdmin && !active?.viewingAs ? await loadMenuAlerts().catch(() => []) : [];
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col" style={{ "--sticky-top": active?.viewingAs ? "7.75rem" : "4rem" } as React.CSSProperties}>
+    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col" style={{ "--sticky-top": active?.viewingAs ? "6.75rem" : "4rem" } as React.CSSProperties}>
       {active?.viewingAs ? (
-        <div role="status" className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-warning px-4 py-2 text-sm text-white">
-          <p className="min-w-0 leading-tight">
-            <span className="block text-xs font-semibold uppercase tracking-wider opacity-90">Visualizando como</span>
-            <span className="block truncate text-base font-extrabold">{active.orgName}</span>
+        <div role="status" className="sticky top-0 z-30 flex h-11 items-center justify-between gap-3 bg-warning px-4 text-sm text-white">
+          <p className="min-w-0 truncate leading-tight">
+            <span className="text-[11px] font-semibold uppercase tracking-wider opacity-90">Visualizando como </span>
+            <span className="font-extrabold">{active.orgName}</span>
           </p>
           <form action={exitViewAs}>
-            <SubmitButton pendingLabel="Saindo…" className="h-11 shrink-0 rounded-xl bg-white px-4 text-sm font-bold text-warning">
+            <SubmitButton pendingLabel="Saindo…" className="relative h-9 shrink-0 rounded-lg bg-white px-3 text-sm font-bold text-warning before:absolute before:-inset-1 before:content-['']">
               Sair
             </SubmitButton>
           </form>
         </div>
       ) : null}
-      <header className={`sticky z-10 flex h-16 items-center justify-between gap-3 bg-brand-deep px-4 text-primary-foreground shadow-md ${active?.viewingAs ? "top-[3.75rem]" : "top-0"}`}>
+      <header className={`sticky z-10 flex h-16 items-center justify-between gap-3 bg-brand-deep px-4 text-primary-foreground shadow-md ${active?.viewingAs ? "top-[2.75rem]" : "top-0"}`}>
         <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-accent" />
         <Link href="/" className="flex min-w-0 flex-1 items-center gap-3">
           <span className="flex min-w-0 flex-col gap-1 leading-none">

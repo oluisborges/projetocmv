@@ -57,6 +57,14 @@
   }
 }
 
+/* Fileiras de pílulas que rolam na horizontal: rolam com o dedo, sem a barra de rolagem cinza. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility card {
   border-radius: 1rem;
   border: 1px solid var(--border);

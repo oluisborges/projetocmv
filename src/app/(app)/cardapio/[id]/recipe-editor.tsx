@@ -653,11 +653,11 @@ export function RecipeEditor({
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-live="polite" className="sticky top-[var(--sticky-top)] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+      <section aria-live="polite" className="sticky top-[var(--sticky-top)] z-10 -mx-4 border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
         {view.ok ? (
-          <div className="flex flex-col gap-0.5">
-            <p className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted">
-              <span>
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex min-w-0 items-baseline gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted">
                 {isServing ? "Custo do produto" : "Custo por porção"}
                 <Hint>
                   {isServing
@@ -665,22 +665,9 @@ export function RecipeEditor({
                     : "Quanto custa fazer UMA unidade: a parte dos ingredientes do lote dividida pelas porções, mais a embalagem."}
                 </Hint>
               </span>
-              {savedChip}
+              <span className="tabular text-2xl font-extrabold tracking-tight">{formatBRL(view.cost.costPerPortion.toNumber())}</span>
             </p>
-            <p className="tabular text-3xl font-extrabold tracking-tight">{formatBRL(view.cost.costPerPortion.toNumber())}</p>
-            {isServing ? null : (
-              <p className="tabular text-xs text-muted">
-                Lote {formatBRL(view.cost.batchCost.toNumber())} · {formatNumber(view.cost.portions.toNumber(), 0)} porções
-              </p>
-            )}
-            {safetyMarginPct > 0 ? (
-              <p className="text-xs text-muted">
-                Inclui {formatNumber(safetyMarginPct * 100, 1)}% de margem de segurança nos insumos.{" "}
-                <Link href="/financeiro/impostos" className="tap-area font-semibold text-primary underline">
-                  Alterar
-                </Link>
-              </p>
-            ) : null}
+            {savedChip}
           </div>
         ) : (
           <div className="flex items-center justify-between gap-3">
@@ -694,17 +681,34 @@ export function RecipeEditor({
             {savedChip}
           </div>
         )}
-        {view.ok && view.missingPrices > 0 ? (
-          <p className="pt-1 text-xs text-warning">
-            {view.missingPrices} {view.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Ingredientes.
-          </p>
-        ) : null}
         {status.kind === "error" ? (
           <p role="alert" className="pt-1 text-sm text-danger">
             {status.message}
           </p>
         ) : null}
       </section>
+      {view.ok && (!isServing || safetyMarginPct > 0 || view.missingPrices > 0) ? (
+        <div className="-mt-3 flex flex-col gap-0.5">
+          {isServing ? null : (
+            <p className="tabular text-xs text-muted">
+              Lote {formatBRL(view.cost.batchCost.toNumber())} · {formatNumber(view.cost.portions.toNumber(), 0)} porções
+            </p>
+          )}
+          {safetyMarginPct > 0 ? (
+            <p className="text-xs text-muted">
+              Inclui {formatNumber(safetyMarginPct * 100, 1)}% de margem de segurança nos insumos.{" "}
+              <Link href="/financeiro/impostos" className="tap-area font-semibold text-primary underline">
+                Alterar
+              </Link>
+            </p>
+          ) : null}
+          {view.missingPrices > 0 ? (
+            <p className="text-xs text-warning">
+              {view.missingPrices} {view.missingPrices === 1 ? "item sem preço" : "itens sem preço"}: o custo está incompleto. Preencha em Ingredientes.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <label className="flex flex-col gap-1.5 text-sm font-medium">
         Nome

@@ -109,7 +109,7 @@ export default async function ProducaoPage() {
       {trackable > 0 && counted < trackable ? (
         <p className="rounded-xl bg-background px-4 py-3 text-sm text-muted">
           Estoque contado: <strong className="text-foreground">{counted} de {trackable}</strong> itens. Quanto mais certo o estoque, mais certa a lista de compras.{" "}
-          <Link href="/producao/estoque" className="font-semibold text-primary underline">
+          <Link href="/producao/estoque" className="tap-area font-semibold text-primary underline">
             Conferir o estoque
           </Link>
         </p>
