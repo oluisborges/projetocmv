@@ -9,7 +9,7 @@ function Pending({ children }: { children: React.ReactNode }) {
 
 /** Dentro do Estoque: o estoque de agora (onde se conta, compra e dá baixa), os movimentos (tudo o que aconteceu, com filtros) e o histórico dos meses (CMV real). */
 export function EstoqueTabs({ active }: { active: "agora" | "movimentos" | "historico" }) {
-  const chip = (on: boolean) => `flex h-11 shrink-0 items-center rounded-full border px-3.5 text-sm font-semibold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground"}`;
+  const chip = (on: boolean) => `flex h-11 shrink-0 items-center rounded-full border px-3 text-sm font-semibold ${on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground"}`;
   const items = [
     { key: "agora", href: "/producao/estoque", label: "Estoque agora" },
     { key: "movimentos", href: "/producao/estoque/movimentos", label: "Movimentos" },

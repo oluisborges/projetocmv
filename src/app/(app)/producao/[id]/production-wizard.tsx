@@ -381,7 +381,7 @@ export function ProductionWizard({
       ) : null}
 
       {/* navegação: fica à vista sobre a barra de baixo */}
-      <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-4 grid grid-cols-2 gap-2 border-t border-border bg-background px-4 py-2">
+      <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 lg:bottom-0 -mx-4 grid grid-cols-2 gap-2 border-t border-border bg-background px-4 py-2">
         <button type="button" onClick={() => setStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s))} disabled={step === 1} className="h-12 rounded-xl border border-border bg-surface font-semibold disabled:opacity-40">
           Voltar
         </button>

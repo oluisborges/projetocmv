@@ -8,7 +8,7 @@ import type { MenuLock } from "@/lib/menu-locks";
 
 const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
-const ICONS = {
+export const ICONS = {
   home: <path d="M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10M10 19.5v-5h4v5" {...stroke} />,
   chart: <path d="M4 20V10m5.5 10V4M15 20v-7m5.5 7V8" {...stroke} />,
   basket: <path d="M3 9h18l-1.6 9.2a2 2 0 0 1-2 1.8H6.6a2 2 0 0 1-2-1.8L3 9Zm4-.5 3-5m7 5-3-5M9.5 13v3m5-3v3" {...stroke} />,
@@ -17,9 +17,9 @@ const ICONS = {
   factory: <path d="M3 20V9l5 3V9l5 3V6h3l1 14M3 20h18M7 16h2m3 0h2" {...stroke} />,
 } as const;
 
-type Item = { href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean; lock?: "producao" };
+export type Item = { href: string; label: string; icon: keyof typeof ICONS; match: (p: string) => boolean; lock?: "producao" };
 
-const ITEMS: Item[] = [
+export const ITEMS: Item[] = [
   { href: "/", label: "Início", icon: "home", match: (p) => p === "/" || p.startsWith("/painel") },
   { href: "/cardapio", label: "Cardápio", icon: "recipe", match: (p) => p.startsWith("/cardapio") },
   { href: "/ingredientes", label: "Ingredientes", icon: "basket", match: (p) => p.startsWith("/ingredientes") },
@@ -62,11 +62,11 @@ export function BottomNav({ locks, producaoOpen = false }: { locks: { producao: 
   return (
     <>
       {tip ? (
-        <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-md">
+        <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-md lg:hidden">
           <LockTip message={tip.message} href={tip.href} cta={tip.cta} onClose={close} />
         </div>
       ) : null}
-      <nav aria-label="Menu principal" className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-16px_rgb(28_59_51/0.3)] backdrop-blur">
+      <nav aria-label="Menu principal" className="fixed inset-x-0 bottom-0 z-20 border-t lg:hidden border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-16px_rgb(28_59_51/0.3)] backdrop-blur">
         <ul className="mx-auto flex max-w-3xl">
           {ITEMS.map((item) => {
             const active = item.match(pathname);

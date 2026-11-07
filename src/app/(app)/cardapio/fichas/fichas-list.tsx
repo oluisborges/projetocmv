@@ -51,7 +51,7 @@ export function FichasList({ options }: { options: FichaOption[] }) {
       {shown.length === 0 ? (
         <p className="card p-4 text-sm text-muted">Nada encontrado.</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start">
           {shown.map((o) => (
             <li key={o.id} className="flex flex-col gap-3 card p-4">
               <div className="flex items-start justify-between gap-3">
